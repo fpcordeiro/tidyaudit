@@ -1,0 +1,17 @@
+# R specific files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+inst/doc
+*.tar.gz
+*.Rcheck/
+# Compilation files
+src/*.o
+src/*.so
+src/*.dll
+# Claude files
+.claude/
+CLAUDE.md
+# MacOS specific files
+.DS_Store

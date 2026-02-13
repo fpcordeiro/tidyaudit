@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^CLAUDE\.md$
+^DESIGN_PLAN\.md$
+^LICENSE\.md$
+^\.claude$
+^cran-comments\.md$
+^\.gitignore$
+^revdep$
+^CRAN-SUBMISSION$

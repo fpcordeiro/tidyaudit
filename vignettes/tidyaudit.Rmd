@@ -1,0 +1,181 @@
+---
+title: "Audit Trail Walkthrough"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Audit Trail Walkthrough}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(tidyaudit)
+library(dplyr)
+```
+
+## What is an audit trail?
+
+When building data pipelines, it's easy to lose track of what happens at each
+step. How many rows were dropped by that filter? Did the join introduce
+duplicates? Which columns have missing values now?
+
+tidyaudit's audit trail captures **metadata-only snapshots** at each step of a
+pipe — row counts, column counts, NA totals, numeric summaries — without storing
+the data itself. This gives you a lightweight, structured record of your
+pipeline's behaviour. The trail object also allows for custom functions to increase
+flexibility and capture domain-specific diagnostics.
+
+## Building a basic trail
+
+Start by creating a trail object and inserting `audit_tap()` calls into your
+pipeline. Each tap records a snapshot and passes the data through unchanged.
+
+```{r basic-trail}
+# Sample data
+orders <- data.frame(
+  id       = 1:20,
+  customer = rep(c("Alice", "Bob", "Carol", "Dan", "Eve"), 4),
+  amount   = c(150, 200, 50, 300, 75, 120, 400, 90, 250, 60,
+               180, 210, 45, 320, 85, 130, 380, 95, 270, 55),
+  status   = rep(c("complete", "pending", "complete", "cancelled", "complete"), 4)
+)
+
+trail <- audit_trail("order_pipeline")
+
+result <- orders |>
+  audit_tap(trail, "raw") |>
+  filter(status == "complete") |>
+  audit_tap(trail, "complete_only") |>
+  mutate(tax = amount * 0.1) |>
+  audit_tap(trail, "with_tax")
+```
+
+Now print the trail to see the snapshot timeline:
+
+```{r print-trail}
+print(trail)
+```
+
+The timeline shows row counts, column counts, NA totals, and change summaries
+between consecutive steps. You can see exactly how many rows each filter removed
+and when columns were added.
+
+## Operation-aware taps
+
+Plain `audit_tap()` records what the data looks like, but it can't tell you
+*why* it changed. Operation-aware taps — `left_join_tap()`, `filter_tap()`,
+etc. — perform the operation AND record enriched diagnostics.
+
+### Join taps
+
+Replace `dplyr::left_join()` + `audit_tap()` with `left_join_tap()` to capture
+match rates, relationship type, and duplicate key information:
+
+```{r join-tap}
+customers <- data.frame(
+  customer = c("Alice", "Bob", "Carol", "Dan"),
+  region   = c("East", "West", "East", "North")
+)
+
+trail2 <- audit_trail("join_pipeline")
+
+result2 <- orders |>
+  audit_tap(trail2, "raw") |>
+  left_join_tap(customers, by = "customer",
+                .trail = trail2, .label = "with_region")
+
+print(trail2)
+```
+
+The `Type` column now shows the join type, relationship, and match rate — all
+without leaving the pipe.
+
+All six dplyr join types are supported: `left_join_tap()`, `right_join_tap()`,
+`inner_join_tap()`, `full_join_tap()`, `anti_join_tap()`, `semi_join_tap()`.
+
+### Filter taps
+
+`filter_tap()` keeps matching rows (like `dplyr::filter()`) while recording how
+many rows were dropped:
+
+```{r filter-tap}
+trail3 <- audit_trail("filter_pipeline")
+
+result3 <- orders |>
+  audit_tap(trail3, "raw") |>
+  filter_tap(status == "complete",
+             .trail = trail3, .label = "complete_only") |>
+  filter_tap(amount > 100,
+             .trail = trail3, .label = "high_value",
+             .stat = amount)
+
+print(trail3)
+```
+
+The `.stat` argument tracks a numeric column through the filter, reporting how
+much of the total was dropped — useful for financial pipelines where you want to
+know the monetary impact of each filter.
+
+`filter_out_tap()` works the same way but drops matching rows (the inverse).
+
+## Comparing snapshots
+
+`audit_diff()` gives you a detailed before/after comparison between any two
+snapshots in the trail:
+
+```{r audit-diff}
+audit_diff(trail3, "raw", "high_value")
+```
+
+This shows row/column/NA deltas, columns added or removed, and numeric
+distribution shifts.
+
+## Full audit report
+
+`audit_report()` prints the complete trail summary plus all consecutive diffs in
+one call:
+
+```{r audit-report}
+audit_report(trail3)
+```
+
+## Tips
+
+### Custom diagnostics
+
+Pass a named list of functions via `.fns` to compute custom diagnostics at any
+tap:
+
+```{r custom-fns}
+trail4 <- audit_trail("custom_example")
+result4 <- orders |>
+  audit_tap(trail4, "raw", .fns = list(
+    mean_amount = ~mean(.x$amount),
+    n_customers = ~length(unique(.x$customer))
+  ))
+```
+
+### NULL-trail mode
+
+All tap functions work without a trail. When `.trail = NULL` (the default):
+
+- **No diagnostic args**: behaves like the plain dplyr function
+- **With `.stat` or `.warn_threshold`**: runs diagnostics and prints results
+  without recording to a trail
+
+```{r null-trail}
+# Plain filter — no diagnostics
+orders |> filter_tap(amount > 100) |> nrow()
+
+# Diagnostics without a trail
+orders |> filter_tap(amount > 100, .stat = amount) |> invisible()
+```
+
+This makes it easy to add quick diagnostics to any pipeline without setting up a
+full trail.

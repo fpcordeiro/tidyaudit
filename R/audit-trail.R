@@ -132,12 +132,15 @@ print.audit_trail <- function(x, ...) {
 
   if (type == "join" && !is.null(diag)) {
     join_type <- diag$join_type %||% "join"
-    relation <- diag$relation %||% ""
+    relation <- diag$relation
     match_x <- diag$match_rate$x
-    if (!is.null(match_x)) {
+    if (!is.null(match_x) && !is.null(relation)) {
       return(glue::glue("{join_type} ({relation}, {round(match_x, 1)}% matched)"))
     }
-    return(glue::glue("{join_type} ({relation})"))
+    if (!is.null(relation)) {
+      return(glue::glue("{join_type} ({relation})"))
+    }
+    return(join_type)
   }
 
   if (type == "filter" && !is.null(diag)) {

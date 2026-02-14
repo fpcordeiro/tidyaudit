@@ -15,7 +15,7 @@ Depends:
     R (>= 4.1.0)
 Imports:
     cli,
-    dplyr (>= 1.1.0),
+    dplyr (>= 1.2.0),
     glue,
     rlang (>= 1.0.0),
     stats,

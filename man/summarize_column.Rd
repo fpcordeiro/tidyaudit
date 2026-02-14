@@ -23,3 +23,11 @@ summarize_column(c(1, 2, 3, NA, 5))
 summarize_column(c("a", "b", "a", "c"))
 
 }
+\seealso{
+Other data quality: 
+\code{\link{audit_clean}()},
+\code{\link{diagnose_nas}()},
+\code{\link{diagnose_strings}()},
+\code{\link{get_summary_table}()}
+}
+\concept{data quality}

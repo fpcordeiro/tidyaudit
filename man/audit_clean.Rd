@@ -2,9 +2,12 @@
 % Please edit documentation in R/string-cleaning.R
 \name{audit_clean}
 \alias{audit_clean}
+\alias{print.audit_clean}
 \title{Audit String Cleaning Operation}
 \usage{
 audit_clean(x, clean_fn, name = NULL)
+
+\method{print}{audit_clean}(x, ...)
 }
 \arguments{
 \item{x}{Character vector to clean.}
@@ -14,6 +17,8 @@ cleaned character vector of the same length.}
 
 \item{name}{Optional name for the variable (used in output). If \code{NULL},
 captures the variable name from the call.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{audit_clean} containing:
@@ -40,3 +45,11 @@ result <- audit_clean(x, trimws)
 result$cleaned
 
 }
+\seealso{
+Other data quality: 
+\code{\link{diagnose_nas}()},
+\code{\link{diagnose_strings}()},
+\code{\link{get_summary_table}()},
+\code{\link{summarize_column}()}
+}
+\concept{data quality}

@@ -2,9 +2,12 @@
 % Please edit documentation in R/audit-diff.R
 \name{audit_diff}
 \alias{audit_diff}
+\alias{print.audit_diff}
 \title{Compare Two Audit Trail Snapshots}
 \usage{
 audit_diff(.trail, from, to)
+
+\method{print}{audit_diff}(x, ...)
 }
 \arguments{
 \item{.trail}{An \code{\link[=audit_trail]{audit_trail()}} object.}
@@ -12,6 +15,10 @@ audit_diff(.trail, from, to)
 \item{from}{Label (character) or index (integer) of the first snapshot.}
 
 \item{to}{Label (character) or index (integer) of the second snapshot.}
+
+\item{x}{An \code{audit_diff} object to print.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An \code{audit_diff} object (S3 list).
@@ -30,3 +37,10 @@ mtcars |>
 audit_diff(trail, "raw", "filtered")
 
 }
+\seealso{
+Other audit trail: 
+\code{\link{audit_report}()},
+\code{\link{audit_tap}()},
+\code{\link{print.audit_snap}()}
+}
+\concept{audit trail}

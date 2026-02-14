@@ -34,3 +34,10 @@ result <- mtcars |>
 print(trail)
 
 }
+\seealso{
+Other audit trail: 
+\code{\link{audit_diff}()},
+\code{\link{audit_report}()},
+\code{\link{print.audit_snap}()}
+}
+\concept{audit trail}

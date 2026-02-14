@@ -87,3 +87,8 @@ print(trail2)
 result3 <- filter_tap(df, amount > 300)
 
 }
+\seealso{
+Other operation taps: 
+\code{\link{join_tap}}
+}
+\concept{operation taps}

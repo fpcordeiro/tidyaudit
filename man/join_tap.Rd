@@ -84,3 +84,8 @@ print(trail)
 result2 <- left_join_tap(orders, customers, by = "id")
 
 }
+\seealso{
+Other operation taps: 
+\code{\link{filter_tap}()}
+}
+\concept{operation taps}

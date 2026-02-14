@@ -9,7 +9,7 @@
 #'   `"rmd"` is planned for a future version.
 #' @param file Output file path (used only with `format = "rmd"`).
 #'
-#' @return `.trail`, invisibly.
+#' @returns `.trail`, invisibly.
 #'
 #' @examples
 #' trail <- audit_trail("example")
@@ -19,6 +19,7 @@
 #'   audit_tap(trail, "filtered")
 #' audit_report(trail)
 #'
+#' @family audit trail
 #' @export
 audit_report <- function(.trail, format = c("console", "rmd"), file = NULL) {
   format <- match.arg(format)

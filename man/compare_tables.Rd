@@ -2,9 +2,12 @@
 % Please edit documentation in R/compare-tables.R
 \name{compare_tables}
 \alias{compare_tables}
+\alias{print.compare_tbl}
 \title{Compare Two Tables}
 \usage{
 compare_tables(x, y, key_cols = NULL)
+
+\method{print}{compare_tbl}(x, ...)
 }
 \arguments{
 \item{x}{First data.frame or tibble to compare.}
@@ -14,6 +17,8 @@ compare_tables(x, y, key_cols = NULL)
 \item{key_cols}{Character vector of column names to use as keys for matching
 rows. If \code{NULL} (default), automatically detects character, factor, and
 integer columns as keys.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{compare_tbl} containing:
@@ -42,3 +47,10 @@ y <- data.frame(id = 1:3, value = c(10.1, 20.0, 30.5))
 compare_tables(x, y)
 
 }
+\seealso{
+Other join validation: 
+\code{\link{validate_join}()},
+\code{\link{validate_primary_keys}()},
+\code{\link{validate_var_relationship}()}
+}
+\concept{join validation}

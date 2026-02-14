@@ -2,12 +2,19 @@
 % Please edit documentation in R/data-summary.R
 \name{diagnose_nas}
 \alias{diagnose_nas}
+\alias{print.diagnose_na}
 \title{Diagnose Missing Values}
 \usage{
 diagnose_nas(.data)
+
+\method{print}{diagnose_na}(x, ...)
 }
 \arguments{
 \item{.data}{A data.frame or tibble to diagnose.}
+
+\item{x}{An object to print.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{diagnose_na} containing:
@@ -31,3 +38,11 @@ df <- data.frame(
 diagnose_nas(df)
 
 }
+\seealso{
+Other data quality: 
+\code{\link{audit_clean}()},
+\code{\link{diagnose_strings}()},
+\code{\link{get_summary_table}()},
+\code{\link{summarize_column}()}
+}
+\concept{data quality}

@@ -7,8 +7,9 @@
 #' @param .data A data.frame, tibble, or other object.
 #' @param ... Arguments passed to methods.
 #'
-#' @return The filtered data.frame or tibble.
+#' @returns The filtered data.frame or tibble.
 #'
+#' @family filter diagnostics
 #' @export
 filter_keep <- function(.data, ...) UseMethod("filter_keep")
 
@@ -61,8 +62,9 @@ filter_keep.data.frame <- function(.data, ..., .stat = NULL,
 #' @param .data A data.frame, tibble, or other object.
 #' @param ... Arguments passed to methods.
 #'
-#' @return The filtered data.frame or tibble.
+#' @returns The filtered data.frame or tibble.
 #'
+#' @family filter diagnostics
 #' @export
 filter_drop <- function(.data, ...) UseMethod("filter_drop")
 

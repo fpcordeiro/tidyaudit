@@ -7,7 +7,7 @@
 #' @param label Character label for this snapshot.
 #' @param index Integer position in the trail.
 #'
-#' @return An `audit_snap` object (S3 list).
+#' @returns An `audit_snap` object (S3 list).
 #'
 #' @noRd
 .build_snapshot <- function(.data, label, index) {
@@ -70,6 +70,7 @@
   structure(snap, class = c("audit_snap", "list"))
 }
 
+#' @rdname audit_trail
 #' @export
 print.audit_snap <- function(x, ...) {
   cli::cli_h2("Snapshot: {.val {x$label}} ({format(x$nrow, big.mark = ',')} rows x {x$ncol} cols)")
@@ -142,7 +143,7 @@ print.audit_snap <- function(x, ...) {
 #' @param data_expr An unevaluated expression from `substitute(.data)`.
 #' @param .max_steps Maximum number of steps to keep (default 5).
 #'
-#' @return A character vector of pipeline steps, or `NULL` on failure.
+#' @returns A character vector of pipeline steps, or `NULL` on failure.
 #'
 #' @noRd
 .capture_pipeline <- function(data_expr, .max_steps = 5L) {
@@ -159,7 +160,7 @@ print.audit_snap <- function(x, ...) {
 #'
 #' @param expr An unevaluated R expression.
 #'
-#' @return A character vector of deparsed steps.
+#' @returns A character vector of deparsed steps.
 #'
 #' @noRd
 .decompose_pipe <- function(expr) {

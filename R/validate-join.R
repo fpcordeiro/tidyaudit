@@ -16,7 +16,7 @@
 #' @param stat_x Optional column name (string) for a numeric statistic in `x`.
 #' @param stat_y Optional column name (string) for a numeric statistic in `y`.
 #'
-#' @return An S3 object of class `validate_join` containing:
+#' @returns An S3 object of class `validate_join` containing:
 #' \describe{
 #'   \item{x_name, y_name}{Names of the input tables from the original call}
 #'   \item{by_x, by_y}{Key columns used for the join}
@@ -41,6 +41,7 @@
 #' y2 <- data.frame(id = 2:4, cost = c(10, 20, 30))
 #' validate_join(x2, y2, by = "id", stat_x = "sales", stat_y = "cost")
 #'
+#' @family join validation
 #' @export
 validate_join <- function(x, y, by = NULL, stat = NULL, stat_x = NULL,
                           stat_y = NULL) {
@@ -301,6 +302,8 @@ validate_join <- function(x, y, by = NULL, stat = NULL, stat_x = NULL,
   structure(out, class = c("validate_join", "list"))
 }
 
+#' @rdname validate_join
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.validate_join <- function(x, ...) {
   cli::cli_h1("Join Validation: {x$x_name} \u2194 {x$y_name}")
@@ -351,6 +354,8 @@ print.validate_join <- function(x, ...) {
   invisible(x)
 }
 
+#' @rdname validate_join
+#' @param object A `validate_join` object to summarize.
 #' @export
 summary.validate_join <- function(object, ...) {
   print(object)

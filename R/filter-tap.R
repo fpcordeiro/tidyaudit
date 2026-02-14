@@ -30,7 +30,7 @@
 #'   \item `.label` provided: warns that label is ignored
 #' }
 #'
-#' @return The filtered data.frame or tibble.
+#' @returns The filtered data.frame or tibble.
 #'
 #' @examples
 #' df <- data.frame(id = 1:10, amount = 1:10 * 100, flag = rep(c(TRUE, FALSE), 5))
@@ -52,6 +52,7 @@
 #' # Without trail (plain filter)
 #' result3 <- filter_tap(df, amount > 300)
 #'
+#' @family operation taps
 #' @name filter_tap
 NULL
 
@@ -156,7 +157,7 @@ filter_out_tap <- function(.data, ..., .trail = NULL, .label = NULL,
 #'   `"Removed"`).
 #' @param .data_expr Unevaluated expression for pipeline capture.
 #'
-#' @return The filtered result.
+#' @returns The filtered result.
 #'
 #' @noRd
 .filter_tap_impl <- function(.data, dots, .trail, .label, .stat_quo, .have_stat,

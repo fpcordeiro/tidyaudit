@@ -11,7 +11,7 @@
 #' @param .fns Optional named list of diagnostic functions (or formula lambdas)
 #'   to run on `.data`. Results are stored in the snapshot.
 #'
-#' @return `.data`, unchanged (invisible to the pipe).
+#' @returns `.data`, unchanged (invisible to the pipe).
 #'
 #' @examples
 #' trail <- audit_trail("example")
@@ -21,6 +21,7 @@
 #'   audit_tap(trail, "filtered")
 #' print(trail)
 #'
+#' @family audit trail
 #' @export
 audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
   data_expr <- substitute(.data)
@@ -104,7 +105,7 @@ audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
 #' @param prev Previous `audit_snap`.
 #' @param curr Current `audit_snap`.
 #'
-#' @return A list of change metrics.
+#' @returns A list of change metrics.
 #'
 #' @noRd
 .detect_changes <- function(prev, curr) {
@@ -123,7 +124,7 @@ audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
 #' @param prev_col_info Column info data.frame from previous snapshot.
 #' @param curr_col_info Column info data.frame from current snapshot.
 #'
-#' @return A data.frame of type changes, or `NULL` if none.
+#' @returns A data.frame of type changes, or `NULL` if none.
 #'
 #' @noRd
 .detect_type_changes <- function(prev_col_info, curr_col_info) {

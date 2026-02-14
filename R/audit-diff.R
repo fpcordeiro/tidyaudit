@@ -8,7 +8,7 @@
 #' @param from Label (character) or index (integer) of the first snapshot.
 #' @param to Label (character) or index (integer) of the second snapshot.
 #'
-#' @return An `audit_diff` object (S3 list).
+#' @returns An `audit_diff` object (S3 list).
 #'
 #' @examples
 #' trail <- audit_trail("example")
@@ -18,6 +18,7 @@
 #'   audit_tap(trail, "filtered")
 #' audit_diff(trail, "raw", "filtered")
 #'
+#' @family audit trail
 #' @export
 audit_diff <- function(.trail, from, to) {
   if (!inherits(.trail, "audit_trail")) {
@@ -53,7 +54,7 @@ audit_diff <- function(.trail, from, to) {
 #' @param .trail An audit trail.
 #' @param ref Character label or integer index.
 #'
-#' @return The matching `audit_snap` object.
+#' @returns The matching `audit_snap` object.
 #'
 #' @noRd
 .resolve_snapshot <- function(.trail, ref) {
@@ -86,7 +87,7 @@ audit_diff <- function(.trail, from, to) {
 #' @param from_col_info Column info from the source snapshot.
 #' @param to_col_info Column info from the target snapshot.
 #'
-#' @return A data.frame of per-column NA changes for common columns, or `NULL`.
+#' @returns A data.frame of per-column NA changes for common columns, or `NULL`.
 #'
 #' @noRd
 .compare_na_counts <- function(from_col_info, to_col_info) {
@@ -115,7 +116,7 @@ audit_diff <- function(.trail, from, to) {
 #' @param snap_from Source snapshot.
 #' @param snap_to Target snapshot.
 #'
-#' @return A data.frame of numeric distribution shifts, or `NULL`.
+#' @returns A data.frame of numeric distribution shifts, or `NULL`.
 #'
 #' @noRd
 .compare_numeric_summaries <- function(snap_from, snap_to) {
@@ -143,6 +144,9 @@ audit_diff <- function(.trail, from, to) {
   )
 }
 
+#' @rdname audit_diff
+#' @param x An `audit_diff` object to print.
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.audit_diff <- function(x, ...) {
   cli::cli_h2("Audit Diff: {.val {x$from_label}} \u2192 {.val {x$to_label}}")

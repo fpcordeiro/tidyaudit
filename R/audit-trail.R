@@ -7,12 +7,13 @@
 #' @param name Optional name for the trail. If `NULL`, a timestamped name is
 #'   generated automatically.
 #'
-#' @return An `audit_trail` object (S3 class wrapping an environment).
+#' @returns An `audit_trail` object (S3 class wrapping an environment).
 #'
 #' @examples
 #' trail <- audit_trail("my_analysis")
 #' print(trail)
 #'
+#' @family audit trail
 #' @export
 audit_trail <- function(name = NULL) {
   trail_env <- new.env(parent = emptyenv())
@@ -23,6 +24,9 @@ audit_trail <- function(name = NULL) {
   structure(trail_env, class = c("audit_trail", "environment"))
 }
 
+#' @rdname audit_trail
+#' @param x An object to print.
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.audit_trail <- function(x, ...) {
   n_snaps <- length(x$snapshots)

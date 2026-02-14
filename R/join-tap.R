@@ -36,7 +36,7 @@
 #'   \item `.label` provided: warns that label is ignored
 #' }
 #'
-#' @return The joined data.frame or tibble (same as the corresponding
+#' @returns The joined data.frame or tibble (same as the corresponding
 #'   `dplyr::*_join()`).
 #'
 #' @examples
@@ -53,6 +53,7 @@
 #' # Without trail (plain join)
 #' result2 <- left_join_tap(orders, customers, by = "id")
 #'
+#' @family operation taps
 #' @name join_tap
 NULL
 
@@ -212,7 +213,7 @@ semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
 #' @param by A character vector, named character vector, `dplyr_join_by`
 #'   object, or `NULL`.
 #'
-#' @return A named character vector, or `NULL`.
+#' @returns A named character vector, or `NULL`.
 #'
 #' @noRd
 .normalize_by <- function(by) {
@@ -276,7 +277,7 @@ semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
 #' @param .data_expr Unevaluated expression for pipeline capture.
 #' @param .y_name Deparsed name of `y`.
 #'
-#' @return The join result.
+#' @returns The join result.
 #'
 #' @noRd
 .join_tap_impl <- function(.data, y, ..., .trail, .label, .stat,

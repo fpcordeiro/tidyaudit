@@ -2,14 +2,21 @@
 % Please edit documentation in R/validate-keys.R
 \name{validate_primary_keys}
 \alias{validate_primary_keys}
+\alias{print.validate_pk}
 \title{Validate Primary Keys}
 \usage{
 validate_primary_keys(.data, keys)
+
+\method{print}{validate_pk}(x, ...)
 }
 \arguments{
 \item{.data}{A data.frame or tibble.}
 
 \item{keys}{Character vector of column names to test as primary keys.}
+
+\item{x}{An object to print.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{validate_pk} containing:
@@ -38,3 +45,10 @@ validate_primary_keys(df, "id")
 validate_primary_keys(df, "group")
 
 }
+\seealso{
+Other join validation: 
+\code{\link{compare_tables}()},
+\code{\link{validate_join}()},
+\code{\link{validate_var_relationship}()}
+}
+\concept{join validation}

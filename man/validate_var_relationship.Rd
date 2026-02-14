@@ -2,9 +2,12 @@
 % Please edit documentation in R/validate-keys.R
 \name{validate_var_relationship}
 \alias{validate_var_relationship}
+\alias{print.validate_var_rel}
 \title{Validate Variable Relationship}
 \usage{
 validate_var_relationship(.data, var1, var2)
+
+\method{print}{validate_var_rel}(x, ...)
 }
 \arguments{
 \item{.data}{A data.frame or tibble.}
@@ -12,6 +15,10 @@ validate_var_relationship(.data, var1, var2)
 \item{var1}{Character string: name of the first variable.}
 
 \item{var2}{Character string: name of the second variable.}
+
+\item{x}{An object to print.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{validate_var_rel} containing:
@@ -44,3 +51,10 @@ df <- data.frame(
 validate_var_relationship(df, "person_id", "department")
 
 }
+\seealso{
+Other join validation: 
+\code{\link{compare_tables}()},
+\code{\link{validate_join}()},
+\code{\link{validate_primary_keys}()}
+}
+\concept{join validation}

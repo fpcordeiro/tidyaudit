@@ -2,9 +2,15 @@
 % Please edit documentation in R/validate-join.R
 \name{validate_join}
 \alias{validate_join}
+\alias{print.validate_join}
+\alias{summary.validate_join}
 \title{Validate Join Operations Between Two Tables}
 \usage{
 validate_join(x, y, by = NULL, stat = NULL, stat_x = NULL, stat_y = NULL)
+
+\method{print}{validate_join}(x, ...)
+
+\method{summary}{validate_join}(object, ...)
 }
 \arguments{
 \item{x}{A data.frame or tibble (left table).}
@@ -21,6 +27,10 @@ the column name is the same. Ignored if \code{stat_x} or \code{stat_y} is provid
 \item{stat_x}{Optional column name (string) for a numeric statistic in \code{x}.}
 
 \item{stat_y}{Optional column name (string) for a numeric statistic in \code{y}.}
+
+\item{...}{Additional arguments (currently unused).}
+
+\item{object}{A \code{validate_join} object to summarize.}
 }
 \value{
 An S3 object of class \code{validate_join} containing:
@@ -56,3 +66,10 @@ y2 <- data.frame(id = 2:4, cost = c(10, 20, 30))
 validate_join(x2, y2, by = "id", stat_x = "sales", stat_y = "cost")
 
 }
+\seealso{
+Other join validation: 
+\code{\link{compare_tables}()},
+\code{\link{validate_primary_keys}()},
+\code{\link{validate_var_relationship}()}
+}
+\concept{join validation}

@@ -28,3 +28,11 @@ df <- data.frame(
 get_summary_table(df)
 
 }
+\seealso{
+Other data quality: 
+\code{\link{audit_clean}()},
+\code{\link{diagnose_nas}()},
+\code{\link{diagnose_strings}()},
+\code{\link{summarize_column}()}
+}
+\concept{data quality}

@@ -2,15 +2,20 @@
 % Please edit documentation in R/string-cleaning.R
 \name{diagnose_strings}
 \alias{diagnose_strings}
+\alias{print.diagnose_strings}
 \title{Diagnose String Column Quality}
 \usage{
 diagnose_strings(x, name = NULL)
+
+\method{print}{diagnose_strings}(x, ...)
 }
 \arguments{
 \item{x}{Character vector to diagnose.}
 
 \item{name}{Optional name for the variable (used in output). If \code{NULL},
 captures the variable name from the call.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{diagnose_strings} containing:
@@ -38,3 +43,11 @@ firms <- c("Apple", "APPLE", "apple", "  Microsoft ", "Google", NA, "")
 diagnose_strings(firms)
 
 }
+\seealso{
+Other data quality: 
+\code{\link{audit_clean}()},
+\code{\link{diagnose_nas}()},
+\code{\link{get_summary_table}()},
+\code{\link{summarize_column}()}
+}
+\concept{data quality}

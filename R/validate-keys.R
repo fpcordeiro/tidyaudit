@@ -6,7 +6,7 @@
 #' @param .data A data.frame or tibble.
 #' @param keys Character vector of column names to test as primary keys.
 #'
-#' @return An S3 object of class `validate_pk` containing:
+#' @returns An S3 object of class `validate_pk` containing:
 #' \describe{
 #'   \item{table_name}{Name of the input table from the original call}
 #'   \item{keys}{Character vector of column names tested}
@@ -27,6 +27,7 @@
 #' validate_primary_keys(df, "id")
 #' validate_primary_keys(df, "group")
 #'
+#' @family join validation
 #' @export
 validate_primary_keys <- function(.data, keys) {
   if (!is.data.frame(.data)) {
@@ -77,6 +78,9 @@ validate_primary_keys <- function(.data, keys) {
   structure(out, class = c("validate_pk", "list"))
 }
 
+#' @rdname validate_primary_keys
+#' @param x An object to print.
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.validate_pk <- function(x, ...) {
   cli::cli_h1("Primary Key Validation")
@@ -124,7 +128,7 @@ print.validate_pk <- function(x, ...) {
 #' @param var1 Character string: name of the first variable.
 #' @param var2 Character string: name of the second variable.
 #'
-#' @return An S3 object of class `validate_var_rel` containing:
+#' @returns An S3 object of class `validate_var_rel` containing:
 #' \describe{
 #'   \item{table_name}{Name of the input table}
 #'   \item{var1, var2}{Names of the variables analyzed}
@@ -149,6 +153,7 @@ print.validate_pk <- function(x, ...) {
 #' )
 #' validate_var_relationship(df, "person_id", "department")
 #'
+#' @family join validation
 #' @export
 validate_var_relationship <- function(.data, var1, var2) {
   if (!is.data.frame(.data)) {
@@ -223,6 +228,9 @@ validate_var_relationship <- function(.data, var1, var2) {
   structure(out, class = c("validate_var_rel", "list"))
 }
 
+#' @rdname validate_var_relationship
+#' @param x An object to print.
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.validate_var_rel <- function(x, ...) {
   cli::cli_h1("Variable Relationship Validation")

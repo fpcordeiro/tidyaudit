@@ -10,7 +10,7 @@
 #'   rows. If `NULL` (default), automatically detects character, factor, and
 #'   integer columns as keys.
 #'
-#' @return An S3 object of class `compare_tbl` containing:
+#' @returns An S3 object of class `compare_tbl` containing:
 #' \describe{
 #'   \item{name1, name2}{Names of the compared objects}
 #'   \item{common_columns}{Column names present in both tables}
@@ -30,6 +30,7 @@
 #' y <- data.frame(id = 1:3, value = c(10.1, 20.0, 30.5))
 #' compare_tables(x, y)
 #'
+#' @family join validation
 #' @export
 compare_tables <- function(x, y, key_cols = NULL) {
   name1 <- deparse(substitute(x))
@@ -201,6 +202,8 @@ compare_tables <- function(x, y, key_cols = NULL) {
   structure(result, class = c("compare_tbl", "list"))
 }
 
+#' @rdname compare_tables
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.compare_tbl <- function(x, ...) {
   cli::cli_h1("Table Comparison: {x$name1} vs {x$name2}")

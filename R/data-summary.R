@@ -5,7 +5,7 @@
 #'
 #' @param x A vector to summarize.
 #'
-#' @return A named character vector with summary statistics including:
+#' @returns A named character vector with summary statistics including:
 #'   type, unique count, missing count, most frequent value (for non-numeric),
 #'   mean, sd, min, quartiles (q25, q50, q75), max, and three example values.
 #'
@@ -13,6 +13,7 @@
 #' summarize_column(c(1, 2, 3, NA, 5))
 #' summarize_column(c("a", "b", "a", "c"))
 #'
+#' @family data quality
 #' @export
 summarize_column <- function(x) {
   x_NAs <- is.na(x)
@@ -151,7 +152,7 @@ summarize_column <- function(x) {
 #' @param cols Optional character vector of column names to summarize. If
 #'   `NULL` (the default), all columns are summarized.
 #'
-#' @return A data.frame with one row per column containing summary statistics.
+#' @returns A data.frame with one row per column containing summary statistics.
 #'
 #' @examples
 #' df <- data.frame(
@@ -161,6 +162,7 @@ summarize_column <- function(x) {
 #' )
 #' get_summary_table(df)
 #'
+#' @family data quality
 #' @export
 get_summary_table <- function(.data, cols = NULL) {
   if (!is.data.frame(.data)) {
@@ -192,7 +194,7 @@ get_summary_table <- function(.data, cols = NULL) {
 #'
 #' @param .data A data.frame or tibble to diagnose.
 #'
-#' @return An S3 object of class `diagnose_na` containing:
+#' @returns An S3 object of class `diagnose_na` containing:
 #' \describe{
 #'   \item{table}{A data.frame with columns `variable`, `n_na`, `pct_na`, and
 #'     `n_valid`, sorted by `pct_na` descending.}
@@ -208,6 +210,7 @@ get_summary_table <- function(.data, cols = NULL) {
 #' )
 #' diagnose_nas(df)
 #'
+#' @family data quality
 #' @export
 diagnose_nas <- function(.data) {
   if (!is.data.frame(.data)) {
@@ -239,6 +242,9 @@ diagnose_nas <- function(.data) {
   )
 }
 
+#' @rdname diagnose_nas
+#' @param x An object to print.
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.diagnose_na <- function(x, ...) {
   cli::cli_h1("Missing Value Diagnosis")

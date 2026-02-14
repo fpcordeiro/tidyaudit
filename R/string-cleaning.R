@@ -8,7 +8,7 @@
 #' @param name Optional name for the variable (used in output). If `NULL`,
 #'   captures the variable name from the call.
 #'
-#' @return An S3 object of class `diagnose_strings` containing:
+#' @returns An S3 object of class `diagnose_strings` containing:
 #' \describe{
 #'   \item{name}{Name of the variable}
 #'   \item{n_total}{Total number of elements}
@@ -27,6 +27,7 @@
 #' firms <- c("Apple", "APPLE", "apple", "  Microsoft ", "Google", NA, "")
 #' diagnose_strings(firms)
 #'
+#' @family data quality
 #' @export
 diagnose_strings <- function(x, name = NULL) {
   rlang::check_installed("stringi", reason = "for string diagnostics")
@@ -113,6 +114,8 @@ diagnose_strings <- function(x, name = NULL) {
   structure(out, class = c("diagnose_strings", "list"))
 }
 
+#' @rdname diagnose_strings
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.diagnose_strings <- function(x, ...) {
   fmt_int <- function(z) format(z, big.mark = ",", scientific = FALSE, trim = TRUE)
@@ -171,7 +174,7 @@ print.diagnose_strings <- function(x, ...) {
 #' @param name Optional name for the variable (used in output). If `NULL`,
 #'   captures the variable name from the call.
 #'
-#' @return An S3 object of class `audit_clean` containing:
+#' @returns An S3 object of class `audit_clean` containing:
 #' \describe{
 #'   \item{name}{Name of the variable}
 #'   \item{clean_fn_name}{Name of the cleaning function used}
@@ -189,6 +192,7 @@ print.diagnose_strings <- function(x, ...) {
 #' result <- audit_clean(x, trimws)
 #' result$cleaned
 #'
+#' @family data quality
 #' @export
 audit_clean <- function(x, clean_fn, name = NULL) {
   if (is.null(name)) {
@@ -248,6 +252,8 @@ audit_clean <- function(x, clean_fn, name = NULL) {
   structure(out, class = c("audit_clean", "list"))
 }
 
+#' @rdname audit_clean
+#' @param ... Additional arguments (currently unused).
 #' @export
 print.audit_clean <- function(x, ...) {
   fmt_int <- function(z) format(z, big.mark = ",", scientific = FALSE, trim = TRUE)

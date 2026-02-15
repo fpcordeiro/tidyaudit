@@ -1,7 +1,11 @@
 # tidyaudit
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml)
+[![License: LGPL-3](https://img.shields.io/badge/license-LGPL--3-blue.svg)](LICENSE.md)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 <!-- badges: end -->
+
 
 Pipeline audit trails and data diagnostics for the tidyverse.
 
@@ -34,9 +38,44 @@ result <- orders |>
   audit_tap(trail, "raw") |>
   left_join_tap(regions, by = "region_id", .trail = trail, .label = "with_region") |>
   filter_tap(amount > 100, .trail = trail, .label = "high_value", .stat = amount)
+#> ℹ filter_tap: amount > 100
+#> Dropped 14 of 100 rows (14.0%)
+#> Stat amount: dropped 713.4317 of 26,831.99
 
 print(trail)
+
+#> ── Audit Trail: "order_pipeline" ───────────────────────────────────────────
+#> Created: 2026-02-15 07:27:19
+#> Snapshots: 3
+#> 
+#>   #  Label        Rows  Cols  NAs  Type                                
+#>   ─  ───────────  ────  ────  ───  ────────────────────────────────────
+#>   1  raw           100     3    0  tap                                 
+#>   2  with_region   100     4   19  left_join (many-to-one, 81% matched)
+#>   3  high_value     86     4   17  filter (dropped 14 rows, 14%)       
+#> 
+#> Changes:
+#>   raw → with_region: = rows, +1 cols, +19 NAs
+#>   with_region → high_value: -14 rows, = cols, -2 NAs
+
 audit_diff(trail, "raw", "high_value")
+#> 
+#> ── Audit Diff: "raw" → "high_value" ──
+#> 
+#>   Metric  Before  After  Delta
+#>   ──────  ──────  ─────  ─────
+#>   Rows       100     86    -14
+#>   Cols         3      4     +1
+#>   NAs          0     17    +17
+#> 
+#> ✔ Columns added: name
+#> 
+#> Numeric shifts (common columns):
+#>     Column     Mean before  Mean after   Shift
+#>     ─────────  ───────────  ──────────  ──────
+#>     id               50.50       49.42   -1.08
+#>     amount          268.32      303.70  +35.38
+#>     region_id         3.00        3.02   +0.02
 ```
 
 ## Features

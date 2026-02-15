@@ -159,6 +159,8 @@ result4 <- orders |>
     mean_amount = ~mean(.x$amount),
     n_customers = ~length(unique(.x$customer))
   ))
+
+audit_report(trail4)
 ```
 
 ### NULL-trail mode

@@ -29,8 +29,8 @@ pak::pak("fpcordeiro/tidyaudit")
 library(tidyaudit)
 library(dplyr)
 
-orders    <- data.frame(id = 1:100, amount = runif(100, 10, 500), region_id = sample(1:5, 100, TRUE))
-regions   <- data.frame(region_id = 1:4, name = c("North", "South", "East", "West"))
+orders  <- data.frame(id = 1:100, amount = runif(100, 10, 500), region_id = sample(1:5, 100, TRUE))
+regions <- data.frame(region_id = 1:4, name = c("North", "South", "East", "West"))
 
 trail <- audit_trail("order_pipeline")
 

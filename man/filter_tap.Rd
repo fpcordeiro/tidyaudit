@@ -41,7 +41,7 @@ a plain \code{dplyr::filter()} is performed; if \code{.stat}, \code{.warn_thresh
 auto-generated as \code{"filter_1"} etc.}
 
 \item{.stat}{An unquoted column or expression to total, e.g., \code{amount},
-\code{price * qty}. Reports the stat amount dropped and its share of total.}
+\code{price * qty}. Reports the stat amount dropped and its share of the total.}
 
 \item{.quiet}{Logical. If \code{TRUE}, suppress printing diagnostics (default
 \code{FALSE}).}
@@ -53,7 +53,7 @@ dropped rows exceeds this threshold, a warning is issued.}
 The filtered data.frame or tibble.
 }
 \description{
-Perform a diagnostic filter AND record filter diagnostics in an audit trail.
+Performs a diagnostic filter AND records filter diagnostics in an audit trail.
 \code{filter_tap()} keeps matching rows (like \code{\link[dplyr:filter]{dplyr::filter()}}),
 \code{filter_out_tap()} drops matching rows (the inverse).
 }

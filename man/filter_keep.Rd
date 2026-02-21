@@ -16,7 +16,7 @@ filter_keep(.data, ...)
 tidy evaluation (same as \code{\link[dplyr:filter]{dplyr::filter()}}).}
 
 \item{.stat}{An unquoted column or expression to total, e.g., \code{amount},
-\code{price * qty}. Reports the amount dropped and its share of total.}
+\code{price * qty}. Reports the amount dropped and its share of the total.}
 
 \item{.quiet}{Logical. If \code{TRUE}, suppress printing diagnostics.}
 

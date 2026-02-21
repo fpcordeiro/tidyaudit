@@ -4,7 +4,7 @@ Version: 0.1.0
 Authors@R:
     person("Fernando", "Cordeiro", , "fernandolpcordeiro@gmail.com", role = c("aut", "cre", "cph"))
 Description: Provides pipeline audit trails and data diagnostics for
-    tidyverse workflows. The audit trail system captures lightweight
+    'tidyverse' workflows. The audit trail system captures lightweight
     metadata snapshots at each step of a pipeline, building a structured audit
     report without storing the data itself. Also includes diagnostic functions
     for interactive data analysis.

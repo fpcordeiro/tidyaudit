@@ -1,6 +1,6 @@
 #' Operation-Aware Filter Taps
 #'
-#' Perform a diagnostic filter AND record filter diagnostics in an audit trail.
+#' Performs a diagnostic filter AND records filter diagnostics in an audit trail.
 #' `filter_tap()` keeps matching rows (like [dplyr::filter()]),
 #' `filter_out_tap()` drops matching rows (the inverse).
 #'
@@ -15,7 +15,7 @@
 #' @param .label Optional character label for this snapshot. If `NULL`,
 #'   auto-generated as `"filter_1"` etc.
 #' @param .stat An unquoted column or expression to total, e.g., `amount`,
-#'   `price * qty`. Reports the stat amount dropped and its share of total.
+#'   `price * qty`. Reports the stat amount dropped and its share of the total.
 #' @param .quiet Logical. If `TRUE`, suppress printing diagnostics (default
 #'   `FALSE`).
 #' @param .warn_threshold Numeric between 0 and 1. If set and the proportion of

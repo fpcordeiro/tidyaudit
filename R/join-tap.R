@@ -1,6 +1,6 @@
 #' Operation-Aware Join Taps
 #'
-#' Perform a dplyr join AND record enriched diagnostics in an audit trail.
+#' Performs a dplyr join AND records enriched diagnostics in an audit trail.
 #' These functions replace the pattern of wrapping a join with two
 #' [audit_tap()] calls, capturing information that plain taps cannot:
 #' match rates, relationship type, duplicate keys, and unmatched row counts.

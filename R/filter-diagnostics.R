@@ -18,7 +18,7 @@ filter_keep <- function(.data, ...) UseMethod("filter_keep")
 #' @param ... Filter conditions, evaluated in the context of `.data` using
 #'   tidy evaluation (same as [dplyr::filter()]).
 #' @param .stat An unquoted column or expression to total, e.g., `amount`,
-#'   `price * qty`. Reports the amount dropped and its share of total.
+#'   `price * qty`. Reports the amount dropped and its share of the total.
 #' @param .quiet Logical. If `TRUE`, suppress printing diagnostics.
 #' @param .warn_threshold Numeric between 0 and 1. If set and the proportion of
 #'   dropped rows exceeds this threshold, a warning is issued.
@@ -74,7 +74,7 @@ filter_drop <- function(.data, ...) UseMethod("filter_drop")
 #' @param ... Filter conditions specifying rows to DROP, evaluated in the
 #'   context of `.data` using tidy evaluation.
 #' @param .stat An unquoted column or expression to total, e.g., `amount`,
-#'   `price * qty`. Reports the amount dropped and its share of total.
+#'   `price * qty`. Reports the amount dropped and its share of the total.
 #' @param .quiet Logical. If `TRUE`, suppress printing diagnostics.
 #' @param .warn_threshold Numeric between 0 and 1. If set and the proportion of
 #'   dropped rows exceeds this threshold, a warning is issued.

@@ -47,7 +47,7 @@ The joined data.frame or tibble (same as the corresponding
 \verb{dplyr::*_join()}).
 }
 \description{
-Perform a dplyr join AND record enriched diagnostics in an audit trail.
+Performs a dplyr join AND records enriched diagnostics in an audit trail.
 These functions replace the pattern of wrapping a join with two
 \code{\link[=audit_tap]{audit_tap()}} calls, capturing information that plain taps cannot:
 match rates, relationship type, duplicate keys, and unmatched row counts.

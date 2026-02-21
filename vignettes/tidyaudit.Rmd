@@ -28,7 +28,7 @@ duplicates? Which columns have missing values now?
 tidyaudit's audit trail captures **metadata-only snapshots** at each step of a
 pipe — row counts, column counts, NA totals, numeric summaries — without storing
 the data itself. This gives you a lightweight, structured record of your
-pipeline's behaviour. The trail object also allows for custom functions to increase
+pipeline's behavior. The trail object also allows for custom functions to increase
 flexibility and capture domain-specific diagnostics.
 
 ## Building a basic trail

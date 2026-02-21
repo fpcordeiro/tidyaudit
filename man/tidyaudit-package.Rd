@@ -6,7 +6,7 @@
 \alias{tidyaudit-package}
 \title{tidyaudit: Pipeline Audit Trails and Data Diagnostics for 'tidyverse' Workflows}
 \description{
-Provides pipeline audit trails and data diagnostics for tidyverse workflows. The audit trail system captures lightweight metadata snapshots at each step of a pipeline, building a structured audit report without storing the data itself. Also includes diagnostic functions for interactive data analysis.
+Provides pipeline audit trails and data diagnostics for 'tidyverse' workflows. The audit trail system captures lightweight metadata snapshots at each step of a pipeline, building a structured audit report without storing the data itself. Also includes diagnostic functions for interactive data analysis.
 }
 \seealso{
 Useful links:

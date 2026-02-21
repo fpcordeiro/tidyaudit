@@ -12,7 +12,8 @@ Pipeline audit trails and data diagnostics for `tidyverse` workflows.
 tidyaudit captures **metadata-only snapshots** at each step of a dplyr pipeline,
 building a structured audit report without storing the data itself.
 Operation-aware taps enrich snapshots with join match rates, filter drop
-statistics, and more. The package combines diagnostic tools for **interactive** development and **production**-oriented tools.
+statistics, and more. The package combines diagnostic tools for **interactive**
+development and **production**-oriented tools.
 
 ## Installation
 
@@ -23,11 +24,12 @@ Install the development version from GitHub:
 pak::pak("fpcordeiro/tidyaudit")
 ```
 
-## Quick example
+## Quick Example
 
 ```r
 library(tidyaudit)
 library(dplyr)
+set.seed(123)
 
 orders  <- data.frame(id = 1:100, amount = runif(100, 10, 500), region_id = sample(1:5, 100, TRUE))
 regions <- data.frame(region_id = 1:4, name = c("North", "South", "East", "West"))
@@ -39,43 +41,42 @@ result <- orders |>
   left_join_tap(regions, by = "region_id", .trail = trail, .label = "with_region") |>
   filter_tap(amount > 100, .trail = trail, .label = "high_value", .stat = amount)
 #> ℹ filter_tap: amount > 100
-#> Dropped 14 of 100 rows (14.0%)
-#> Stat amount: dropped 713.4317 of 26,831.99
+#> Dropped 18 of 100 rows (18.0%)
+#> Stat amount: dropped 1,062.191 of 25,429.39
 
 print(trail)
 
-#> ── Audit Trail: "order_pipeline" ───────────────────────────────────────────
-#> Created: 2026-02-15 07:27:19
+#> ── Audit Trail: "order_pipeline" ─────────────────────────────────────────────────────────────────────
+#> Created: 2026-02-21 14:36:35
 #> Snapshots: 3
 #> 
 #>   #  Label        Rows  Cols  NAs  Type                                
 #>   ─  ───────────  ────  ────  ───  ────────────────────────────────────
 #>   1  raw           100     3    0  tap                                 
-#>   2  with_region   100     4   19  left_join (many-to-one, 81% matched)
-#>   3  high_value     86     4   17  filter (dropped 14 rows, 14%)       
+#>   2  with_region   100     4   23  left_join (many-to-one, 77% matched)
+#>   3  high_value     82     4   20  filter (dropped 18 rows, 18%)       
 #> 
 #> Changes:
-#>   raw → with_region: = rows, +1 cols, +19 NAs
-#>   with_region → high_value: -14 rows, = cols, -2 NAs
+#>   raw → with_region: = rows, +1 cols, +23 NAs
+#>   with_region → high_value: -18 rows, = cols, -3 NAs
 
 audit_diff(trail, "raw", "high_value")
-#> 
 #> ── Audit Diff: "raw" → "high_value" ──
 #> 
 #>   Metric  Before  After  Delta
 #>   ──────  ──────  ─────  ─────
-#>   Rows       100     86    -14
+#>   Rows       100     82    -18
 #>   Cols         3      4     +1
-#>   NAs          0     17    +17
+#>   NAs          0     20    +20
 #> 
 #> ✔ Columns added: name
 #> 
 #> Numeric shifts (common columns):
 #>     Column     Mean before  Mean after   Shift
 #>     ─────────  ───────────  ──────────  ──────
-#>     id               50.50       49.42   -1.08
-#>     amount          268.32      303.70  +35.38
-#>     region_id         3.00        3.02   +0.02
+#>     id               50.50       49.66   -0.84
+#>     amount          254.29      297.16  +42.87
+#>     region_id         3.08        3.05   -0.03
 ```
 
 ## Features

@@ -549,6 +549,50 @@ test_that("filter_out_tap with zero conditions and trail records no-op snapshot"
 # audit_report with mixed snapshot types
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# .warn_threshold input validation in filter_tap / filter_out_tap (Fix 1)
+# ---------------------------------------------------------------------------
+
+test_that("filter_tap rejects NA_real_ .warn_threshold", {
+  trail <- audit_trail("wt_na1")
+  expect_error(
+    filter_tap(df, amount > 300, .trail = trail, .warn_threshold = NA_real_),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_tap rejects length-2 .warn_threshold", {
+  trail <- audit_trail("wt_len")
+  expect_error(
+    filter_tap(df, amount > 300, .trail = trail, .warn_threshold = c(0.1, 0.2)),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_tap rejects character .warn_threshold", {
+  trail <- audit_trail("wt_char")
+  expect_error(
+    filter_tap(df, amount > 300, .trail = trail, .warn_threshold = "0.5"),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_out_tap rejects NA_real_ .warn_threshold", {
+  trail <- audit_trail("wt_na2")
+  expect_error(
+    filter_out_tap(df, amount > 300, .trail = trail, .warn_threshold = NA_real_),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_tap rejects invalid .warn_threshold without trail too", {
+  # NULL trail delegation path also validates
+  expect_error(
+    filter_tap(df, amount > 300, .warn_threshold = NA_real_),
+    "warn_threshold"
+  )
+})
+
 test_that("audit_report works with mixed snapshot types (tap + join + filter)", {
   customers <- data.frame(id = c(1L, 5L, 7L), name = c("A", "B", "C"))
 

@@ -61,6 +61,7 @@ NULL
 filter_tap <- function(.data, ..., .trail = NULL, .label = NULL, .stat = NULL,
                         .quiet = FALSE, .warn_threshold = NULL) {
   data_expr <- substitute(.data)
+  .validate_warn_threshold(.warn_threshold)
   stat_quo <- rlang::enquo(.stat)
   have_stat <- !rlang::quo_is_null(stat_quo)
 
@@ -99,6 +100,7 @@ filter_out_tap <- function(.data, ..., .trail = NULL, .label = NULL,
                             .stat = NULL, .quiet = FALSE,
                             .warn_threshold = NULL) {
   data_expr <- substitute(.data)
+  .validate_warn_threshold(.warn_threshold)
   stat_quo <- rlang::enquo(.stat)
   have_stat <- !rlang::quo_is_null(stat_quo)
 

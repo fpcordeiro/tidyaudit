@@ -36,6 +36,7 @@ filter_keep <- function(.data, ...) UseMethod("filter_keep")
 filter_keep.data.frame <- function(.data, ..., .stat = NULL,
                                     .quiet = FALSE, .warn_threshold = NULL) {
   data_name <- deparse(substitute(.data))
+  .validate_warn_threshold(.warn_threshold)
   dots <- rlang::enquos(...)
   stat_quo <- rlang::enquo(.stat)
   have_stat <- !rlang::quo_is_null(stat_quo)
@@ -91,6 +92,7 @@ filter_drop <- function(.data, ...) UseMethod("filter_drop")
 filter_drop.data.frame <- function(.data, ..., .stat = NULL,
                                     .quiet = FALSE, .warn_threshold = NULL) {
   data_name <- deparse(substitute(.data))
+  .validate_warn_threshold(.warn_threshold)
   dots <- rlang::enquos(...)
   stat_quo <- rlang::enquo(.stat)
   have_stat <- !rlang::quo_is_null(stat_quo)
@@ -137,13 +139,15 @@ filter_drop.data.frame <- function(.data, ..., .stat = NULL,
   }
 
   if (!quiet) {
+    pct_lab <- if (is.na(share_drop)) "N/A" else sprintf("%.2f%%", 100 * share_drop)
     cli::cli_text("{func_name}({data_name}, {expr_lab})")
     cli::cli_text(
-      "  Dropped {format(n_drop, big.mark = ',')} of {format(n_total, big.mark = ',')} rows ({sprintf('%.2f%%', 100 * share_drop)})."
+      "  Dropped {format(n_drop, big.mark = ',')} of {format(n_total, big.mark = ',')} rows ({pct_lab})."
     )
     if (have_stat) {
+      pct_val_lab <- if (is.na(share_val)) "N/A" else sprintf("%.2f%%", 100 * share_val)
       cli::cli_text(
-        "  Dropped {format(drop_val, big.mark = ',', scientific = FALSE)} of {format(total_val, big.mark = ',', scientific = FALSE)} for {stat_lab} ({sprintf('%.2f%%', 100 * share_val)})."
+        "  Dropped {format(drop_val, big.mark = ',', scientific = FALSE)} of {format(total_val, big.mark = ',', scientific = FALSE)} for {stat_lab} ({pct_val_lab})."
       )
     }
   }
@@ -153,4 +157,22 @@ filter_drop.data.frame <- function(.data, ..., .stat = NULL,
       "Dropped {sprintf('%.1f%%', 100 * share_drop)} of rows exceeds threshold ({sprintf('%.1f%%', 100 * warn_threshold)})."
     )
   }
+}
+
+#' Validate .warn_threshold argument
+#'
+#' Checks that .warn_threshold is NULL or a single finite numeric in \[0, 1\].
+#' Emits a cli_abort() if the value is invalid.
+#'
+#' @param x The value to validate.
+#'
+#' @noRd
+.validate_warn_threshold <- function(x) {
+  if (is.null(x)) return(invisible(NULL))
+  if (!is.numeric(x) || length(x) != 1L || is.na(x) || x < 0 || x > 1) {
+    cli::cli_abort(
+      "{.arg .warn_threshold} must be a single number between 0 and 1, or NULL."
+    )
+  }
+  invisible(NULL)
 }

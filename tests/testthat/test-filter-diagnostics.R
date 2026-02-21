@@ -167,3 +167,77 @@ test_that("filter_drop with multiple predicates and .stat", {
   # Rows matching a > 3 & b < 4 are rows 4,5,6
   expect_equal(nrow(result), 3L)
 })
+
+# ---------------------------------------------------------------------------
+# .warn_threshold input validation (Fix 1)
+# ---------------------------------------------------------------------------
+
+test_that("filter_keep rejects NA_real_ .warn_threshold", {
+  df <- data.frame(x = 1:5)
+  expect_error(
+    filter_keep(df, x > 2, .warn_threshold = NA_real_),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_keep rejects length-2 .warn_threshold", {
+  df <- data.frame(x = 1:5)
+  expect_error(
+    filter_keep(df, x > 2, .warn_threshold = c(0.1, 0.2)),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_keep rejects character .warn_threshold", {
+  df <- data.frame(x = 1:5)
+  expect_error(
+    filter_keep(df, x > 2, .warn_threshold = "0.5"),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_drop rejects NA_real_ .warn_threshold", {
+  df <- data.frame(x = 1:5)
+  expect_error(
+    filter_drop(df, x > 2, .warn_threshold = NA_real_),
+    "warn_threshold"
+  )
+})
+
+test_that("filter_drop rejects out-of-range .warn_threshold", {
+  df <- data.frame(x = 1:5)
+  expect_error(
+    filter_drop(df, x > 2, .warn_threshold = 1.5),
+    "warn_threshold"
+  )
+  expect_error(
+    filter_drop(df, x > 2, .warn_threshold = -0.1),
+    "warn_threshold"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# NA% display for zero-row inputs (Fix 4)
+# ---------------------------------------------------------------------------
+
+test_that("filter_keep shows N/A instead of NA% for empty input", {
+  empty <- data.frame(x = integer(0))
+  output <- capture.output(
+    filter_keep(empty, x > 2),
+    type = "message"
+  )
+  combined <- paste(output, collapse = "\n")
+  expect_false(grepl("NA%", combined))
+  expect_true(grepl("N/A", combined))
+})
+
+test_that("filter_drop shows N/A instead of NA% for empty input", {
+  empty <- data.frame(x = integer(0))
+  output <- capture.output(
+    filter_drop(empty, x > 2),
+    type = "message"
+  )
+  combined <- paste(output, collapse = "\n")
+  expect_false(grepl("NA%", combined))
+  expect_true(grepl("N/A", combined))
+})

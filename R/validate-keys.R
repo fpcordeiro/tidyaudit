@@ -10,12 +10,15 @@
 #' \describe{
 #'   \item{table_name}{Name of the input table from the original call}
 #'   \item{keys}{Character vector of column names tested}
-#'   \item{is_primary_key}{Logical: TRUE if keys uniquely identify all rows}
+#'   \item{is_primary_key}{Logical: TRUE if keys uniquely identify all rows AND
+#'     no key column contains NA values}
 #'   \item{n_rows}{Total number of rows in the table}
 #'   \item{n_unique_keys}{Number of distinct key combinations}
 #'   \item{n_duplicate_keys}{Number of key combinations that appear more than once}
 #'   \item{duplicate_keys}{A data.frame of duplicated key values with their counts}
 #'   \item{has_numeric_keys}{Logical: TRUE if any key column is of type double}
+#'   \item{has_na_keys}{Logical: TRUE if any key column contains NA values}
+#'   \item{na_in_keys}{Named logical vector indicating which key columns contain NAs}
 #' }
 #'
 #' @examples
@@ -54,6 +57,10 @@ validate_primary_keys <- function(.data, keys) {
     )
   }
 
+  # Check for NA values in key columns (NA keys violate PK semantics)
+  na_in_keys <- vapply(keys, function(k) anyNA(.data[[k]]), logical(1L))
+  has_na_keys <- any(na_in_keys)
+
   # Count occurrences of each key combination
   key_counts <- dplyr::count(.data, dplyr::across(dplyr::all_of(keys)), name = "n")
   n_rows <- nrow(.data)
@@ -63,7 +70,7 @@ validate_primary_keys <- function(.data, keys) {
   duplicate_keys <- dplyr::filter(key_counts, .data$n > 1L)
   n_duplicate_keys <- nrow(duplicate_keys)
 
-  is_primary_key <- n_unique_keys == n_rows
+  is_primary_key <- (n_unique_keys == n_rows) && !has_na_keys
 
   out <- list(
     table_name = table_name,
@@ -73,7 +80,9 @@ validate_primary_keys <- function(.data, keys) {
     n_unique_keys = n_unique_keys,
     n_duplicate_keys = n_duplicate_keys,
     duplicate_keys = duplicate_keys,
-    has_numeric_keys = has_numeric_keys
+    has_numeric_keys = has_numeric_keys,
+    has_na_keys = has_na_keys,
+    na_in_keys = na_in_keys
   )
   structure(out, class = c("validate_pk", "list"))
 }
@@ -109,6 +118,12 @@ print.validate_pk <- function(x, ...) {
       cli::cli_text("{.strong Duplicate keys (showing up to 10):}")
       print(utils::head(x$duplicate_keys, 10L))
     }
+  }
+
+  if (x$has_na_keys) {
+    na_cols <- names(x$na_in_keys)[x$na_in_keys]
+    cli::cli_text("")
+    cli::cli_alert_warning("NA values found in key column{?s}: {.field {na_cols}}. Primary keys must not contain NAs.")
   }
 
   if (x$has_numeric_keys) {

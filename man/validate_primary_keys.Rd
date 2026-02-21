@@ -23,12 +23,15 @@ An S3 object of class \code{validate_pk} containing:
 \describe{
 \item{table_name}{Name of the input table from the original call}
 \item{keys}{Character vector of column names tested}
-\item{is_primary_key}{Logical: TRUE if keys uniquely identify all rows}
+\item{is_primary_key}{Logical: TRUE if keys uniquely identify all rows AND
+no key column contains NA values}
 \item{n_rows}{Total number of rows in the table}
 \item{n_unique_keys}{Number of distinct key combinations}
 \item{n_duplicate_keys}{Number of key combinations that appear more than once}
 \item{duplicate_keys}{A data.frame of duplicated key values with their counts}
 \item{has_numeric_keys}{Logical: TRUE if any key column is of type double}
+\item{has_na_keys}{Logical: TRUE if any key column contains NA values}
+\item{na_in_keys}{Named logical vector indicating which key columns contain NAs}
 }
 }
 \description{

@@ -143,3 +143,50 @@ test_that("validate_var_relationship works with factors", {
 
   expect_equal(result$relation, "one-to-one")
 })
+
+# ---------------------------------------------------------------------------
+# validate_primary_keys: NA key values (Fix 2)
+# ---------------------------------------------------------------------------
+
+test_that("validate_primary_keys returns FALSE when single NA in integer key", {
+  df <- data.frame(id = c(1L, 2L, NA_integer_))
+  result <- validate_primary_keys(df, "id")
+
+  expect_false(result$is_primary_key)
+  expect_true(result$has_na_keys)
+  expect_true(result$na_in_keys[["id"]])
+})
+
+test_that("validate_primary_keys returns FALSE when single NA in character key", {
+  df <- data.frame(id = c("a", "b", NA_character_), stringsAsFactors = FALSE)
+  result <- validate_primary_keys(df, "id")
+
+  expect_false(result$is_primary_key)
+  expect_true(result$has_na_keys)
+})
+
+test_that("validate_primary_keys has_na_keys=FALSE when no NAs present", {
+  df <- data.frame(id = 1:3)
+  result <- validate_primary_keys(df, "id")
+
+  expect_true(result$is_primary_key)
+  expect_false(result$has_na_keys)
+  expect_false(any(result$na_in_keys))
+})
+
+test_that("validate_primary_keys returns FALSE with multiple NAs (duplicate NA keys)", {
+  df <- data.frame(id = c(1L, NA_integer_, NA_integer_))
+  result <- validate_primary_keys(df, "id")
+
+  expect_false(result$is_primary_key)
+  expect_true(result$has_na_keys)
+})
+
+test_that("print.validate_pk warns about NA key columns", {
+  df <- data.frame(id = c(1L, 2L, NA_integer_))
+  result <- validate_primary_keys(df, "id")
+
+  output <- capture.output(print(result), type = "message")
+  combined <- paste(output, collapse = "\n")
+  expect_true(grepl("NA values", combined, ignore.case = TRUE))
+})

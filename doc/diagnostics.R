@@ -35,7 +35,7 @@ validate_join(x, y, by = "id", stat_x = "revenue", stat_y = "cost")
 ## ----validate-pk--------------------------------------------------------------
 df <- data.frame(
   id    = c(1L, 2L, 3L, 3L, 4L),
-  group = c("A", "A", "B", "B", "A"),
+  group = c("A", "A", "B", "C", "A"),
   value = c(10, 20, 30, 40, 50)
 )
 
@@ -97,4 +97,3 @@ diagnose_strings(firms)
 ## ----audit-clean--------------------------------------------------------------
 audit_clean(firms, trimws)
 audit_clean(firms, tolower)
-

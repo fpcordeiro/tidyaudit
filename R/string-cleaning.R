@@ -162,39 +162,39 @@ print.diagnose_strings <- function(x, ...) {
   invisible(x)
 }
 
-#' Audit String Cleaning Operation
+#' Audit a String Transformation
 #'
-#' Applies a cleaning function to a character vector and reports what changed.
-#' Provides transparency about the cleaning operation by showing counts and
-#' before/after examples.
+#' Applies a transformation function to a character vector and reports what
+#' changed. Provides transparency about the transformation by showing counts
+#' and before/after examples.
 #'
-#' @param x Character vector to clean.
+#' @param x Character vector to transform.
 #' @param clean_fn A function that takes a character vector and returns a
-#'   cleaned character vector of the same length.
+#'   transformed character vector of the same length.
 #' @param name Optional name for the variable (used in output). If `NULL`,
 #'   captures the variable name from the call.
 #'
-#' @returns An S3 object of class `audit_clean` containing:
+#' @returns An S3 object of class `audit_transform` containing:
 #' \describe{
 #'   \item{name}{Name of the variable}
-#'   \item{clean_fn_name}{Name of the cleaning function used}
+#'   \item{clean_fn_name}{Name of the transformation function used}
 #'   \item{n_total}{Total number of elements}
 #'   \item{n_changed}{Count of values that changed}
 #'   \item{n_unchanged}{Count of values that stayed the same}
 #'   \item{n_na}{Count of NA values}
 #'   \item{pct_changed}{Percentage of non-NA values that changed}
 #'   \item{change_examples}{Data.frame with before/after pairs}
-#'   \item{cleaned}{The cleaned character vector}
+#'   \item{cleaned}{The transformed character vector}
 #' }
 #'
 #' @examples
 #' x <- c("  hello ", "WORLD", "  foo  ", NA)
-#' result <- audit_clean(x, trimws)
+#' result <- audit_transform(x, trimws)
 #' result$cleaned
 #'
 #' @family data quality
 #' @export
-audit_clean <- function(x, clean_fn, name = NULL) {
+audit_transform <- function(x, clean_fn, name = NULL) {
   if (is.null(name)) {
     name <- deparse(substitute(x))
   }
@@ -249,16 +249,16 @@ audit_clean <- function(x, clean_fn, name = NULL) {
     change_examples = change_examples,
     cleaned = cleaned
   )
-  structure(out, class = c("audit_clean", "list"))
+  structure(out, class = c("audit_transform", "list"))
 }
 
-#' @rdname audit_clean
+#' @rdname audit_transform
 #' @param ... Additional arguments (currently unused).
 #' @export
-print.audit_clean <- function(x, ...) {
+print.audit_transform <- function(x, ...) {
   fmt_int <- function(z) format(z, big.mark = ",", scientific = FALSE, trim = TRUE)
 
-  cli::cli_h1("String Cleaning Audit: {x$name}")
+  cli::cli_h1("String Transformation Audit: {x$name}")
   cli::cli_text("Function: {x$clean_fn_name}")
   cli::cli_text("")
 

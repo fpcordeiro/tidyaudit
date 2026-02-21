@@ -189,11 +189,11 @@ firms <- c("Apple", "APPLE", "apple", "  Microsoft ", "Google", NA, "")
 diagnose_strings(firms)
 ```
 
-### audit_clean
+### audit_transform
 
-`audit_clean()` shows exactly what a cleaning function changes:
+`audit_transform()` shows exactly what a transformation function changes:
 
-```{r audit-clean}
-audit_clean(firms, trimws)
-audit_clean(firms, tolower)
+```{r audit-transform}
+audit_transform(firms, trimws)
+audit_transform(firms, tolower)
 ```

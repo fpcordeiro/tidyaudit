@@ -40,7 +40,7 @@ diagnose_nas(df)
 }
 \seealso{
 Other data quality: 
-\code{\link{audit_clean}()},
+\code{\link{audit_transform}()},
 \code{\link{diagnose_strings}()},
 \code{\link{get_summary_table}()},
 \code{\link{summarize_column}()}

@@ -45,7 +45,7 @@ diagnose_strings(firms)
 }
 \seealso{
 Other data quality: 
-\code{\link{audit_clean}()},
+\code{\link{audit_transform}()},
 \code{\link{diagnose_nas}()},
 \code{\link{get_summary_table}()},
 \code{\link{summarize_column}()}

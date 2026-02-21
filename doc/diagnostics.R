@@ -94,6 +94,6 @@ get_summary_table(messy)
 firms <- c("Apple", "APPLE", "apple", "  Microsoft ", "Google", NA, "")
 diagnose_strings(firms)
 
-## ----audit-clean--------------------------------------------------------------
-audit_clean(firms, trimws)
-audit_clean(firms, tolower)
+## ----audit-transform----------------------------------------------------------
+audit_transform(firms, trimws)
+audit_transform(firms, tolower)

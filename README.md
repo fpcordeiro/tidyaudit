@@ -7,7 +7,7 @@
 <!-- badges: end -->
 
 
-Pipeline audit trails and data diagnostics for the tidyverse.
+Pipeline audit trails and data diagnostics for `tidyverse` workflows.
 
 tidyaudit captures **metadata-only snapshots** at each step of a dplyr pipeline,
 building a structured audit report without storing the data itself.
@@ -96,7 +96,7 @@ audit_diff(trail, "raw", "high_value")
 - `compare_tables()` — column, row, and numeric comparison
 - `filter_keep()` / `filter_drop()` — filter with diagnostic output
 - `diagnose_nas()` / `summarize_column()` / `get_summary_table()` — data quality
-- `diagnose_strings()` / `audit_clean()` — string quality auditing
+- `diagnose_strings()` / `audit_transform()` — string quality auditing and transformation
 
 See `vignette("tidyaudit")` for the audit trail walkthrough and
 `vignette("diagnostics")` for the diagnostic functions guide.

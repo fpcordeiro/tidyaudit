@@ -85,13 +85,13 @@ test_that("diagnose_strings detects non-ASCII", {
   expect_equal(result$n_non_ascii, 2L)
 })
 
-# audit_clean tests
+# audit_transform tests
 
-test_that("audit_clean reports changes from trimws", {
+test_that("audit_transform reports changes from trimws", {
   x <- c("  hello ", "world", "  foo  ", NA)
-  result <- audit_clean(x, trimws)
+  result <- audit_transform(x, trimws)
 
-  expect_s3_class(result, "audit_clean")
+  expect_s3_class(result, "audit_transform")
   expect_equal(result$n_total, 4L)
   expect_equal(result$n_na, 1L)
   expect_equal(result$n_changed, 2L)  # "  hello " and "  foo  " change
@@ -102,81 +102,81 @@ test_that("audit_clean reports changes from trimws", {
   expect_true(is.na(result$cleaned[4]))
 })
 
-test_that("audit_clean captures function name", {
+test_that("audit_transform captures function name", {
   x <- c("a", "b")
-  result <- audit_clean(x, toupper)
+  result <- audit_transform(x, toupper)
 
   expect_equal(result$clean_fn_name, "toupper")
   expect_equal(result$cleaned, c("A", "B"))
   expect_equal(result$n_changed, 2L)
 })
 
-test_that("audit_clean handles no changes", {
+test_that("audit_transform handles no changes", {
   x <- c("HELLO", "WORLD")
-  result <- audit_clean(x, toupper)
+  result <- audit_transform(x, toupper)
 
   expect_equal(result$n_changed, 0L)
   expect_equal(nrow(result$change_examples), 0L)
   expect_equal(result$pct_changed, 0)
 })
 
-test_that("audit_clean provides change examples", {
+test_that("audit_transform provides change examples", {
   x <- c("  a  ", "b", "  c  ", "d", "  e  ")
-  result <- audit_clean(x, trimws)
+  result <- audit_transform(x, trimws)
 
   expect_true(nrow(result$change_examples) > 0L)
   expect_true(all(c("before", "after") %in% names(result$change_examples)))
 })
 
-test_that("audit_clean handles all-NA input", {
+test_that("audit_transform handles all-NA input", {
   x <- c(NA_character_, NA_character_)
-  result <- audit_clean(x, toupper)
+  result <- audit_transform(x, toupper)
 
   expect_equal(result$n_changed, 0L)
   expect_equal(result$n_na, 2L)
   expect_equal(result$pct_changed, 0)
 })
 
-test_that("audit_clean captures custom name", {
-  result <- audit_clean(c("a", "b"), toupper, name = "test_col")
+test_that("audit_transform captures custom name", {
+  result <- audit_transform(c("a", "b"), toupper, name = "test_col")
   expect_equal(result$name, "test_col")
 })
 
-test_that("print.audit_clean produces output", {
+test_that("print.audit_transform produces output", {
   x <- c("  hello ", "world")
-  result <- audit_clean(x, trimws)
+  result <- audit_transform(x, trimws)
 
   output <- capture.output(print(result), type = "message")
   combined <- paste(output, collapse = "\n")
-  expect_true(grepl("String Cleaning Audit", combined))
+  expect_true(grepl("String Transformation Audit", combined))
   expect_true(grepl("trimws", combined))
 })
 
-test_that("audit_clean pct_changed is correct", {
+test_that("audit_transform pct_changed is correct", {
   x <- c("a", "b", "c", "d", NA)
   # toupper changes all 4 non-NA values
-  result <- audit_clean(x, toupper)
+  result <- audit_transform(x, toupper)
 
   expect_equal(result$pct_changed, 100)
 })
 
-test_that("audit_clean change examples limited to 10", {
+test_that("audit_transform change examples limited to 10", {
   x <- paste0("item_", 1:20)
-  result <- audit_clean(x, toupper)
+  result <- audit_transform(x, toupper)
 
   expect_true(nrow(result$change_examples) <= 10L)
 })
 
-test_that("audit_clean errors when clean_fn returns wrong length", {
+test_that("audit_transform errors when clean_fn returns wrong length", {
   expect_error(
-    audit_clean(c("a", "b", "c"), function(x) x[1]),
+    audit_transform(c("a", "b", "c"), function(x) x[1]),
     "same length"
   )
 })
 
-test_that("audit_clean errors when clean_fn returns longer vector", {
+test_that("audit_transform errors when clean_fn returns longer vector", {
   expect_error(
-    audit_clean(c("a", "b"), function(x) rep(x, 2)),
+    audit_transform(c("a", "b"), function(x) rep(x, 2)),
     "same length"
   )
 })

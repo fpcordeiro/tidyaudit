@@ -257,8 +257,8 @@ validate_join <- function(x, y, by = NULL, stat = NULL, stat_x = NULL,
       fmt_int(y_unique),
       fmt_int(n_key_overlap),
       fmt_int(n_matched),
-      sprintf("%.2f%%", match_rate_x),
-      sprintf("%.2f%%", match_rate_y),
+      if (is.na(match_rate_x)) "N/A" else sprintf("%.2f%%", match_rate_x),
+      if (is.na(match_rate_y)) "N/A" else sprintf("%.2f%%", match_rate_y),
       fmt_int(n_only_x),
       fmt_int(n_only_y)
     ),
@@ -326,8 +326,8 @@ print.validate_join <- function(x, ...) {
       cli::cli_text("{.strong {scx}} in {x$x_name}:")
       cli::cli_bullets(c(
         "*" = "Total: {format(sx$total, big.mark = ',', trim = TRUE)}",
-        "*" = "Matched: {format(sx$matched, big.mark = ',', trim = TRUE)}  ({sprintf('%.2f%%', sx$rate)})",
-        "*" = "Unmatched: {format(sx$only, big.mark = ',', trim = TRUE)}  ({sprintf('%.2f%%', if (!is.na(sx$rate)) 100 - sx$rate else NA_real_)})"
+        "*" = "Matched: {format(sx$matched, big.mark = ',', trim = TRUE)}  ({if (is.na(sx$rate)) 'N/A' else sprintf('%.2f%%', sx$rate)})",
+        "*" = "Unmatched: {format(sx$only, big.mark = ',', trim = TRUE)}  ({if (is.na(sx$rate)) 'N/A' else sprintf('%.2f%%', 100 - sx$rate)})"
       ))
     }
 
@@ -338,8 +338,8 @@ print.validate_join <- function(x, ...) {
       cli::cli_text("{.strong {scy}} in {x$y_name}:")
       cli::cli_bullets(c(
         "*" = "Total: {format(sy$total, big.mark = ',', trim = TRUE)}",
-        "*" = "Matched: {format(sy$matched, big.mark = ',', trim = TRUE)}  ({sprintf('%.2f%%', sy$rate)})",
-        "*" = "Unmatched: {format(sy$only, big.mark = ',', trim = TRUE)}  ({sprintf('%.2f%%', if (!is.na(sy$rate)) 100 - sy$rate else NA_real_)})"
+        "*" = "Matched: {format(sy$matched, big.mark = ',', trim = TRUE)}  ({if (is.na(sy$rate)) 'N/A' else sprintf('%.2f%%', sy$rate)})",
+        "*" = "Unmatched: {format(sy$only, big.mark = ',', trim = TRUE)}  ({if (is.na(sy$rate)) 'N/A' else sprintf('%.2f%%', 100 - sy$rate)})"
       ))
     }
   }

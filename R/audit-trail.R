@@ -138,7 +138,7 @@ print.audit_trail <- function(x, ...) {
     join_type <- diag$join_type %||% "join"
     relation <- diag$relation
     match_x <- diag$match_rate$x
-    if (!is.null(match_x) && !is.null(relation)) {
+    if (!is.null(match_x) && !is.na(match_x) && !is.null(relation)) {
       return(glue::glue("{join_type} ({relation}, {round(match_x, 1)}% matched)"))
     }
     if (!is.null(relation)) {

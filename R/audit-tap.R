@@ -11,7 +11,8 @@
 #' @param .fns Optional named list of diagnostic functions (or formula lambdas)
 #'   to run on `.data`. Results are stored in the snapshot.
 #'
-#' @returns `.data`, unchanged (invisible to the pipe).
+#' @returns `.data`, unchanged, returned invisibly. The function is a
+#'   transparent pass-through; its only effect is the side effect on `.trail`.
 #'
 #' @examples
 #' trail <- audit_trail("example")
@@ -73,7 +74,7 @@ audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
     if (is.null(names(.fns))) {
       names(.fns) <- paste0("fn_", seq_along(.fns))
     } else {
-      empty <- names(.fns) == ""
+      empty <- is.na(names(.fns)) | names(.fns) == ""
       if (any(empty)) {
         names(.fns)[empty] <- paste0("fn_", which(empty))
       }
@@ -94,8 +95,8 @@ audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
   .trail$snapshots[[index]] <- snap
   .trail$labels <- c(.trail$labels, label)
 
-  # Return data unchanged
-  .data
+  # Return data unchanged, invisibly (side-effect-only function)
+  invisible(.data)
 }
 
 #' Detect Changes Between Two Consecutive Snapshots

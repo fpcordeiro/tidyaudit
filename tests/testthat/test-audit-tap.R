@@ -180,3 +180,40 @@ test_that("audit_tap validates .trail before forcing .data", {
   # We can't perfectly test evaluation order, but we verify the error message
   expect_error(audit_tap(mtcars, "not_a_trail", "s"), "audit_trail")
 })
+
+# ---------------------------------------------------------------------------
+# .fns with NA names (Fix 3)
+# ---------------------------------------------------------------------------
+
+test_that("audit_tap handles .fns list with NA name without crashing", {
+  trail <- audit_trail("fns_na_name")
+  fns <- list(nrow)
+  names(fns) <- NA_character_
+
+  # Must not crash; the NA name should be auto-renamed to fn_1
+  mtcars |> audit_tap(trail, "raw", .fns = fns)
+  snap <- trail$snapshots[[1]]
+  expect_equal(names(snap$custom), "fn_1")
+  expect_equal(snap$custom$fn_1, 32L)
+})
+
+test_that("audit_tap handles mixed NA and empty names in .fns", {
+  trail <- audit_trail("fns_mixed_names")
+  fns <- list(nrow, ncol)
+  names(fns) <- c("keep", NA_character_)
+
+  mtcars |> audit_tap(trail, "raw", .fns = fns)
+  snap <- trail$snapshots[[1]]
+  expect_equal(names(snap$custom), c("keep", "fn_2"))
+})
+
+# ---------------------------------------------------------------------------
+# invisible return (Fix 5)
+# ---------------------------------------------------------------------------
+
+test_that("audit_tap returns invisibly", {
+  trail <- audit_trail("invisible_test")
+  result <- withVisible(audit_tap(mtcars, trail, "step1"))
+  expect_false(result$visible)
+  expect_identical(result$value, mtcars)
+})

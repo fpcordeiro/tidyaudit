@@ -18,7 +18,8 @@ auto-generated label like \code{"step_1"} is used.}
 to run on \code{.data}. Results are stored in the snapshot.}
 }
 \value{
-\code{.data}, unchanged (invisible to the pipe).
+\code{.data}, unchanged, returned invisibly. The function is a
+transparent pass-through; its only effect is the side effect on \code{.trail}.
 }
 \description{
 Transparent pipe pass-through that captures a metadata snapshot and appends

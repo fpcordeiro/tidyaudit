@@ -2,7 +2,7 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml)
-[![License: LGPL-3](https://img.shields.io/badge/license-LGPL--3-blue.svg)](LICENSE.md)
+[![License: LGPL-3](https://img.shields.io/badge/license-LGPL--3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 <!-- badges: end -->
 
@@ -13,14 +13,15 @@ tidyaudit captures **metadata-only snapshots** at each step of a dplyr pipeline,
 building a structured audit report without storing the data itself.
 Operation-aware taps enrich snapshots with join match rates, filter drop
 statistics, and more. The package combines diagnostic tools for **interactive**
-development and **production**-oriented tools.
+development and **production**-oriented tools for data quality.
 
 ## Installation
 
-Install the development version from GitHub:
-
 ```r
-# install.packages("pak")
+# Install CRAN version using
+install.packages("tidyaudit")
+
+# Install development version using using `pak`
 pak::pak("fpcordeiro/tidyaudit")
 ```
 
@@ -45,7 +46,6 @@ result <- orders |>
 #> Stat amount: dropped 1,062.191 of 25,429.39
 
 print(trail)
-
 #> ── Audit Trail: "order_pipeline" ─────────────────────────────────────────────────────────────────────
 #> Created: 2026-02-21 14:36:35
 #> Snapshots: 3

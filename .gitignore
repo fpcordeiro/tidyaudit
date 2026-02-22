@@ -13,6 +13,7 @@ src/*.dll
 # Claude files
 .claude/
 CLAUDE.md
+ROADMAP.md
 # MacOS specific files
 .DS_Store
 /Meta/

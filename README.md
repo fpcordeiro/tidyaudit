@@ -1,6 +1,8 @@
 # tidyaudit
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/tidyaudit)](https://CRAN.R-project.org/package=tidyaudit)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/tidyaudit)](https://cran.r-project.org/package=tidyaudit)
 [![R-CMD-check](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml)
 [![License: LGPL-3](https://img.shields.io/badge/license-LGPL--3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)

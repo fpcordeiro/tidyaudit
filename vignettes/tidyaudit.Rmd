@@ -149,18 +149,46 @@ audit_report(trail3)
 
 ### Custom diagnostics
 
-Pass a named list of functions via `.fns` to compute custom diagnostics at any
-tap:
+Pass a named list of functions via `.fns` to compute domain-specific diagnostics
+at any tap. Each function receives the snapshot data as its argument (`.` in
+formula lambdas) and its return value is stored in the snapshot.
 
 ```{r custom-fns}
 trail4 <- audit_trail("custom_example")
+
 result4 <- orders |>
   audit_tap(trail4, "raw", .fns = list(
-    mean_amount = ~mean(.x$amount),
-    n_customers = ~length(unique(.x$customer))
+    n_complete   = ~sum(.$status == "complete"),          # scalar
+    amount_stats = ~c(mean = mean(.$amount),              # named vector
+                      max  = max(.$amount))
+  )) |>
+  filter(status == "complete") |>
+  audit_tap(trail4, "complete_only", .fns = list(
+    n_complete   = ~sum(.$status == "complete"),
+    amount_stats = ~c(mean = mean(.$amount),
+                      max  = max(.$amount))
   ))
+```
 
-audit_report(trail4)
+When you print the trail, custom results appear as inline `↳` annotations
+directly below each snapshot row:
+
+```{r print-custom}
+print(trail4)
+```
+
+The rendering rules are:
+
+- **Scalar** return value → `↳ fn_name: value`
+- **Named vector or named list of scalars** → `↳ fn_name: key=val, key=val`
+  (truncated at 60 characters)
+- **Complex object** (data frame, unnamed vector, nested list) →
+  `↳ fn_name: [complex — see audit_report()]`
+
+To suppress annotations and display only the main table:
+
+```{r show-custom-false}
+print(trail4, show_custom = FALSE)
 ```
 
 ### NULL-trail mode

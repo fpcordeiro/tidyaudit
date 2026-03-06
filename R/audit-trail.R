@@ -26,9 +26,13 @@ audit_trail <- function(name = NULL) {
 
 #' @rdname audit_trail
 #' @param x An object to print.
+#' @param show_custom Logical. If `TRUE` (default), inline annotations (one
+#'   indented line per custom function) are printed below each snapshot that has
+#'   custom diagnostics. Set to `FALSE` to suppress them and display only the
+#'   main timeline table.
 #' @param ... Additional arguments (currently unused).
 #' @export
-print.audit_trail <- function(x, ...) {
+print.audit_trail <- function(x, show_custom = TRUE, ...) {
   n_snaps <- length(x$snapshots)
 
   cli::cli_h1("Audit Trail: {.val {x$name}}")
@@ -57,7 +61,23 @@ print.audit_trail <- function(x, ...) {
     check.names = FALSE
   )
 
-  .cli_table(tbl, right_align = c("Rows", "Cols", "NAs"))
+  # Build per-row annotation lines for custom diagnostics
+  row_annotations <- NULL
+  if (show_custom) {
+    row_annotations <- vector("list", n_snaps)
+    for (i in seq_len(n_snaps)) {
+      snap <- x$snapshots[[i]]
+      if (!is.null(snap$custom) && length(snap$custom) > 0L) {
+        row_annotations[[i]] <- vapply(
+          names(snap$custom),
+          function(nm) .format_custom_result(nm, snap$custom[[nm]]),
+          character(1)
+        )
+      }
+    }
+  }
+
+  .cli_table(tbl, right_align = c("Rows", "Cols", "NAs"), row_annotations = row_annotations)
 
   # Print change summaries
   if (n_snaps > 1L) {
@@ -86,7 +106,7 @@ print.audit_trail <- function(x, ...) {
 #' @param indent Number of leading spaces (default 2).
 #'
 #' @noRd
-.cli_table <- function(tbl, right_align = character(), indent = 2L) {
+.cli_table <- function(tbl, right_align = character(), indent = 2L, row_annotations = NULL) {
   nms <- names(tbl)
 
   # Compute column widths (max of header and data)
@@ -120,10 +140,14 @@ print.audit_trail <- function(x, ...) {
   }, character(1))
   sep_line <- paste0(pad, paste(sep_cells, collapse = gap))
 
-  # Data rows
-  data_lines <- vapply(seq_len(nrow(tbl)), function(i) {
-    format_row(as.character(tbl[i, ]))
-  }, character(1))
+  # Data rows — interleave annotation lines where present
+  data_lines <- character(0)
+  for (i in seq_len(nrow(tbl))) {
+    data_lines <- c(data_lines, format_row(as.character(tbl[i, ])))
+    if (!is.null(row_annotations) && !is.null(row_annotations[[i]])) {
+      data_lines <- c(data_lines, row_annotations[[i]])
+    }
+  }
 
   cli::cli_verbatim(paste(c(header_line, sep_line, data_lines), collapse = "\n"))
 }
@@ -194,4 +218,58 @@ print.audit_trail <- function(x, ...) {
   }
 
   paste(parts, collapse = ", ")
+}
+
+#' Detect if x is a named collection of scalar values (Case 2 rendering)
+#'
+#' Returns TRUE for named atomic vectors and named lists whose every element is
+#' a length-1 atomic. Returns FALSE for unnamed structures, data frames, and
+#' anything with complex/nested elements.
+#'
+#' @param x Any R object.
+#' @returns Logical scalar.
+#' @noRd
+.is_named_scalars <- function(x) {
+  if (length(x) == 0L) return(FALSE)
+  if (is.null(names(x)) || !all(nzchar(names(x)))) return(FALSE)
+  if (is.data.frame(x)) return(FALSE)
+  if (is.atomic(x) && !is.list(x)) return(TRUE)   # named atomic vector
+  if (is.list(x)) {
+    return(all(vapply(x, function(e) is.atomic(e) && length(e) == 1L, logical(1))))
+  }
+  FALSE
+}
+
+#' Format one custom diagnostic result for inline display
+#'
+#' @param name Character scalar: the function name as it appears in `snap$custom`.
+#' @param result The value returned by the custom function.
+#' @param indent Integer: number of leading spaces before the arrow (default 5).
+#' @returns A single character string, e.g. `"     ↳ fn_name: key=val"`.
+#' @noRd
+.format_custom_result <- function(name, result, indent = 5L) {
+  pad <- strrep(" ", indent)
+  prefix <- paste0(pad, "\u21b3 ", name, ": ")
+
+  # Case 1: single scalar
+  if (is.atomic(result) && length(result) == 1L && !is.list(result)) {
+    return(paste0(prefix, format(result)))
+  }
+
+  # Case 2: named atomic vector or named list of length-1 atomics
+  if (.is_named_scalars(result)) {
+    pairs <- paste(
+      names(result),
+      vapply(result, function(v) format(v[[1L]]), character(1)),  # [[1L]] works for both atomic elements and length-1 list elements
+      sep = "="
+    )
+    value_str <- paste(pairs, collapse = ", ")
+    if (nchar(value_str) > 60L) {
+      value_str <- paste0(substr(value_str, 1L, 60L), "...")
+    }
+    return(paste0(prefix, value_str))
+  }
+
+  # Case 3: complex object
+  paste0(prefix, "[complex \u2014 see audit_report()]")
 }

@@ -10,7 +10,7 @@
 
 audit_trail(name = NULL)
 
-\method{print}{audit_trail}(x, ...)
+\method{print}{audit_trail}(x, show_custom = TRUE, ...)
 }
 \arguments{
 \item{x}{An object to print.}
@@ -19,6 +19,11 @@ audit_trail(name = NULL)
 
 \item{name}{Optional name for the trail. If \code{NULL}, a timestamped name is
 generated automatically.}
+
+\item{show_custom}{Logical. If \code{TRUE} (default), inline annotations (one
+indented line per custom function) are printed below each snapshot that has
+custom diagnostics. Set to \code{FALSE} to suppress them and display only the
+main timeline table.}
 }
 \value{
 An \code{audit_trail} object (S3 class wrapping an environment).

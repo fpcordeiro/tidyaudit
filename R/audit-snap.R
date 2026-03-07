@@ -14,7 +14,7 @@
   # Diagnostic aggregates on ungrouped data for deterministic results
   ungrouped <- dplyr::ungroup(.data)
 
-  col_info <- data.frame(
+  schema <- data.frame(
     column = names(ungrouped),
     type   = vapply(ungrouped, function(x) class(x)[[1L]], character(1)),
     n_na   = vapply(ungrouped, function(x) sum(is.na(x)), integer(1)),
@@ -22,7 +22,7 @@
   )
 
   # Numeric summaries
-  numeric_cols <- col_info$column[col_info$type %in% c("numeric", "integer")]
+  numeric_cols <- schema$column[schema$type %in% c("numeric", "integer")]
   numeric_summary <- if (length(numeric_cols) > 0L) {
     summaries <- lapply(numeric_cols, function(col) {
       vals <- ungrouped[[col]]
@@ -59,8 +59,8 @@
     type            = "tap",
     nrow            = as.integer(nrow(ungrouped)),
     ncol            = as.integer(ncol(ungrouped)),
-    col_info        = col_info,
-    total_nas       = as.integer(sum(col_info$n_na)),
+    schema          = schema,
+    total_nas       = as.integer(sum(schema$n_na)),
     numeric_summary = numeric_summary,
     diagnostics     = NULL,
     pipeline        = NULL,
@@ -95,14 +95,14 @@ print.audit_snap <- function(x, ...) {
     cli::cli_verbatim(paste(lines, collapse = "\n"))
   }
 
-  # Column info — grouped by type
+  # Schema — grouped by type
   cli::cli_text("")
   cli::cli_text("{.strong Columns ({x$ncol}):}")
-  col_info <- x$col_info
-  types <- unique(col_info$type)
+  schema <- x$schema
+  types <- unique(schema$type)
   for (tp in types) {
-    cols_of_type <- col_info$column[col_info$type == tp]
-    na_of_type <- col_info$n_na[col_info$type == tp]
+    cols_of_type <- schema$column[schema$type == tp]
+    na_of_type <- schema$n_na[schema$type == tp]
     n_type <- length(cols_of_type)
 
     # Build column list with NA annotations

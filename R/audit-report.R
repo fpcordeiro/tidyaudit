@@ -98,8 +98,8 @@ audit_report <- function(.trail, format = c("console", "rmd"), file = NULL) {
   cli::cli_text("{.strong {last_snap$label}} ({format(last_snap$nrow, big.mark = ',')} rows x {last_snap$ncol} cols)")
 
   # Column types summary
-  col_info <- last_snap$col_info
-  type_counts <- table(col_info$type)
+  schema <- last_snap$schema
+  type_counts <- table(schema$type)
   type_str <- paste(
     vapply(names(type_counts), function(t) glue::glue("{type_counts[t]} {t}"), character(1)),
     collapse = ", "
@@ -108,7 +108,7 @@ audit_report <- function(.trail, format = c("console", "rmd"), file = NULL) {
 
   # NA summary
   if (last_snap$total_nas > 0L) {
-    na_cols <- col_info[col_info$n_na > 0L, , drop = FALSE]
+    na_cols <- schema[schema$n_na > 0L, , drop = FALSE]
     pct <- round(100 * na_cols$n_na / last_snap$nrow, 1)
     na_tbl <- data.frame(
       Column = na_cols$column,

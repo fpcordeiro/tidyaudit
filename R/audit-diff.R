@@ -40,10 +40,10 @@ audit_diff <- function(.trail, from, to) {
     row_delta      = snap_to$nrow - snap_from$nrow,
     col_delta      = snap_to$ncol - snap_from$ncol,
     na_delta       = snap_to$total_nas - snap_from$total_nas,
-    cols_added     = setdiff(snap_to$col_info$column, snap_from$col_info$column),
-    cols_removed   = setdiff(snap_from$col_info$column, snap_to$col_info$column),
-    type_changes   = .detect_type_changes(snap_from$col_info, snap_to$col_info),
-    na_changes     = .compare_na_counts(snap_from$col_info, snap_to$col_info),
+    cols_added     = setdiff(snap_to$schema$column, snap_from$schema$column),
+    cols_removed   = setdiff(snap_from$schema$column, snap_to$schema$column),
+    type_changes   = .detect_type_changes(snap_from$schema, snap_to$schema),
+    na_changes     = .compare_na_counts(snap_from$schema, snap_to$schema),
     numeric_shifts = .compare_numeric_summaries(snap_from, snap_to)
   )
   structure(diff_obj, class = c("audit_diff", "list"))
@@ -84,18 +84,18 @@ audit_diff <- function(.trail, from, to) {
 
 #' Compare NA Counts Between Two Snapshots
 #'
-#' @param from_col_info Column info from the source snapshot.
-#' @param to_col_info Column info from the target snapshot.
+#' @param from_schema Schema data.frame from the source snapshot.
+#' @param to_schema Schema data.frame from the target snapshot.
 #'
 #' @returns A data.frame of per-column NA changes for common columns, or `NULL`.
 #'
 #' @noRd
-.compare_na_counts <- function(from_col_info, to_col_info) {
-  common <- intersect(from_col_info$column, to_col_info$column)
+.compare_na_counts <- function(from_schema, to_schema) {
+  common <- intersect(from_schema$column, to_schema$column)
   if (length(common) == 0L) return(NULL)
 
-  from_nas <- setNames(from_col_info$n_na, from_col_info$column)[common]
-  to_nas   <- setNames(to_col_info$n_na, to_col_info$column)[common]
+  from_nas <- setNames(from_schema$n_na, from_schema$column)[common]
+  to_nas   <- setNames(to_schema$n_na, to_schema$column)[common]
   delta    <- to_nas - from_nas
 
   changed <- common[delta != 0L]

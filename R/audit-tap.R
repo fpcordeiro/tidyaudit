@@ -114,26 +114,26 @@ audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
     row_delta    = curr$nrow - prev$nrow,
     col_delta    = curr$ncol - prev$ncol,
     na_delta     = curr$total_nas - prev$total_nas,
-    cols_added   = setdiff(curr$col_info$column, prev$col_info$column),
-    cols_removed = setdiff(prev$col_info$column, curr$col_info$column),
-    type_changes = .detect_type_changes(prev$col_info, curr$col_info)
+    cols_added   = setdiff(curr$schema$column, prev$schema$column),
+    cols_removed = setdiff(prev$schema$column, curr$schema$column),
+    type_changes = .detect_type_changes(prev$schema, curr$schema)
   )
 }
 
 #' Detect Column Type Changes Between Snapshots
 #'
-#' @param prev_col_info Column info data.frame from previous snapshot.
-#' @param curr_col_info Column info data.frame from current snapshot.
+#' @param prev_schema Schema data.frame from previous snapshot.
+#' @param curr_schema Schema data.frame from current snapshot.
 #'
 #' @returns A data.frame of type changes, or `NULL` if none.
 #'
 #' @noRd
-.detect_type_changes <- function(prev_col_info, curr_col_info) {
-  common <- intersect(prev_col_info$column, curr_col_info$column)
+.detect_type_changes <- function(prev_schema, curr_schema) {
+  common <- intersect(prev_schema$column, curr_schema$column)
   if (length(common) == 0L) return(NULL)
 
-  prev_types <- setNames(prev_col_info$type, prev_col_info$column)[common]
-  curr_types <- setNames(curr_col_info$type, curr_col_info$column)[common]
+  prev_types <- setNames(prev_schema$type, prev_schema$column)[common]
+  curr_types <- setNames(curr_schema$type, curr_schema$column)[common]
 
   changed <- common[prev_types != curr_types]
   if (length(changed) == 0L) return(NULL)

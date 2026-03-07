@@ -9,15 +9,15 @@ test_that(".build_snapshot captures correct dimensions", {
   expect_equal(snap$type, "tap")
 })
 
-test_that(".build_snapshot captures column info", {
+test_that(".build_snapshot captures schema", {
   df <- data.frame(x = 1:5, y = c("a", "b", "c", NA, "e"),
                    z = c(1.1, 2.2, NA, 4.4, 5.5),
                    stringsAsFactors = FALSE)
   snap <- tidyaudit:::.build_snapshot(df, label = "test", index = 1L)
 
-  expect_equal(nrow(snap$col_info), 3L)
-  expect_equal(snap$col_info$column, c("x", "y", "z"))
-  expect_equal(snap$col_info$n_na, c(0L, 1L, 1L))
+  expect_equal(nrow(snap$schema), 3L)
+  expect_equal(snap$schema$column, c("x", "y", "z"))
+  expect_equal(snap$schema$n_na, c(0L, 1L, 1L))
   expect_equal(snap$total_nas, 2L)
 })
 

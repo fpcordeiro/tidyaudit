@@ -79,20 +79,35 @@ print.audit_trail <- function(x, show_custom = TRUE, ...) {
 
   .cli_table(tbl, right_align = c("Rows", "Cols", "NAs"), row_annotations = row_annotations)
 
-  # Print change summaries
+  # Print change summaries as a table
   if (n_snaps > 1L) {
+  change_rows <- lapply(seq(2L, n_snaps), function(i) {
+    snap <- x$snapshots[[i]]
+    if (is.null(snap$changes)) return(NULL)
+    ch <- snap$changes
+    list(
+      From = x$snapshots[[i - 1L]]$label,
+      To   = snap$label,
+      Rows = .format_delta(ch$row_delta),
+      Cols = .format_delta(ch$col_delta),
+      NAs  = .format_delta(ch$na_delta)
+    )
+  })
+  change_rows <- Filter(Negate(is.null), change_rows)
+  }
+
+  if (n_snaps > 1L && length(change_rows) > 0L) {
     cli::cli_text("")
     cli::cli_text("{.strong Changes:}")
-    for (i in seq(2L, n_snaps)) {
-      snap <- x$snapshots[[i]]
-      if (!is.null(snap$changes)) {
-        prev_label <- x$snapshots[[i - 1L]]$label
-        curr_label <- snap$label
-        summary <- .format_change_summary(snap$changes)
-        line <- glue::glue("  {prev_label} \u2192 {curr_label}: {summary}")
-        cli::cli_verbatim(line)
-      }
-    }
+    changes_tbl <- data.frame(
+      From = vapply(change_rows, `[[`, character(1), "From"),
+      To   = vapply(change_rows, `[[`, character(1), "To"),
+      Rows = vapply(change_rows, `[[`, character(1), "Rows"),
+      Cols = vapply(change_rows, `[[`, character(1), "Cols"),
+      NAs  = vapply(change_rows, `[[`, character(1), "NAs"),
+      stringsAsFactors = FALSE
+    )
+    .cli_table(changes_tbl, right_align = c("Rows", "Cols", "NAs"))
   }
 
   invisible(x)
@@ -180,6 +195,15 @@ print.audit_trail <- function(x, show_custom = TRUE, ...) {
   }
 
   type
+}
+
+#' Format a numeric delta as a signed string for the changes table
+#' @noRd
+.format_delta <- function(d) {
+  if (is.null(d) || is.na(d)) return("=")
+  if (d > 0L) paste0("+", format(d, big.mark = ",", trim = TRUE))
+  else if (d < 0L) format(d, big.mark = ",", trim = TRUE)
+  else "="
 }
 
 #' Format a change summary for display

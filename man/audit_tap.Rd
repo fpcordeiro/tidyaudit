@@ -4,14 +4,14 @@
 \alias{audit_tap}
 \title{Record a Pipeline Snapshot}
 \usage{
-audit_tap(.data, .trail, label = NULL, .fns = NULL)
+audit_tap(.data, .trail, .label = NULL, .fns = NULL)
 }
 \arguments{
 \item{.data}{A data.frame or tibble flowing through the pipe.}
 
 \item{.trail}{An \code{\link[=audit_trail]{audit_trail()}} object.}
 
-\item{label}{Optional character label for this snapshot. If \code{NULL}, an
+\item{.label}{Optional character label for this snapshot. If \code{NULL}, an
 auto-generated label like \code{"step_1"} is used.}
 
 \item{.fns}{Optional named list of diagnostic functions (or formula lambdas)

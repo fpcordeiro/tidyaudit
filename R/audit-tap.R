@@ -6,7 +6,7 @@
 #'
 #' @param .data A data.frame or tibble flowing through the pipe.
 #' @param .trail An [audit_trail()] object.
-#' @param label Optional character label for this snapshot. If `NULL`, an
+#' @param .label Optional character label for this snapshot. If `NULL`, an
 #'   auto-generated label like `"step_1"` is used.
 #' @param .fns Optional named list of diagnostic functions (or formula lambdas)
 #'   to run on `.data`. Results are stored in the snapshot.
@@ -24,16 +24,16 @@
 #'
 #' @family audit trail
 #' @export
-audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
+audit_tap <- function(.data, .trail, .label = NULL, .fns = NULL) {
   data_expr <- substitute(.data)
 
   # Validate arguments that don't require .data evaluation
   if (!inherits(.trail, "audit_trail")) {
     cli::cli_abort("{.arg .trail} must be an {.cls audit_trail} object.")
   }
-  if (!is.null(label)) {
-    if (!is.character(label) || length(label) != 1L || is.na(label)) {
-      cli::cli_abort("{.arg label} must be a single character string or NULL.")
+  if (!is.null(.label)) {
+    if (!is.character(.label) || length(.label) != 1L || is.na(.label)) {
+      cli::cli_abort("{.arg .label} must be a single character string or NULL.")
     }
   }
   if (!is.null(.fns) && !is.list(.fns)) {
@@ -51,19 +51,20 @@ audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
   }
 
   # Auto-generate label if not provided
-  if (is.null(label)) {
-    label <- paste0("step_", length(.trail$snapshots) + 1L)
+  if (is.null(.label)) {
+    .label <- paste0("step_", length(.trail$snapshots) + 1L)
   }
 
   # Check label uniqueness
-  if (label %in% .trail$labels) {
+  if (.label %in% .trail$labels) {
     trail_name <- .trail$name
-    cli::cli_abort("Label {.val {label}} already exists in trail {.val {trail_name}}.")
+    label_val <- .label
+    cli::cli_abort("Label {.val {label_val}} already exists in trail {.val {trail_name}}.")
   }
 
   # Build snapshot (index computed after forcing .data)
   index <- length(.trail$snapshots) + 1L
-  snap <- .build_snapshot(.data, label = label, index = index)
+  snap <- .build_snapshot(.data, label = .label, index = index)
 
   # Capture pipeline (best-effort)
   snap$pipeline <- tryCatch(.capture_pipeline(data_expr), error = function(e) NULL)
@@ -93,7 +94,7 @@ audit_tap <- function(.data, .trail, label = NULL, .fns = NULL) {
 
   # Mutate trail (reference semantics — side effect)
   .trail$snapshots[[index]] <- snap
-  .trail$labels <- c(.trail$labels, label)
+  .trail$labels <- c(.trail$labels, .label)
 
   # Return data unchanged, invisibly (side-effect-only function)
   invisible(.data)

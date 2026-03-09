@@ -131,10 +131,10 @@ test_that("audit_tap rejects non-data.frame input", {
 
 test_that("audit_tap rejects invalid label types", {
   trail <- audit_trail("bad_label")
-  expect_error(audit_tap(mtcars, trail, label = 42), "single character string")
-  expect_error(audit_tap(mtcars, trail, label = TRUE), "single character string")
-  expect_error(audit_tap(mtcars, trail, label = c("a", "b")), "single character string")
-  expect_error(audit_tap(mtcars, trail, label = NA_character_), "single character string")
+  expect_error(audit_tap(mtcars, trail, .label = 42), "single character string")
+  expect_error(audit_tap(mtcars, trail, .label = TRUE), "single character string")
+  expect_error(audit_tap(mtcars, trail, .label = c("a", "b")), "single character string")
+  expect_error(audit_tap(mtcars, trail, .label = NA_character_), "single character string")
 })
 
 test_that("audit_tap rejects non-list .fns", {

@@ -39,8 +39,8 @@ diagnostics are printed before the join.}
 \item{.label}{Optional character label for this snapshot. If \code{NULL},
 auto-generated as \code{"left_join_1"} etc.}
 
-\item{.stat}{Optional column name (string) for stat tracking, passed to
-\code{\link[=validate_join]{validate_join()}}.}
+\item{.stat}{An unquoted column name for stat tracking, e.g., \code{amount}.
+Passed to \code{\link[=validate_join]{validate_join()}}.}
 }
 \value{
 The joined data.frame or tibble (same as the corresponding

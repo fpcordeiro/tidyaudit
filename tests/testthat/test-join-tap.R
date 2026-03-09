@@ -54,6 +54,18 @@ test_that("left_join_tap with stat tracks stat column", {
   trail <- audit_trail("lj_stat")
   result <- left_join_tap(x_stat, y_stat, by = "id",
                            .trail = trail, .label = "joined",
+                           .stat = amount)
+
+  snap <- trail$snapshots[[1]]
+  expect_true(!is.null(snap$diagnostics$stat))
+})
+
+test_that("left_join_tap accepts .stat as quoted string (tolerant API)", {
+  x_stat <- data.frame(id = 1:4, amount = c(100, 200, 300, 400))
+  y_stat <- data.frame(id = c(2L, 3L, 5L), amount = c(50, 75, 100))
+  trail <- audit_trail("lj_stat_str")
+  result <- left_join_tap(x_stat, y_stat, by = "id",
+                           .trail = trail, .label = "joined",
                            .stat = "amount")
 
   snap <- trail$snapshots[[1]]
@@ -151,7 +163,7 @@ test_that("join_tap without trail + .stat prints diagnostics", {
   x_stat <- data.frame(id = 1:4, amount = c(100, 200, 300, 400))
   y_stat <- data.frame(id = c(2L, 3L, 5L), amount = c(50, 75, 100))
   output <- capture.output(
-    result <- left_join_tap(x_stat, y_stat, by = "id", .stat = "amount"),
+    result <- left_join_tap(x_stat, y_stat, by = "id", .stat = amount),
     type = "message"
   )
   expected <- dplyr::left_join(x_stat, y_stat, by = "id")
@@ -501,7 +513,7 @@ test_that("join_tap no-trail warns when validate_join fails", {
   # .stat referencing a column that doesn't exist in one table
   expect_warning(
     result <- left_join_tap(orders, customers, by = "id",
-                             .stat = "nonexistent_col"),
+                             .stat = nonexistent_col),
     "validate_join.*failed"
   )
   # Join itself should still succeed
@@ -518,7 +530,7 @@ test_that("join_tap with trail degrades gracefully when validate_join fails", {
   # .stat referencing a column that doesn't exist
   result <- left_join_tap(orders, customers, by = "id",
                            .trail = trail, .label = "graceful",
-                           .stat = "nonexistent_col")
+                           .stat = nonexistent_col)
 
   # Join result should be correct
   expected <- dplyr::left_join(orders, customers, by = "id")

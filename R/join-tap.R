@@ -16,8 +16,8 @@
 #'   diagnostics are printed before the join.
 #' @param .label Optional character label for this snapshot. If `NULL`,
 #'   auto-generated as `"left_join_1"` etc.
-#' @param .stat Optional column name (string) for stat tracking, passed to
-#'   [validate_join()].
+#' @param .stat An unquoted column name for stat tracking, e.g., `amount`.
+#'   Passed to [validate_join()].
 #'
 #' @details
 #' Enriched diagnostics (match rates, relationship type, duplicate keys) require
@@ -63,9 +63,16 @@ left_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
                            .stat = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
+  stat_quo <- rlang::enquo(.stat)
+  stat_str <- if (rlang::quo_is_null(stat_quo)) {
+    NULL
+  } else {
+    expr <- rlang::quo_get_expr(stat_quo)
+    if (is.character(expr)) expr else rlang::as_label(stat_quo)
+  }
 
   if (is.null(.trail)) {
-    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = .stat,
+    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = stat_str,
                                .join_fn = dplyr::left_join))
   }
 
@@ -76,7 +83,7 @@ left_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   force(.data)
 
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
-                  .stat = .stat, .join_fn = dplyr::left_join,
+                  .stat = stat_str, .join_fn = dplyr::left_join,
                   .join_type = "left_join", .data_expr = data_expr,
                   .y_name = y_name)
 }
@@ -87,9 +94,16 @@ right_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
                             .stat = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
+  stat_quo <- rlang::enquo(.stat)
+  stat_str <- if (rlang::quo_is_null(stat_quo)) {
+    NULL
+  } else {
+    expr <- rlang::quo_get_expr(stat_quo)
+    if (is.character(expr)) expr else rlang::as_label(stat_quo)
+  }
 
   if (is.null(.trail)) {
-    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = .stat,
+    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = stat_str,
                                .join_fn = dplyr::right_join))
   }
 
@@ -100,7 +114,7 @@ right_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   force(.data)
 
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
-                  .stat = .stat, .join_fn = dplyr::right_join,
+                  .stat = stat_str, .join_fn = dplyr::right_join,
                   .join_type = "right_join", .data_expr = data_expr,
                   .y_name = y_name)
 }
@@ -111,9 +125,16 @@ inner_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
                             .stat = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
+  stat_quo <- rlang::enquo(.stat)
+  stat_str <- if (rlang::quo_is_null(stat_quo)) {
+    NULL
+  } else {
+    expr <- rlang::quo_get_expr(stat_quo)
+    if (is.character(expr)) expr else rlang::as_label(stat_quo)
+  }
 
   if (is.null(.trail)) {
-    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = .stat,
+    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = stat_str,
                                .join_fn = dplyr::inner_join))
   }
 
@@ -124,7 +145,7 @@ inner_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   force(.data)
 
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
-                  .stat = .stat, .join_fn = dplyr::inner_join,
+                  .stat = stat_str, .join_fn = dplyr::inner_join,
                   .join_type = "inner_join", .data_expr = data_expr,
                   .y_name = y_name)
 }
@@ -135,9 +156,16 @@ full_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
                            .stat = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
+  stat_quo <- rlang::enquo(.stat)
+  stat_str <- if (rlang::quo_is_null(stat_quo)) {
+    NULL
+  } else {
+    expr <- rlang::quo_get_expr(stat_quo)
+    if (is.character(expr)) expr else rlang::as_label(stat_quo)
+  }
 
   if (is.null(.trail)) {
-    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = .stat,
+    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = stat_str,
                                .join_fn = dplyr::full_join))
   }
 
@@ -148,7 +176,7 @@ full_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   force(.data)
 
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
-                  .stat = .stat, .join_fn = dplyr::full_join,
+                  .stat = stat_str, .join_fn = dplyr::full_join,
                   .join_type = "full_join", .data_expr = data_expr,
                   .y_name = y_name)
 }
@@ -159,9 +187,16 @@ anti_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
                            .stat = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
+  stat_quo <- rlang::enquo(.stat)
+  stat_str <- if (rlang::quo_is_null(stat_quo)) {
+    NULL
+  } else {
+    expr <- rlang::quo_get_expr(stat_quo)
+    if (is.character(expr)) expr else rlang::as_label(stat_quo)
+  }
 
   if (is.null(.trail)) {
-    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = .stat,
+    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = stat_str,
                                .join_fn = dplyr::anti_join))
   }
 
@@ -172,7 +207,7 @@ anti_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   force(.data)
 
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
-                  .stat = .stat, .join_fn = dplyr::anti_join,
+                  .stat = stat_str, .join_fn = dplyr::anti_join,
                   .join_type = "anti_join", .data_expr = data_expr,
                   .y_name = y_name)
 }
@@ -183,9 +218,16 @@ semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
                            .stat = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
+  stat_quo <- rlang::enquo(.stat)
+  stat_str <- if (rlang::quo_is_null(stat_quo)) {
+    NULL
+  } else {
+    expr <- rlang::quo_get_expr(stat_quo)
+    if (is.character(expr)) expr else rlang::as_label(stat_quo)
+  }
 
   if (is.null(.trail)) {
-    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = .stat,
+    return(.join_tap_no_trail(.data, y, ..., .label = .label, .stat = stat_str,
                                .join_fn = dplyr::semi_join))
   }
 
@@ -196,7 +238,7 @@ semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   force(.data)
 
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
-                  .stat = .stat, .join_fn = dplyr::semi_join,
+                  .stat = stat_str, .join_fn = dplyr::semi_join,
                   .join_type = "semi_join", .data_expr = data_expr,
                   .y_name = y_name)
 }

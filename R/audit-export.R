@@ -8,7 +8,9 @@
 
 #' @noRd
 .parse_posixct <- function(x) {
-  if (is.null(x) || (length(x) == 1L && is.na(x))) return(NA_real_)
+  if (is.null(x) || (length(x) == 1L && is.na(x))) {
+    return(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"))
+  }
   as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 }
 
@@ -24,8 +26,9 @@
 #' @param rows   List of named lists (one per row). NULL or length-0 returns NULL.
 #' @param cols   Character vector of expected column names.
 #' @param int_cols Character vector of columns to coerce to integer.
+#' @param dbl_cols Character vector of columns to coerce to double.
 #' @noRd
-.rows_to_df <- function(rows, cols, int_cols = character()) {
+.rows_to_df <- function(rows, cols, int_cols = character(), dbl_cols = character()) {
   if (is.null(rows) || length(rows) == 0L) return(NULL)
   out <- data.frame(
     lapply(cols, function(col) {
@@ -34,7 +37,9 @@
         if (is.null(v)) NA else v
       })
       vals <- unlist(vals)
-      if (col %in% int_cols) as.integer(vals) else vals
+      if (col %in% int_cols) as.integer(vals)
+      else if (col %in% dbl_cols) as.double(vals)
+      else vals
     }),
     stringsAsFactors = FALSE
   )
@@ -126,7 +131,8 @@
 
     numeric_summary <- .rows_to_df(
       s$numeric_summary,
-      cols = c("column", "min", "q25", "median", "mean", "q75", "max")
+      cols     = c("column", "min", "q25", "median", "mean", "q75", "max"),
+      dbl_cols = c("min", "q25", "median", "mean", "q75", "max")
     )
 
     snap <- list(

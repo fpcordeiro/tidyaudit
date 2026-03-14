@@ -379,6 +379,42 @@ test_that("read_trail auto-detects json format from extension", {
   expect_s3_class(read_trail(tmp), "audit_trail")
 })
 
+test_that("read_trail (json) restores numeric_summary values as double", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  original <- make_export_trail()
+  write_trail(original, tmp, format = "json")
+  restored <- read_trail(tmp)
+
+  orig_ns <- original$snapshots[[1]]$numeric_summary
+  rest_ns <- restored$snapshots[[1]]$numeric_summary
+  expect_s3_class(rest_ns, "data.frame")
+  expect_equal(rest_ns$min,    orig_ns$min)
+  expect_equal(rest_ns$median, orig_ns$median)
+  expect_type(rest_ns$min,    "double")
+  expect_type(rest_ns$median, "double")
+  expect_type(rest_ns$max,    "double")
+})
+
+test_that("read_trail (json) restores custom diagnostics", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  original <- make_export_trail()
+  write_trail(original, tmp, format = "json")
+  restored <- read_trail(tmp)
+  # 3rd snapshot has .fns = list(n = nrow)
+  expect_equal(restored$snapshots[[3]]$custom$n,
+               original$snapshots[[3]]$custom$n)
+})
+
+test_that(".parse_posixct returns a POSIXct-classed NA for NULL input", {
+  result <- tidyaudit:::.parse_posixct(NULL)
+  expect_s3_class(result, "POSIXct")
+  expect_true(is.na(result))
+})
+
 
 # ── Error handling ────────────────────────────────────────────────────────────
 

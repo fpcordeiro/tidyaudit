@@ -42,6 +42,7 @@ print(trail)
 Other audit trail: 
 \code{\link{audit_diff}()},
 \code{\link{audit_report}()},
-\code{\link{audit_tap}()}
+\code{\link{audit_tap}()},
+\code{\link{tab_tap}()}
 }
 \concept{audit trail}

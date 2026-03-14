@@ -28,6 +28,7 @@ Other data quality:
 \code{\link{audit_transform}()},
 \code{\link{diagnose_nas}()},
 \code{\link{diagnose_strings}()},
-\code{\link{get_summary_table}()}
+\code{\link{get_summary_table}()},
+\code{\link{tab}()}
 }
 \concept{data quality}

@@ -41,6 +41,7 @@ audit_diff(trail, "raw", "filtered")
 Other audit trail: 
 \code{\link{audit_report}()},
 \code{\link{audit_tap}()},
-\code{\link{print.audit_snap}()}
+\code{\link{print.audit_snap}()},
+\code{\link{tab_tap}()}
 }
 \concept{audit trail}

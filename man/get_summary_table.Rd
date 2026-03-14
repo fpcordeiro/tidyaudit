@@ -33,6 +33,7 @@ Other data quality:
 \code{\link{audit_transform}()},
 \code{\link{diagnose_nas}()},
 \code{\link{diagnose_strings}()},
-\code{\link{summarize_column}()}
+\code{\link{summarize_column}()},
+\code{\link{tab}()}
 }
 \concept{data quality}

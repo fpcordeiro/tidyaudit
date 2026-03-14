@@ -415,6 +415,22 @@ test_that(".parse_posixct returns a POSIXct-classed NA for NULL input", {
   expect_true(is.na(result))
 })
 
+test_that("read_trail (json) restores schema as 0-row data.frame for zero-column input", {
+  skip_if_not_installed("jsonlite")
+  trail <- audit_trail("zero_cols")
+  data.frame(row.names = 1:3) |> audit_tap(trail, "empty")
+
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "json")
+  restored <- read_trail(tmp)
+
+  schema <- restored$snapshots[[1]]$schema
+  expect_s3_class(schema, "data.frame")
+  expect_named(schema, c("column", "type", "n_na"))
+  expect_equal(nrow(schema), 0L)
+})
+
 
 # ── Error handling ────────────────────────────────────────────────────────────
 

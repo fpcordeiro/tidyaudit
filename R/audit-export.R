@@ -125,9 +125,10 @@
 
     schema <- .rows_to_df(
       s$schema,
-      cols      = c("column", "type", "n_na"),
-      int_cols  = "n_na"
-    )
+      cols     = c("column", "type", "n_na"),
+      int_cols = "n_na"
+    ) %||% data.frame(column = character(), type = character(),
+                      n_na = integer(), stringsAsFactors = FALSE)
 
     numeric_summary <- .rows_to_df(
       s$numeric_summary,

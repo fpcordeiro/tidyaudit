@@ -21,6 +21,7 @@ Imports:
     stats,
     utils
 Suggests:
+    jsonlite,
     knitr,
     rmarkdown,
     stringi,

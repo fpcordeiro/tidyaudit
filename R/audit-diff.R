@@ -227,18 +227,6 @@ print.audit_diff <- function(x, ...) {
   invisible(x)
 }
 
-#' Format an integer delta with sign prefix
-#' @noRd
-.format_delta <- function(delta) {
-  if (delta > 0) {
-    paste0("+", format(delta, big.mark = ",", trim = TRUE))
-  } else if (delta < 0) {
-    format(delta, big.mark = ",", trim = TRUE)
-  } else {
-    "="
-  }
-}
-
 #' Format a numeric (double) delta with sign prefix
 #' @noRd
 .format_delta_numeric <- function(shifts) {

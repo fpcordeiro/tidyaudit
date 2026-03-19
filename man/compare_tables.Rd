@@ -5,9 +5,9 @@
 \alias{print.compare_tbl}
 \title{Compare Two Tables}
 \usage{
-compare_tables(x, y, key_cols = NULL)
+compare_tables(x, y, key_cols = NULL, tol = .Machine$double.eps, top_n = Inf)
 
-\method{print}{compare_tbl}(x, ...)
+\method{print}{compare_tbl}(x, show_n = 5L, ...)
 }
 \arguments{
 \item{x}{First data.frame or tibble to compare.}
@@ -18,12 +18,23 @@ compare_tables(x, y, key_cols = NULL)
 rows. If \code{NULL} (default), automatically detects character, factor, and
 integer columns as keys.}
 
+\item{tol}{Numeric tolerance for comparing numeric columns. Differences
+less than or equal to \code{tol} are considered equal. Defaults to
+\code{\link[=.Machine]{.Machine$double.eps}} (machine double-precision).}
+
+\item{top_n}{Maximum number of row-level discrepancies to store \strong{per numeric
+column}, and maximum unmatched keys to store. Defaults to \code{Inf} (all).
+Unmatched keys are stored in arbitrary order.}
+
+\item{show_n}{Maximum number of rows to display for discrepancies and
+unmatched keys in the printed output. Defaults to \code{5}.}
+
 \item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{compare_tbl} containing:
 \describe{
-\item{name1, name2}{Names of the compared objects}
+\item{name_x, name_y}{Names of the compared objects}
 \item{common_columns}{Column names present in both tables}
 \item{only_x}{Column names only in x}
 \item{only_y}{Column names only in y}
@@ -31,9 +42,22 @@ An S3 object of class \code{compare_tbl} containing:
 \item{nrow_x}{Number of rows in x}
 \item{nrow_y}{Number of rows in y}
 \item{key_summary}{Summary of key overlap, or NULL}
-\item{numeric_summary}{Data.frame of numeric discrepancies, or NULL}
+\item{numeric_summary}{Data.frame of numeric discrepancy quantiles (with
+\code{n_over_tol} count), or NULL}
 \item{numeric_method}{How numeric columns were compared}
 \item{rows_matched}{Number of rows matched on keys}
+\item{tol}{The tolerance used}
+\item{top_n}{The top_n used}
+\item{discrepancies}{Data.frame of row-level numeric discrepancies
+exceeding \code{tol} (or where one side is \code{NA}), with key columns (or
+\code{row_index}), \code{column}, \code{value_x}, \code{value_y}, and \code{abs_diff}. Rows with
+\code{abs_diff = NA} indicate that one value is \code{NA}. NULL if none.}
+\item{only_x_keys}{Data.frame of key combinations only in x (up to
+\code{top_n} rows), or NULL}
+\item{only_y_keys}{Data.frame of key combinations only in y (up to
+\code{top_n} rows), or NULL}
+\item{match_summary}{List with \code{only_x}, \code{only_y}, \code{matched_no_disc},
+\code{matched_with_disc}, \code{pct_no_disc}, \code{pct_with_disc}}
 }
 }
 \description{
@@ -45,6 +69,9 @@ pipelines.
 x <- data.frame(id = 1:3, value = c(10.0, 20.0, 30.0))
 y <- data.frame(id = 1:3, value = c(10.1, 20.0, 30.5))
 compare_tables(x, y)
+
+# With tolerance — differences <= 0.15 are considered equal
+compare_tables(x, y, tol = 0.15)
 
 }
 \seealso{

@@ -386,6 +386,16 @@ test_that("both-NA is NOT treated as discrepancy", {
   expect_equal(result$match_summary$matched_with_disc, 0L)
 })
 
+test_that("n_over_tol includes NA-vs-value pairs", {
+  x <- data.frame(id = 1:4, value = c(10.0, NA, 30.0, 40.0))
+  y <- data.frame(id = 1:4, value = c(10.5, 20.0, 30.0, 40.0))
+  result <- compare_tables(x, y, key_cols = "id")
+
+  # id=1 (diff=0.5 > eps): over tol; id=2 (NA vs 20): NA mismatch
+  # n_over_tol should count both
+  expect_equal(result$numeric_summary$n_over_tol, 2L)
+})
+
 test_that("NA discrepancies are sorted to the end", {
   x <- data.frame(id = 1:4, value = c(10.0, NA, 30.0, 40.0))
   y <- data.frame(id = 1:4, value = c(15.0, 20.0, 30.0, 42.0))
@@ -479,6 +489,28 @@ test_that("print section numbering is sequential even without match_summary", {
   expect_true(grepl("1\\. Row counts", combined))
   expect_true(grepl("2\\. Column names", combined))
   expect_true(grepl("3\\. Key columns", combined))
+})
+
+test_that("print.compare_tbl suppresses tol label at default eps", {
+  x <- data.frame(id = 1:3, value = c(10.0, 20.0, 30.0))
+  y <- data.frame(id = 1:3, value = c(10.5, 20.0, 30.5))
+  result <- compare_tables(x, y, key_cols = "id")
+
+  output <- capture.output(print(result), type = "message")
+  combined <- paste(output, collapse = "\n")
+  # Default eps should NOT show tol label
+  expect_false(grepl("tol =", combined))
+})
+
+test_that("print.compare_tbl shows top_n cap in remaining message", {
+  x <- data.frame(id = 1:10, value = 1:10)
+  y <- data.frame(id = 6:15, value = 6:15)
+  result <- compare_tables(x, y, key_cols = "id", top_n = 3)
+
+  output <- capture.output(print(result, show_n = 2), type = "message")
+  combined <- paste(output, collapse = "\n")
+  # top_n = 3 < total unmatched (5), so should mention "stored"
+  expect_true(grepl("3 stored", combined))
 })
 
 test_that("print.compare_tbl validates show_n", {

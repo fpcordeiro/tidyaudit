@@ -1,3 +1,84 @@
+# Shared helper: compute numeric summary, discrepancies, and row-level disc count
+# from pre-computed col_diffs. key_fn(keep_indices) returns a key data.frame.
+.analyze_numeric_diffs <- function(col_diffs, num_cols, tol, top_n, key_fn) {
+  # Numeric summary (quantiles + n_over_tol including NA-vs-value pairs)
+  num_list <- lapply(num_cols, function(nm) {
+    cd <- col_diffs[[nm]]
+    d_clean <- cd$d[!is.na(cd$d)]
+    if (!length(d_clean) && !any(cd$na_mismatch)) return(NULL)
+    n_over <- sum(d_clean > tol) + sum(cd$na_mismatch)
+    if (length(d_clean)) {
+      qs <- quantile(d_clean, probs = c(0, 0.25, 0.5, 0.75, 1),
+                     na.rm = TRUE, names = FALSE)
+    } else {
+      qs <- rep(NA_real_, 5L)
+    }
+    data.frame(column = nm, n = length(d_clean),
+               min = qs[1], q25 = qs[2], median = qs[3], q75 = qs[4], max = qs[5],
+               n_over_tol = n_over,
+               stringsAsFactors = FALSE)
+  })
+  num_list <- Filter(Negate(is.null), num_list)
+  num_summary <- if (length(num_list)) {
+    out <- do.call(rbind, num_list)
+    row.names(out) <- NULL
+    out
+  }
+
+  # Row-level discrepancies (numeric diffs > tol OR NA-vs-value)
+  disc_list <- lapply(num_cols, function(nm) {
+    cd <- col_diffs[[nm]]
+    keep <- which((!is.na(cd$d) & cd$d > tol) | cd$na_mismatch)
+    if (!length(keep)) return(NULL)
+    df <- cbind(
+      key_fn(keep),
+      data.frame(column = nm,
+                 value_x = cd$v1[keep], value_y = cd$v2[keep],
+                 abs_diff = cd$d[keep],
+                 stringsAsFactors = FALSE)
+    )
+    # Sort: finite diffs descending, then NA diffs at the end
+    df <- df[order(is.na(df$abs_diff), -replace(df$abs_diff, is.na(df$abs_diff), 0)), ]
+    head(df, top_n)
+  })
+  disc_list <- Filter(Negate(is.null), disc_list)
+  discrepancies <- if (length(disc_list)) {
+    out <- do.call(rbind, disc_list)
+    row.names(out) <- NULL
+    out
+  }
+
+  # Count rows with any discrepancy
+  n_rows <- length(col_diffs[[1L]]$d)
+  row_has_disc <- rep(FALSE, n_rows)
+  for (nm in num_cols) {
+    cd <- col_diffs[[nm]]
+    row_has_disc <- row_has_disc |
+      (!is.na(cd$d) & cd$d > tol) | cd$na_mismatch
+  }
+
+  list(
+    num_summary = num_summary,
+    discrepancies = discrepancies,
+    n_with_disc = sum(row_has_disc)
+  )
+}
+
+# Build a match_summary list from disc counts and unmatched counts
+.build_match_summary <- function(n_with_disc, n_matched, n_only_x, n_only_y) {
+  n_no_disc <- n_matched - n_with_disc
+  pct_no <- if (n_matched > 0L) round(100 * n_no_disc / n_matched, 1) else NA_real_
+  pct_with <- if (n_matched > 0L) round(100 * n_with_disc / n_matched, 1) else NA_real_
+  list(
+    only_x = n_only_x,
+    only_y = n_only_y,
+    matched_no_disc = n_no_disc,
+    matched_with_disc = n_with_disc,
+    pct_no_disc = pct_no,
+    pct_with_disc = pct_with
+  )
+}
+
 #' Compare Two Tables
 #'
 #' Compares two data.frames or tibbles by examining column names, row counts,
@@ -177,7 +258,6 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
       maxn <- min(n1, n2)
       idx <- seq_len(maxn)
 
-      # Cache per-column diffs and NA-mismatch flags
       col_diffs <- lapply(num_cols, function(nm) {
         v1 <- x[[nm]][idx]
         v2 <- y[[nm]][idx]
@@ -187,64 +267,17 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
       })
       names(col_diffs) <- num_cols
 
-      num_list <- lapply(num_cols, function(nm) {
-        cd <- col_diffs[[nm]]
-        d_clean <- cd$d[!is.na(cd$d)]
-        if (!length(d_clean)) return(NULL)
-        n_over <- sum(d_clean > tol)
-        qs <- quantile(d_clean, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE, names = FALSE)
-        data.frame(column = nm, n = length(d_clean),
-                   min = qs[1], q25 = qs[2], median = qs[3], q75 = qs[4], max = qs[5],
-                   n_over_tol = n_over,
-                   stringsAsFactors = FALSE)
-      })
-      num_list <- Filter(Negate(is.null), num_list)
-      if (length(num_list)) {
-        num_summary <- do.call(rbind, num_list)
-        row.names(num_summary) <- NULL
+      key_fn <- function(keep) {
+        data.frame(row_index = idx[keep], stringsAsFactors = FALSE)
       }
+      analysis <- .analyze_numeric_diffs(col_diffs, num_cols, tol, top_n, key_fn)
+      num_summary <- analysis$num_summary
+      discrepancies <- analysis$discrepancies
 
-      # Row-level discrepancies (numeric diffs > tol OR NA-vs-value)
-      disc_list <- lapply(num_cols, function(nm) {
-        cd <- col_diffs[[nm]]
-        keep <- which((!is.na(cd$d) & cd$d > tol) | cd$na_mismatch)
-        if (!length(keep)) return(NULL)
-        df <- data.frame(row_index = idx[keep], column = nm,
-                         value_x = cd$v1[keep], value_y = cd$v2[keep],
-                         abs_diff = cd$d[keep],
-                         stringsAsFactors = FALSE)
-        # Sort: finite diffs descending, then NA diffs at the end
-        df <- df[order(is.na(df$abs_diff), -replace(df$abs_diff, is.na(df$abs_diff), 0)), ]
-        head(df, top_n)
-      })
-      disc_list <- Filter(Negate(is.null), disc_list)
-      if (length(disc_list)) {
-        discrepancies <- do.call(rbind, disc_list)
-        row.names(discrepancies) <- NULL
-      }
-
-      # Match summary for row-index mode
-      # A row has a discrepancy if any column has diff > tol or NA-vs-value
-      row_has_disc <- rep(FALSE, maxn)
-      for (nm in num_cols) {
-        cd <- col_diffs[[nm]]
-        row_has_disc <- row_has_disc |
-          (!is.na(cd$d) & cd$d > tol) | cd$na_mismatch
-      }
-      n_with_disc <- sum(row_has_disc)
-      n_no_disc <- maxn - n_with_disc
       n_only_x <- if (n1 > maxn) n1 - maxn else 0L
       n_only_y <- if (n2 > maxn) n2 - maxn else 0L
-      pct_no <- if (maxn > 0L) round(100 * n_no_disc / maxn, 1) else NA_real_
-      pct_with <- if (maxn > 0L) round(100 * n_with_disc / maxn, 1) else NA_real_
-
-      match_summary <- list(
-        only_x = n_only_x,
-        only_y = n_only_y,
-        matched_no_disc = n_no_disc,
-        matched_with_disc = n_with_disc,
-        pct_no_disc = pct_no,
-        pct_with_disc = pct_with
+      match_summary <- .build_match_summary(
+        analysis$n_with_disc, maxn, n_only_x, n_only_y
       )
 
       # Unmatched row indices for row-index mode
@@ -278,7 +311,6 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
       merged <- dplyr::inner_join(x_sub, y_sub, by = key_cols, suffix = c(".x", ".y"))
       rows_matched <- nrow(merged)
 
-      # Cache per-column diffs and NA-mismatch flags
       col_diffs <- lapply(num_cols, function(nm) {
         v1 <- merged[[paste0(nm, ".x")]]
         v2 <- merged[[paste0(nm, ".y")]]
@@ -288,65 +320,14 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
       })
       names(col_diffs) <- num_cols
 
-      num_list <- lapply(num_cols, function(nm) {
-        cd <- col_diffs[[nm]]
-        d_clean <- cd$d[!is.na(cd$d)]
-        if (!length(d_clean)) return(NULL)
-        n_over <- sum(d_clean > tol)
-        qs <- quantile(d_clean, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE, names = FALSE)
-        data.frame(column = nm, n = length(d_clean),
-                   min = qs[1], q25 = qs[2], median = qs[3], q75 = qs[4], max = qs[5],
-                   n_over_tol = n_over,
-                   stringsAsFactors = FALSE)
-      })
-      num_list <- Filter(Negate(is.null), num_list)
-      if (length(num_list)) {
-        num_summary <- do.call(rbind, num_list)
-        row.names(num_summary) <- NULL
-      }
+      key_fn <- function(keep) merged[keep, key_cols, drop = FALSE]
+      analysis <- .analyze_numeric_diffs(col_diffs, num_cols, tol, top_n, key_fn)
+      num_summary <- analysis$num_summary
+      discrepancies <- analysis$discrepancies
 
-      # Row-level discrepancies (numeric diffs > tol OR NA-vs-value)
-      disc_list <- lapply(num_cols, function(nm) {
-        cd <- col_diffs[[nm]]
-        keep <- which((!is.na(cd$d) & cd$d > tol) | cd$na_mismatch)
-        if (!length(keep)) return(NULL)
-        key_df <- merged[keep, key_cols, drop = FALSE]
-        df <- cbind(
-          key_df,
-          data.frame(column = nm,
-                     value_x = cd$v1[keep], value_y = cd$v2[keep],
-                     abs_diff = cd$d[keep],
-                     stringsAsFactors = FALSE)
-        )
-        df <- df[order(is.na(df$abs_diff), -replace(df$abs_diff, is.na(df$abs_diff), 0)), ]
-        head(df, top_n)
-      })
-      disc_list <- Filter(Negate(is.null), disc_list)
-      if (length(disc_list)) {
-        discrepancies <- do.call(rbind, disc_list)
-        row.names(discrepancies) <- NULL
-      }
-
-      # Match summary for keys mode
-      # A row has a discrepancy if any column has diff > tol or NA-vs-value
-      row_has_disc <- rep(FALSE, rows_matched)
-      for (nm in num_cols) {
-        cd <- col_diffs[[nm]]
-        row_has_disc <- row_has_disc |
-          (!is.na(cd$d) & cd$d > tol) | cd$na_mismatch
-      }
-      n_with_disc <- sum(row_has_disc)
-      n_no_disc <- rows_matched - n_with_disc
-      pct_no <- if (rows_matched > 0L) round(100 * n_no_disc / rows_matched, 1) else NA_real_
-      pct_with <- if (rows_matched > 0L) round(100 * n_with_disc / rows_matched, 1) else NA_real_
-
-      match_summary <- list(
-        only_x = key_summary$only_x,
-        only_y = key_summary$only_y,
-        matched_no_disc = n_no_disc,
-        matched_with_disc = n_with_disc,
-        pct_no_disc = pct_no,
-        pct_with_disc = pct_with
+      match_summary <- .build_match_summary(
+        analysis$n_with_disc, rows_matched,
+        key_summary$only_x, key_summary$only_y
       )
     }
   } else if (length(key_cols) > 0L) {
@@ -384,9 +365,21 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
   structure(result, class = c("compare_tbl", "list"))
 }
 
+# Print "... and N more" with an optional note when top_n truncated storage
+.print_remaining <- function(total, n_displayed, top_n) {
+  remaining <- total - n_displayed
+  if (remaining <= 0L) return(invisible())
+  msg <- format(remaining, big.mark = ",")
+  if (is.finite(top_n) && top_n < total) {
+    cli::cli_text("    {.emph ... and {msg} more ({format(top_n, big.mark = ',')} stored)}")
+  } else {
+    cli::cli_text("    {.emph ... and {msg} more}")
+  }
+}
+
 #' @rdname compare_tables
 #' @param show_n Maximum number of rows to display for discrepancies and
-#'   unmatched keys in the printed output. Defaults to `5`.
+#'   unmatched keys in the printed output. Defaults to `5L`.
 #' @param ... Additional arguments (currently unused).
 #' @export
 print.compare_tbl <- function(x, show_n = 5L, ...) {
@@ -453,7 +446,11 @@ print.compare_tbl <- function(x, show_n = 5L, ...) {
     cli::cli_text("")
     sec <- sec + 1L
     tol_val <- x$tol
-    tol_lbl <- if (!is.null(tol_val) && tol_val > 0) paste0(" (tol = ", tol_val, ")") else ""
+    tol_lbl <- if (!is.null(tol_val) && tol_val > .Machine$double.eps) {
+      paste0(" (tol = ", format(tol_val, scientific = FALSE), ")")
+    } else {
+      ""
+    }
     cli::cli_text("{.strong {sec}. Row matching}{tol_lbl}")
     cli::cli_text("  Only in {x$name_x}: {format(ms$only_x, big.mark = ',')}")
     cli::cli_text("  Only in {x$name_y}: {format(ms$only_y, big.mark = ',')}")
@@ -471,20 +468,14 @@ print.compare_tbl <- function(x, show_n = 5L, ...) {
       cli::cli_text("  Unmatched keys in {x$name_x}:")
       display_keys <- head(x$only_x_keys, show_n)
       .cli_table(display_keys, indent = 4L)
-      remaining <- ms$only_x - nrow(display_keys)
-      if (remaining > 0L) {
-        cli::cli_text("    {.emph ... and {format(remaining, big.mark = ',')} more}")
-      }
+      .print_remaining(ms$only_x, nrow(display_keys), x$top_n)
     }
     if (!is.null(x$only_y_keys) && nrow(x$only_y_keys) > 0L) {
       cli::cli_text("")
       cli::cli_text("  Unmatched keys in {x$name_y}:")
       display_keys <- head(x$only_y_keys, show_n)
       .cli_table(display_keys, indent = 4L)
-      remaining <- ms$only_y - nrow(display_keys)
-      if (remaining > 0L) {
-        cli::cli_text("    {.emph ... and {format(remaining, big.mark = ',')} more}")
-      }
+      .print_remaining(ms$only_y, nrow(display_keys), x$top_n)
     }
   }
 

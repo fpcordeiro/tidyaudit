@@ -72,6 +72,30 @@ audit_report <- function(.trail, format = c("console", "rmd"), file = NULL) {
     }
   }
 
+  # Snapshot controls (when non-default)
+  has_controls <- any(vapply(.trail$snapshots, function(s) !is.null(s$controls), logical(1)))
+  if (has_controls) {
+    cli::cli_text("")
+    cli::cli_rule(left = "Snapshot Controls")
+
+    for (snap in .trail$snapshots) {
+      if (!is.null(snap$controls)) {
+        cli::cli_text("")
+        cli::cli_text("{.strong {snap$label}:}")
+        ctrl <- snap$controls
+        if (!isTRUE(ctrl$numeric_summary)) {
+          cli::cli_text("  numeric_summary: {.val {ctrl$numeric_summary}}")
+        }
+        if (!is.null(ctrl$cols_include)) {
+          cli::cli_text("  cols_include: {.val {ctrl$cols_include}}")
+        }
+        if (!is.null(ctrl$cols_exclude)) {
+          cli::cli_text("  cols_exclude: {.val {ctrl$cols_exclude}}")
+        }
+      }
+    }
+  }
+
   # Custom diagnostics
   has_custom <- any(vapply(.trail$snapshots, function(s) !is.null(s$custom), logical(1)))
   if (has_custom) {

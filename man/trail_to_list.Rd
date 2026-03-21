@@ -28,6 +28,7 @@ str(lst, max.level = 2)
 }
 \seealso{
 Other audit export: 
+\code{\link{audit_export}()},
 \code{\link{read_trail}()},
 \code{\link{trail_to_df}()},
 \code{\link{write_trail}()}

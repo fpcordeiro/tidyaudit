@@ -413,3 +413,100 @@ read_trail <- function(file, format = NULL) {
     .list_to_trail(lst)
   }
 }
+
+
+# ── Exported: audit_export ──────────────────────────────────────────────────
+
+#' Export an Audit Trail as a Self-Contained HTML File
+#'
+#' Produces a standalone HTML file that visualises the audit trail as an
+#' interactive pipeline flow diagram. The file is completely self-contained
+#' — no server, internet connection, or R installation is required to view
+#' it. Open it in any browser.
+#'
+#' The trail is serialised via [trail_to_list()] and embedded as JSON inside
+#' an HTML template with inline CSS and vanilla JavaScript. The visualisation
+#' features:
+#' \itemize{
+#'   \item Horizontal pipeline flow diagram with colour-coded nodes per
+#'         operation type (snapshot, join, filter).
+#'   \item Edges annotated with key deltas (match rate, drop \%, columns
+#'         added).
+#'   \item Clickable nodes expanding to show column schema, operation
+#'         diagnostics, and custom \code{.fns} results.
+#'   \item Clickable edges showing the full diff between adjacent snapshots.
+#'   \item Light / dark theme toggle.
+#'   \item Collapsible JSON export panel.
+#' }
+#'
+#' @param .trail An [audit_trail()] object.
+#' @param file   Path to the output \code{.html} file. If \code{NULL}
+#'   (the default), writes to a temporary file and opens it in the default
+#'   browser via [utils::browseURL()].
+#'
+#' @returns The file path (character), invisibly.
+#'
+#' @examples
+#' trail <- audit_trail("demo")
+#' mtcars |> audit_tap(trail, "raw")
+#' dplyr::filter(mtcars, mpg > 20) |> audit_tap(trail, "filtered")
+#' \dontrun{
+#' audit_export(trail)            # opens in browser
+#' audit_export(trail, "my_trail.html")
+#' }
+#'
+#' @family audit export
+#' @seealso [trail_to_list()], [write_trail()]
+#' @export
+audit_export <- function(.trail, file = NULL) {
+  if (!inherits(.trail, "audit_trail")) {
+    cli::cli_abort("{.arg .trail} must be an {.cls audit_trail} object.")
+  }
+
+  pkg <- "jsonlite"
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    cli::cli_abort(
+      c(
+        "Package {.pkg {pkg}} is required for HTML export.",
+        "i" = "Install it with {.code install.packages(\"{pkg}\")}."
+      )
+    )
+  }
+
+  if (!is.null(file)) {
+    if (!is.character(file) || length(file) != 1L || is.na(file)) {
+      cli::cli_abort("{.arg file} must be a single non-missing character string.")
+    }
+  }
+
+  # Serialise trail to JSON
+  lst      <- trail_to_list(.trail)
+  json_txt <- jsonlite::toJSON(lst, auto_unbox = TRUE, pretty = FALSE,
+                               null = "null")
+  json_txt <- as.character(json_txt)
+
+  # Prevent inline JSON from breaking the <script> tag
+  json_txt <- gsub("</script>", "<\\/script>", json_txt, fixed = TRUE)
+
+  # Read template
+  template_path <- system.file("templates", "audit_trail.html",
+                               package = "tidyaudit")
+  if (template_path == "") {
+    cli::cli_abort("HTML template not found. Is the package installed correctly?")
+  }
+  template <- paste(readLines(template_path, warn = FALSE), collapse = "\n")
+
+  # Inject JSON into template
+  html <- sub("/*__TRAIL_DATA__*/null", json_txt, template, fixed = TRUE)
+
+  # Write output
+  if (is.null(file)) {
+    file <- tempfile(fileext = ".html")
+    writeLines(html, con = file)
+    utils::browseURL(file)
+  } else {
+    writeLines(html, con = file)
+  }
+
+  invisible(file)
+}

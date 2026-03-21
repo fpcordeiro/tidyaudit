@@ -42,6 +42,7 @@ restored <- read_trail(tmp)
 \code{\link[=read_trail]{read_trail()}}, \code{\link[=trail_to_list]{trail_to_list()}}
 
 Other audit export: 
+\code{\link{audit_export}()},
 \code{\link{read_trail}()},
 \code{\link{trail_to_df}()},
 \code{\link{trail_to_list}()}

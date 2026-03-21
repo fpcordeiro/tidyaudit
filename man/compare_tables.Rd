@@ -27,7 +27,7 @@ column}, and maximum unmatched keys to store. Defaults to \code{Inf} (all).
 Unmatched keys are stored in arbitrary order.}
 
 \item{show_n}{Maximum number of rows to display for discrepancies and
-unmatched keys in the printed output. Defaults to \code{5}.}
+unmatched keys in the printed output. Defaults to \code{5L}.}
 
 \item{...}{Additional arguments (currently unused).}
 }

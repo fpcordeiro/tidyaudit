@@ -6,8 +6,9 @@
 #' @param x A vector to summarize.
 #'
 #' @returns A named character vector with summary statistics including:
-#'   type, unique count, missing count, most frequent value (for non-numeric),
-#'   mean, sd, min, quartiles (q25, q50, q75), max, and three example values.
+#'   type, unique count, missing count, missing share (proportion from 0 to 1),
+#'   most frequent value (for non-numeric), mean, sd, min, quartiles (q25, q50,
+#'   q75), max, and three example values.
 #'
 #' @examples
 #' summarize_column(c(1, 2, 3, NA, 5))
@@ -26,6 +27,7 @@ summarize_column <- function(x) {
       type = "numeric",
       n_unique = as.character(n_uniq),
       missing = as.character(sum(x_NAs)),
+      missing_share = as.character(mean(x_NAs)),
       most_frequent = NA_character_,
       mean = if (n_valid) as.character(mean(x_no_NAs)) else NA_character_,
       sd = if (n_valid > 1L) as.character(stats::sd(x_no_NAs)) else NA_character_,
@@ -44,6 +46,7 @@ summarize_column <- function(x) {
       type = "factor",
       n_unique = as.character(n_uniq),
       missing = as.character(sum(x_NAs)),
+      missing_share = as.character(mean(x_NAs)),
       most_frequent = .most_frequent(x),
       mean = NA_character_,
       sd = NA_character_,
@@ -61,6 +64,7 @@ summarize_column <- function(x) {
       type = "character",
       n_unique = as.character(n_uniq),
       missing = as.character(sum(x_NAs)),
+      missing_share = as.character(mean(x_NAs)),
       most_frequent = .most_frequent(x),
       mean = NA_character_,
       sd = NA_character_,
@@ -78,6 +82,7 @@ summarize_column <- function(x) {
       type = "logical",
       n_unique = as.character(n_uniq),
       missing = as.character(sum(x_NAs)),
+      missing_share = as.character(mean(x_NAs)),
       most_frequent = .most_frequent(x),
       mean = if (n_valid) as.character(mean(x_no_NAs)) else NA_character_,
       sd = if (n_valid > 1L) as.character(stats::sd(x_no_NAs)) else NA_character_,
@@ -95,6 +100,7 @@ summarize_column <- function(x) {
       type = "Date",
       n_unique = as.character(n_uniq),
       missing = as.character(sum(x_NAs)),
+      missing_share = as.character(mean(x_NAs)),
       most_frequent = .most_frequent(x),
       mean = NA_character_,
       sd = NA_character_,
@@ -112,6 +118,7 @@ summarize_column <- function(x) {
       type = class(x)[1L],
       n_unique = as.character(n_uniq),
       missing = as.character(sum(x_NAs)),
+      missing_share = as.character(mean(x_NAs)),
       most_frequent = .most_frequent(x),
       mean = NA_character_,
       sd = NA_character_,
@@ -138,7 +145,7 @@ summarize_column <- function(x) {
 
 # Statistic names returned by summarize_column()
 .summary_stat_names <- c(
-  "type", "n_unique", "missing", "most_frequent",
+  "type", "n_unique", "missing", "missing_share", "most_frequent",
   "mean", "sd", "min", "q25", "q50", "q75", "max",
   "example1", "example2", "example3"
 )

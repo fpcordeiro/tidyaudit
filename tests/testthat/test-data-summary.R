@@ -56,7 +56,7 @@ test_that("summarize_column handles all-NA", {
 test_that("summarize_column returns named character vector", {
   result <- summarize_column(1:5)
   expect_true(is.character(result))
-  expect_equal(length(result), 14L)
+  expect_equal(length(result), 15L)
   expect_true(all(c("type", "n_unique", "missing", "mean") %in% names(result)))
 })
 

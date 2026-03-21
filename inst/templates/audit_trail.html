@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tidyaudit Trail Explorer</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text: #334155;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --snap: #3b82f6;
+    --join: #22c55e;
+    --filter: #f97316;
+    --mutate: #a855f7;
+    --summarize: #14b8a6;
+    --violation: #ef4444;
+    --violation-bg: #fef2f2;
+    --violation-border: #fecaca;
+    --warning-bg: #fffbeb;
+    --warning-border: #fde68a;
+    --warning-text: #92400e;
+    --edge: #94a3b8;
+    --edge-text: #64748b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  .dark {
+    --bg: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border: #334155;
+    --border-strong: #475569;
+    --snap: #60a5fa;
+    --join: #4ade80;
+    --filter: #fb923c;
+    --mutate: #c084fc;
+    --summarize: #2dd4bf;
+    --violation: #f87171;
+    --violation-bg: #1c1117;
+    --violation-border: #7f1d1d;
+    --warning-bg: #1c1a0e;
+    --warning-border: #78350f;
+    --warning-text: #fbbf24;
+    --edge: #475569;
+    --edge-text: #94a3b8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.2s, color 0.2s;
+    overflow-x: hidden;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary);
+  }
+
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .header h1 span {
+    color: var(--snap);
+    font-family: var(--mono);
+    font-weight: 600;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .layout {
+    display: flex;
+    height: calc(100vh - 57px);
+  }
+
+  .controls {
+    width: 260px;
+    min-width: 260px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-secondary);
+    padding: 20px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .control-group h3 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .control-row label {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--border-strong);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle.on { background: var(--snap); }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle.on::after { transform: translateX(16px); }
+
+  .main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pipeline-container {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 32px 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .pipeline-svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .detail-panel {
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+    max-height: 45vh;
+    overflow-y: auto;
+    padding: 0;
+    transition: max-height 0.3s;
+  }
+
+  .detail-panel.hidden { max-height: 0; border-top: none; }
+
+  .detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-secondary);
+    z-index: 2;
+  }
+
+  .detail-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .detail-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px;
+  }
+
+  .detail-close:hover { color: var(--text); }
+
+  .detail-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .detail-section {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .detail-section h4 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .detail-table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .stat-card {
+    display: inline-flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius);
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+
+  .stat-card .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+  }
+
+  .stat-card .stat-value {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .violation-card {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--warning-text);
+  }
+
+  .diff-arrow {
+    color: var(--text-muted);
+    margin: 0 4px;
+  }
+
+  .diff-positive { color: var(--join); }
+  .diff-negative { color: var(--violation); }
+  .diff-neutral { color: var(--text-muted); }
+
+  .json-panel {
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+  }
+
+  .json-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    cursor: pointer;
+  }
+
+  .json-header h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .copy-btn {
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { border-color: var(--snap); color: var(--snap); }
+
+  .json-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s;
+  }
+
+  .json-body.open { max-height: 300px; overflow-y: auto; }
+
+  .json-body pre {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 12px 20px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .hint {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 12px;
+  }
+
+  /* SVG styles */
+  .node-card { cursor: pointer; transition: filter 0.15s; }
+  .node-card:hover { filter: brightness(1.05); }
+  .edge-hit { cursor: pointer; stroke: transparent; stroke-width: 20; fill: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>tidyaudit</span> Trail Explorer</h1>
+  <div class="header-right">
+    <span id="trail-info" style="font-size:13px;color:var(--text-secondary);font-family:var(--mono)"></span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="controls">
+    <div class="control-group">
+      <h3>Display</h3>
+      <div class="control-row">
+        <label>Numeric summaries</label>
+        <div class="toggle on" id="t-numeric" onclick="toggleOption(this, 'numeric')"></div>
+      </div>
+      <div class="control-row">
+        <label>Dark theme</label>
+        <div class="toggle" id="t-theme" onclick="toggleClick(this); toggleTheme()"></div>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h3>Legend</h3>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:12px">
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--snap)"></div>Snapshot</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--join)"></div>Join</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--filter)"></div>Filter</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--mutate)"></div>Mutate</div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--summarize)"></div>Summarize</div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto">
+      <p class="hint">Click nodes or edges to inspect</p>
+    </div>
+  </div>
+
+  <div class="main-area">
+    <div class="pipeline-container" id="pipeline-container"></div>
+
+    <div class="detail-panel hidden" id="detail-panel">
+      <div class="detail-header">
+        <h3 id="detail-title">Snapshot Detail</h3>
+        <button class="detail-close" onclick="closeDetail()">&times;</button>
+      </div>
+      <div class="detail-body" id="detail-body"></div>
+    </div>
+
+    <div class="json-panel">
+      <div class="json-header" onclick="toggleJson()">
+        <h3>Machine-Readable JSON Export</h3>
+        <button class="copy-btn" onclick="event.stopPropagation(); copyJson()">Copy JSON</button>
+      </div>
+      <div class="json-body" id="json-body">
+        <pre id="json-output"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Trail data injected by audit_export() ─────────────────────
+const TRAIL_DATA = /*__TRAIL_DATA__*/null;
+
+// ── State ──────────────────────────────────────────────────────
+const state = {
+  numeric: true,
+  trail: null,
+  selected: null // { type: 'node'|'edge', index: N }
+};
+
+// ── Helpers ────────────────────────────────────────────────────
+function fmtN(n) {
+  if (n == null) return '-';
+  return n >= 1000 ? (n/1000).toFixed(1) + 'k' : String(n);
+}
+
+function fmtNum(v) {
+  if (v == null) return '-';
+  return typeof v === 'number' ? v.toFixed(2) : String(v);
+}
+
+function fmtDelta(d) {
+  if (d == null) return '=';
+  if (d === 0) return '=';
+  return (d > 0 ? '+' : '') + d.toLocaleString();
+}
+
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function asArray(x) {
+  if (x == null) return [];
+  return Array.isArray(x) ? x : [x];
+}
+
+function statCard(label, value, colorVar) {
+  const style = colorVar ? ` style="color:var(${colorVar})"` : '';
+  return `<div class="stat-card"><span class="stat-label">${escHtml(label)}</span><span class="stat-value"${style}>${escHtml(String(value))}</span></div>`;
+}
+
+// ── Data loading ───────────────────────────────────────────────
+function loadTrail() {
+  if (!TRAIL_DATA || !TRAIL_DATA.snapshots) return null;
+
+  // trail_to_list() outputs snapshots as a named list (JSON object).
+  // Convert to array preserving insertion order.
+  let snapshots;
+  if (Array.isArray(TRAIL_DATA.snapshots)) {
+    snapshots = TRAIL_DATA.snapshots;
+  } else {
+    snapshots = Object.values(TRAIL_DATA.snapshots);
+  }
+
+  if (snapshots.length === 0) return null;
+
+  return {
+    name: TRAIL_DATA.name,
+    created_at: TRAIL_DATA.created_at,
+    n_snapshots: TRAIL_DATA.n_snapshots,
+    snapshots: snapshots
+  };
+}
+
+// ── Type display helpers ───────────────────────────────────────
+function typeLabel(snap) {
+  const d = snap.diagnostics || {};
+  if (snap.type === 'join' && d.join_type) return d.join_type.replace(/_/g, ' ');
+  if (snap.type === 'filter') {
+    const ft = d.filter_type === 'drop' ? 'filter out' : 'filter';
+    return ft;
+  }
+  if (snap.type === 'tabulation') return 'tabulation';
+  if (snap.type === 'mutate') return 'mutate';
+  if (snap.type === 'summarize') return 'summarize';
+  return 'snapshot';
+}
+
+function opColorHex(type, dark) {
+  if (type === 'join') return dark ? '#4ade80' : '#22c55e';
+  if (type === 'filter') return dark ? '#fb923c' : '#f97316';
+  if (type === 'mutate') return dark ? '#c084fc' : '#a855f7';
+  if (type === 'summarize' || type === 'tabulation') return dark ? '#2dd4bf' : '#14b8a6';
+  return dark ? '#60a5fa' : '#3b82f6';
+}
+
+// ── SVG Pipeline Rendering ─────────────────────────────────────
+function renderPipeline() {
+  const trail = state.trail;
+  if (!trail) return;
+  const snaps = trail.snapshots;
+  const n = snaps.length;
+  const dark = document.body.classList.contains('dark');
+
+  const nodeW = 160, nodeH = 88;
+  const gap = 100;
+  const padX = 40, padY = 50;
+  const totalW = padX * 2 + n * nodeW + (n - 1) * gap;
+  const totalH = padY * 2 + nodeH + 30;
+
+  const fontFamily = getComputedStyle(document.body).getPropertyValue('--font').split(',')[0].trim();
+  const monoFamily = getComputedStyle(document.body).getPropertyValue('--mono').trim();
+
+  let svg = `<svg class="pipeline-svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Defs
+  svg += `<defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="${dark ? '#475569' : '#94a3b8'}" />
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.1"/>
+    </filter>
+  </defs>`;
+
+  // Edges
+  for (let i = 0; i < n - 1; i++) {
+    const x1 = padX + i * (nodeW + gap) + nodeW;
+    const x2 = padX + (i + 1) * (nodeW + gap);
+    const cy = padY + nodeH / 2;
+
+    svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="${dark ? '#475569' : '#cbd5e1'}" stroke-width="2" marker-end="url(#arrowhead)" />`;
+    svg += `<line class="edge-hit" x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" data-edge="${i}" onclick="selectEdge(${i})" />`;
+
+    // Edge label
+    const midX = (x1 + x2) / 2;
+    const nextSnap = snaps[i + 1];
+    const d = nextSnap.diagnostics || {};
+    let edgeLabel = '';
+
+    if (nextSnap.type === 'join' && d.join_type) {
+      edgeLabel = d.join_type.replace(/_/g, ' ');
+      if (d.match_rate && d.match_rate.x != null) edgeLabel += ' | match: ' + d.match_rate.x.toFixed(1) + '%';
+    } else if (nextSnap.type === 'filter' && d.pct_dropped != null) {
+      edgeLabel = 'filter | -' + d.pct_dropped.toFixed(1) + '%';
+    } else if (nextSnap.changes) {
+      const ch = nextSnap.changes;
+      const parts = [];
+      if (ch.row_delta && ch.row_delta !== 0) parts.push((ch.row_delta > 0 ? '+' : '') + ch.row_delta + ' rows');
+      if (ch.col_delta && ch.col_delta !== 0) parts.push((ch.col_delta > 0 ? '+' : '') + ch.col_delta + ' cols');
+      edgeLabel = parts.join(', ');
+    }
+
+    svg += `<text x="${midX}" y="${cy - 10}" text-anchor="middle" font-size="10" font-family="${monoFamily}" fill="${dark ? '#94a3b8' : '#64748b'}">${escHtml(edgeLabel)}</text>`;
+  }
+
+  // Nodes
+  for (let i = 0; i < n; i++) {
+    const snap = snaps[i];
+    const x = padX + i * (nodeW + gap);
+    const y = padY;
+    const color = opColorHex(snap.type, dark);
+    const w = nodeW;
+    const h = nodeH;
+    const hasViolation = (snap.policy_violations || []).length > 0;
+    const bg = dark ? '#1e293b' : '#ffffff';
+    const isSelected = state.selected && state.selected.type === 'node' && state.selected.index === i;
+
+    svg += `<g class="node-card" data-node="${i}" onclick="selectNode(${i})" transform="translate(${x},${y})">`;
+    svg += `<rect width="${w}" height="${h}" rx="8" fill="${bg}" stroke="${hasViolation ? (dark ? '#f87171' : '#ef4444') : color}" stroke-width="${isSelected ? 3 : hasViolation ? 2.5 : 1.5}" filter="url(#shadow)" />`;
+    // Color bar at top
+    svg += `<rect width="${w}" height="4" rx="8" fill="${color}" />`;
+    svg += `<rect x="8" width="${w - 16}" height="4" fill="${color}" />`;
+    // Label
+    svg += `<text x="${w/2}" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="${dark ? '#f1f5f9' : '#334155'}" font-family="${fontFamily}">${escHtml(snap.label)}</text>`;
+    // Operation type
+    svg += `<text x="${w/2}" y="37" text-anchor="middle" font-size="10" fill="${color}" font-family="${monoFamily}">${escHtml(typeLabel(snap))}</text>`;
+    // Stats line
+    svg += `<text x="${w/2}" y="56" text-anchor="middle" font-size="11" fill="${dark ? '#94a3b8' : '#64748b'}" font-family="${monoFamily}">${fmtN(snap.nrow)} rows  ${snap.ncol} cols</text>`;
+    // NAs
+    const naColor = snap.total_nas > 0 ? (dark ? '#fb923c' : '#f97316') : (dark ? '#64748b' : '#94a3b8');
+    svg += `<text x="${w/2}" y="72" text-anchor="middle" font-size="10" fill="${naColor}" font-family="${monoFamily}">${snap.total_nas} NAs</text>`;
+    // Violation indicator
+    if (hasViolation) {
+      svg += `<circle cx="${w - 8}" cy="8" r="5" fill="${dark ? '#f87171' : '#ef4444'}" />`;
+      svg += `<text x="${w - 8}" y="11" text-anchor="middle" font-size="8" fill="white" font-weight="700">!</text>`;
+    }
+    svg += `</g>`;
+  }
+
+  svg += `</svg>`;
+  document.getElementById('pipeline-container').innerHTML = svg;
+}
+
+// ── Node & Edge Selection ──────────────────────────────────────
+function selectNode(i) {
+  state.selected = { type: 'node', index: i };
+  renderDetail();
+  renderPipeline();
+}
+
+function selectEdge(i) {
+  state.selected = { type: 'edge', index: i };
+  renderDetail();
+}
+
+function closeDetail() {
+  state.selected = null;
+  document.getElementById('detail-panel').classList.add('hidden');
+  renderPipeline();
+}
+
+// ── Detail Panel Rendering ─────────────────────────────────────
+function renderDetail() {
+  const panel = document.getElementById('detail-panel');
+  const title = document.getElementById('detail-title');
+  const body = document.getElementById('detail-body');
+  panel.classList.remove('hidden');
+
+  if (state.selected.type === 'node') {
+    renderNodeDetail(title, body);
+  } else {
+    renderEdgeDetail(title, body);
+  }
+}
+
+function renderNodeDetail(title, body) {
+  const snap = state.trail.snapshots[state.selected.index];
+  const d = snap.diagnostics || {};
+  title.textContent = snap.label + ' \u2014 ' + typeLabel(snap);
+
+  let html = '<div class="detail-section" style="min-width:100%"><div style="display:flex;flex-wrap:wrap">';
+
+  // Core stats
+  html += statCard('Rows', snap.nrow.toLocaleString());
+  html += statCard('Cols', snap.ncol);
+  html += statCard('Total NAs', snap.total_nas.toLocaleString());
+  if (snap.timestamp) html += statCard('Timestamp', snap.timestamp);
+
+  // Join diagnostics
+  if (snap.type === 'join') {
+    if (d.match_rate) {
+      if (d.match_rate.x != null) html += statCard('Match Rate X', d.match_rate.x.toFixed(1) + '%', '--join');
+      if (d.match_rate.y != null) html += statCard('Match Rate Y', d.match_rate.y.toFixed(1) + '%', '--join');
+    }
+    if (d.n_only_x != null) html += statCard('Unmatched X', d.n_only_x);
+    if (d.n_only_y != null) html += statCard('Unmatched Y', d.n_only_y);
+    if (d.relation) html += statCard('Relation', d.relation);
+    if (d.y_name) html += statCard('Right Table', d.y_name);
+    if (d.x_has_dups != null) html += statCard('X Has Dups', d.x_has_dups ? 'Yes' : 'No');
+    if (d.y_has_dups != null) html += statCard('Y Has Dups', d.y_has_dups ? 'Yes' : 'No');
+  }
+
+  // Filter diagnostics
+  if (snap.type === 'filter') {
+    if (d.n_total != null) html += statCard('Total Before', d.n_total.toLocaleString());
+    if (d.n_dropped != null) html += statCard('Dropped', d.n_dropped.toLocaleString(), '--filter');
+    if (d.pct_dropped != null) html += statCard('Drop %', d.pct_dropped.toFixed(1) + '%', '--filter');
+    if (d.expr_label) html += statCard('Expression', d.expr_label);
+    if (d.n_na_in_filter != null) html += statCard('NAs in Expr', d.n_na_in_filter);
+    if (d.stat_col) {
+      html += statCard('Stat Col', d.stat_col);
+      if (d.stat_dropped != null) html += statCard('Stat Dropped', d.stat_dropped.toLocaleString());
+      if (d.stat_total != null) html += statCard('Stat Total', d.stat_total.toLocaleString());
+    }
+  }
+
+  // Mutate diagnostics (future-proof)
+  if (snap.type === 'mutate' && d.cols_added != null) {
+    html += statCard('Added', '+' + d.cols_added, '--mutate');
+    if (d.cols_modified != null) html += statCard('Modified', d.cols_modified);
+  }
+
+  // Summarize diagnostics (future-proof)
+  if (snap.type === 'summarize') {
+    if (d.groups_before != null) html += statCard('Groups', d.groups_before);
+    if (d.nrow_before != null) html += statCard('Rows Before', d.nrow_before.toLocaleString());
+  }
+
+  html += '</div></div>';
+
+  // Policy violations (future-proof)
+  const violations = snap.policy_violations || [];
+  if (violations.length > 0) {
+    html += '<div class="detail-section" style="min-width:100%"><h4>Policy Violations</h4>';
+    violations.forEach(function(v) {
+      html += '<div class="violation-card">' + escHtml(v.message || JSON.stringify(v)) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Custom diagnostics (.fns)
+  if (snap.custom && typeof snap.custom === 'object' && Object.keys(snap.custom).length > 0) {
+    html += '<div class="detail-section" style="min-width:100%"><h4>Custom Diagnostics (.fns)</h4>';
+    html += '<table class="detail-table"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody>';
+    Object.entries(snap.custom).forEach(function(entry) {
+      const k = entry[0], v = entry[1];
+      const display = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      html += '<tr><td>' + escHtml(k) + '</td><td>' + escHtml(display) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Column schema table
+  const schema = snap.schema || [];
+  if (schema.length > 0) {
+    html += '<div class="detail-section"><h4>Column Schema</h4>';
+    html += '<table class="detail-table"><thead><tr>';
+    html += '<th>Column</th><th>Type</th><th>NAs</th><th>NA%</th>';
+    if (state.numeric) html += '<th>Min</th><th>Q25</th><th>Median</th><th>Mean</th><th>Q75</th><th>Max</th>';
+    html += '</tr></thead><tbody>';
+
+    // Build numeric summary lookup
+    var numLookup = {};
+    if (snap.numeric_summary) {
+      (Array.isArray(snap.numeric_summary) ? snap.numeric_summary : Object.values(snap.numeric_summary)).forEach(function(ns) {
+        numLookup[ns.column] = ns;
+      });
+    }
+
+    schema.forEach(function(col) {
+      const pctNa = snap.nrow > 0 ? (col.n_na / snap.nrow * 100).toFixed(1) : '0.0';
+      html += '<tr><td>' + escHtml(col.column) + '</td><td>' + escHtml(col.type) + '</td><td>' + col.n_na + '</td><td>' + pctNa + '%</td>';
+      if (state.numeric) {
+        const ns = numLookup[col.column];
+        if (ns) {
+          html += '<td>' + fmtNum(ns.min) + '</td><td>' + fmtNum(ns.q25) + '</td><td>' + fmtNum(ns.median) + '</td><td>' + fmtNum(ns.mean) + '</td><td>' + fmtNum(ns.q75) + '</td><td>' + fmtNum(ns.max) + '</td>';
+        } else {
+          html += '<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>';
+        }
+      }
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+  }
+
+  // Pipeline capture
+  var pipelineArr = asArray(snap.pipeline);
+  if (pipelineArr.length > 0) {
+    html += '<div class="detail-section" style="min-width:100%"><h4>Captured Pipeline</h4>';
+    html += '<pre style="font-family:var(--mono);font-size:11px;color:var(--text-secondary);background:var(--bg-tertiary);padding:8px 12px;border-radius:var(--radius);white-space:pre-wrap">';
+    html += escHtml(pipelineArr.join('\n'));
+    html += '</pre></div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function renderEdgeDetail(title, body) {
+  const i = state.selected.index;
+  const prev = state.trail.snapshots[i];
+  const next = state.trail.snapshots[i + 1];
+  title.textContent = 'Diff: ' + prev.label + ' \u2192 ' + next.label;
+
+  let html = '';
+
+  // Row / Column / NA changes from the changes field
+  const ch = next.changes;
+  html += '<div class="detail-section"><h4>Row / Column Changes</h4><div style="display:flex;flex-wrap:wrap">';
+
+  if (ch) {
+    const rowClass = ch.row_delta > 0 ? 'diff-positive' : ch.row_delta < 0 ? 'diff-negative' : 'diff-neutral';
+    const colClass = ch.col_delta > 0 ? 'diff-positive' : ch.col_delta < 0 ? 'diff-negative' : 'diff-neutral';
+    const naClass = ch.na_delta > 0 ? 'diff-negative' : ch.na_delta < 0 ? 'diff-positive' : 'diff-neutral';
+
+    html += `<div class="stat-card"><span class="stat-label">Rows</span><span class="stat-value">${prev.nrow.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.nrow.toLocaleString()} <span class="${rowClass}">(${fmtDelta(ch.row_delta)})</span></span></div>`;
+    html += `<div class="stat-card"><span class="stat-label">Cols</span><span class="stat-value">${prev.ncol} <span class="diff-arrow">\u2192</span> ${next.ncol} <span class="${colClass}">(${fmtDelta(ch.col_delta)})</span></span></div>`;
+    html += `<div class="stat-card"><span class="stat-label">Total NAs</span><span class="stat-value">${prev.total_nas.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.total_nas.toLocaleString()} <span class="${naClass}">(${fmtDelta(ch.na_delta)})</span></span></div>`;
+  } else {
+    html += `<div class="stat-card"><span class="stat-label">Rows</span><span class="stat-value">${prev.nrow.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.nrow.toLocaleString()}</span></div>`;
+    html += `<div class="stat-card"><span class="stat-label">Cols</span><span class="stat-value">${prev.ncol} <span class="diff-arrow">\u2192</span> ${next.ncol}</span></div>`;
+    html += `<div class="stat-card"><span class="stat-label">Total NAs</span><span class="stat-value">${prev.total_nas.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.total_nas.toLocaleString()}</span></div>`;
+  }
+  html += '</div></div>';
+
+  // Column changes from changes field
+  if (ch) {
+    const added = asArray(ch.cols_added);
+    const removed = asArray(ch.cols_removed);
+    html += '<div class="detail-section"><h4>Column Changes</h4>';
+    if (added.length) html += '<p style="font-size:12px;margin-bottom:4px"><span class="diff-positive">+ Added (' + added.length + '):</span> <code style="font-size:11px">' + escHtml(added.join(', ')) + '</code></p>';
+    if (removed.length) html += '<p style="font-size:12px;margin-bottom:4px"><span class="diff-negative">- Removed (' + removed.length + '):</span> <code style="font-size:11px">' + escHtml(removed.join(', ')) + '</code></p>';
+
+    // Type changes
+    const tc = ch.type_changes || [];
+    if (tc.length > 0) {
+      html += '<table class="detail-table" style="margin-top:8px"><thead><tr><th>Column</th><th>From</th><th>To</th></tr></thead><tbody>';
+      tc.forEach(function(t) {
+        html += '<tr><td>' + escHtml(t.column) + '</td><td>' + escHtml(t.from) + '</td><td>' + escHtml(t.to) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    // Count unchanged columns
+    const prevCols = new Set((prev.schema || []).map(function(c) { return c.column; }));
+    const nextCols = new Set((next.schema || []).map(function(c) { return c.column; }));
+    const common = [...prevCols].filter(function(c) { return nextCols.has(c); });
+    html += '<p style="font-size:12px;color:var(--text-muted);margin-top:4px">Unchanged: ' + common.length + ' columns</p>';
+    html += '</div>';
+
+    // NA changes for common columns
+    const naChanges = common.map(function(name) {
+      const pc = (prev.schema || []).find(function(c) { return c.column === name; });
+      const nc = (next.schema || []).find(function(c) { return c.column === name; });
+      if (!pc || !nc) return null;
+      return { name: name, prev_na: pc.n_na, next_na: nc.n_na, delta: nc.n_na - pc.n_na };
+    }).filter(function(x) { return x && x.delta !== 0; }).sort(function(a, b) { return Math.abs(b.delta) - Math.abs(a.delta); }).slice(0, 10);
+
+    if (naChanges.length > 0) {
+      html += '<div class="detail-section"><h4>NA Changes (top ' + naChanges.length + ')</h4>';
+      html += '<table class="detail-table"><thead><tr><th>Column</th><th>Before</th><th>After</th><th>Delta</th></tr></thead><tbody>';
+      naChanges.forEach(function(c) {
+        html += '<tr><td>' + escHtml(c.name) + '</td><td>' + c.prev_na + '</td><td>' + c.next_na + '</td><td class="' + (c.delta > 0 ? 'diff-negative' : 'diff-positive') + '">' + (c.delta > 0 ? '+' : '') + c.delta + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+  }
+
+  // Operation diagnostics for the target snapshot
+  const d = next.diagnostics || {};
+  const dKeys = Object.keys(d);
+  if (dKeys.length > 0) {
+    html += '<div class="detail-section"><h4>Operation Diagnostics</h4>';
+    html += '<table class="detail-table"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
+    dKeys.forEach(function(k) {
+      var v = d[k];
+      var display;
+      if (v != null && typeof v === 'object') {
+        display = JSON.stringify(v);
+      } else if (typeof v === 'number' && v < 1 && v > 0) {
+        display = (v * 100).toFixed(1) + '%';
+      } else {
+        display = String(v);
+      }
+      html += '<tr><td>' + escHtml(k.replace(/_/g, ' ')) + '</td><td>' + escHtml(display) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  body.innerHTML = html;
+}
+
+// ── JSON panel ─────────────────────────────────────────────────
+function updateJson() {
+  document.getElementById('json-output').textContent = JSON.stringify(TRAIL_DATA, null, 2);
+}
+
+function copyJson() {
+  var text = document.getElementById('json-output').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy JSON'; }, 1500);
+  });
+}
+
+function toggleJson() {
+  document.getElementById('json-body').classList.toggle('open');
+}
+
+// ── Controls ───────────────────────────────────────────────────
+function toggleClick(el) { el.classList.toggle('on'); }
+
+function toggleOption(el, key) {
+  el.classList.toggle('on');
+  state[key] = el.classList.contains('on');
+  if (state.selected) renderDetail();
+}
+
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  renderPipeline();
+  if (state.selected) renderDetail();
+}
+
+// ── Init ────────────────────────────────────────────────────────
+(function init() {
+  state.trail = loadTrail();
+  if (!state.trail) {
+    document.getElementById('pipeline-container').innerHTML =
+      '<p style="color:var(--text-muted);text-align:center;margin-top:40px">No trail data found.</p>';
+    document.getElementById('trail-info').textContent = 'Empty trail';
+    return;
+  }
+  document.getElementById('trail-info').textContent =
+    state.trail.name + ' \u2014 ' + state.trail.n_snapshots + ' snapshots \u2014 Created: ' + (state.trail.created_at || 'N/A');
+  renderPipeline();
+  updateJson();
+})();
+</script>
+</body>
+</html>

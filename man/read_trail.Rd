@@ -34,6 +34,7 @@ print(restored)
 \code{\link[=write_trail]{write_trail()}}
 
 Other audit export: 
+\code{\link{audit_export}()},
 \code{\link{trail_to_df}()},
 \code{\link{trail_to_list}()},
 \code{\link{write_trail}()}

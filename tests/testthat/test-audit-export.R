@@ -458,3 +458,119 @@ test_that("read_trail errors on unknown extension without explicit format", {
 test_that("read_trail errors on invalid file argument", {
   expect_error(read_trail(NA_character_), "file")
 })
+
+
+# ── audit_export ─────────────────────────────────────────────────────────────
+
+test_that("audit_export creates an HTML file", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- make_export_trail()
+  audit_export(trail, file = tmp)
+  expect_true(file.exists(tmp))
+})
+
+test_that("audit_export output is valid HTML containing the trail JSON", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- make_export_trail()
+  audit_export(trail, file = tmp)
+  content <- paste(readLines(tmp), collapse = "\n")
+  expect_true(grepl("<!DOCTYPE html>", content, fixed = TRUE))
+  expect_true(grepl("TRAIL_DATA", content, fixed = TRUE))
+  expect_true(grepl("export_test", content, fixed = TRUE))
+})
+
+test_that("audit_export returns the file path invisibly", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- make_export_trail()
+  result <- withVisible(audit_export(trail, file = tmp))
+  expect_false(result$visible)
+  expect_equal(result$value, tmp)
+})
+
+test_that("audit_export embeds all snapshot labels in the output", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- make_export_trail()
+  audit_export(trail, file = tmp)
+  content <- paste(readLines(tmp), collapse = "\n")
+  expect_true(grepl('"raw"', content, fixed = TRUE))
+  expect_true(grepl('"joined"', content, fixed = TRUE))
+  expect_true(grepl('"filtered"', content, fixed = TRUE))
+})
+
+test_that("audit_export errors on non-trail input", {
+  expect_error(audit_export(list()), "audit_trail")
+})
+
+test_that("audit_export errors on invalid file argument", {
+  skip_if_not_installed("jsonlite")
+  trail <- make_export_trail()
+  expect_error(audit_export(trail, file = NA_character_), "file")
+  expect_error(audit_export(trail, file = c("a.html", "b.html")), "file")
+})
+
+test_that("audit_export works with empty trail", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- audit_trail("empty")
+  audit_export(trail, file = tmp)
+  expect_true(file.exists(tmp))
+  content <- paste(readLines(tmp), collapse = "\n")
+  expect_true(grepl("TRAIL_DATA", content, fixed = TRUE))
+})
+
+test_that("audit_export embeds join diagnostics", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- make_export_trail()
+  audit_export(trail, file = tmp)
+  content <- paste(readLines(tmp), collapse = "\n")
+  expect_true(grepl("match_rate", content, fixed = TRUE))
+})
+
+test_that("audit_export embeds filter diagnostics when present", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- audit_trail("filter_test")
+  data.frame(id = 1:10, amount = 1:10 * 100) |>
+    audit_tap(trail, "raw") |>
+    filter_tap(amount > 300, .trail = trail, .label = "filtered")
+  audit_export(trail, file = tmp)
+  content <- paste(readLines(tmp), collapse = "\n")
+  expect_true(grepl("pct_dropped", content, fixed = TRUE))
+})
+
+test_that("audit_export with file=NULL creates a temp file", {
+  skip_if_not_installed("jsonlite")
+  trail <- make_export_trail()
+  # Stub browseURL to prevent opening a browser in tests
+  local_mocked_bindings(browseURL = function(...) invisible(NULL), .package = "utils")
+  result <- audit_export(trail)
+  on.exit(unlink(result))
+  expect_true(file.exists(result))
+  expect_true(grepl("\\.html$", result))
+})
+
+test_that("audit_export escapes </script> in trail content", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- audit_trail("<script>alert(1)</script>")
+  mtcars |> audit_tap(trail, "<b>bad</b>")
+  audit_export(trail, file = tmp)
+  content <- paste(readLines(tmp), collapse = "\n")
+  # A raw </script> inside the JSON blob would break the HTML <script> tag.
+  # The R function escapes it to <\/script>.
+  # Count </script> occurrences — there should be exactly 1 (the real closing tag).
+  expect_equal(length(gregexpr("</script>", content, fixed = TRUE)[[1L]]), 1L)
+})

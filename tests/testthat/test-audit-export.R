@@ -549,3 +549,28 @@ test_that("audit_export embeds filter diagnostics when present", {
   content <- paste(readLines(tmp), collapse = "\n")
   expect_true(grepl("pct_dropped", content, fixed = TRUE))
 })
+
+test_that("audit_export with file=NULL creates a temp file", {
+  skip_if_not_installed("jsonlite")
+  trail <- make_export_trail()
+  # Stub browseURL to prevent opening a browser in tests
+  local_mocked_bindings(browseURL = function(...) invisible(NULL), .package = "utils")
+  result <- audit_export(trail)
+  on.exit(unlink(result))
+  expect_true(file.exists(result))
+  expect_true(grepl("\\.html$", result))
+})
+
+test_that("audit_export escapes </script> in trail content", {
+  skip_if_not_installed("jsonlite")
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  trail <- audit_trail("<script>alert(1)</script>")
+  mtcars |> audit_tap(trail, "<b>bad</b>")
+  audit_export(trail, file = tmp)
+  content <- paste(readLines(tmp), collapse = "\n")
+  # A raw </script> inside the JSON blob would break the HTML <script> tag.
+  # The R function escapes it to <\/script>.
+  # Count </script> occurrences — there should be exactly 1 (the real closing tag).
+  expect_equal(length(gregexpr("</script>", content, fixed = TRUE)[[1L]]), 1L)
+})

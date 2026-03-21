@@ -39,12 +39,11 @@ diagnostics, and custom \code{.fns} results.
 }
 }
 \examples{
+\donttest{
 trail <- audit_trail("demo")
 mtcars |> audit_tap(trail, "raw")
 dplyr::filter(mtcars, mpg > 20) |> audit_tap(trail, "filtered")
-\dontrun{
-audit_export(trail)            # opens in browser
-audit_export(trail, "my_trail.html")
+audit_export(trail, tempfile(fileext = ".html"))
 }
 
 }

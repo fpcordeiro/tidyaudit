@@ -465,7 +465,12 @@ function fmtDelta(d) {
 
 function escHtml(s) {
   if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function asArray(x) {
+  if (x == null) return [];
+  return Array.isArray(x) ? x : [x];
 }
 
 function statCard(label, value, colorVar) {
@@ -760,10 +765,11 @@ function renderNodeDetail(title, body) {
   }
 
   // Pipeline capture
-  if (snap.pipeline && snap.pipeline.length > 0) {
+  var pipelineArr = asArray(snap.pipeline);
+  if (pipelineArr.length > 0) {
     html += '<div class="detail-section" style="min-width:100%"><h4>Captured Pipeline</h4>';
     html += '<pre style="font-family:var(--mono);font-size:11px;color:var(--text-secondary);background:var(--bg-tertiary);padding:8px 12px;border-radius:var(--radius);white-space:pre-wrap">';
-    html += escHtml(snap.pipeline.join('\n'));
+    html += escHtml(pipelineArr.join('\n'));
     html += '</pre></div>';
   }
 
@@ -799,8 +805,8 @@ function renderEdgeDetail(title, body) {
 
   // Column changes from changes field
   if (ch) {
-    const added = ch.cols_added || [];
-    const removed = ch.cols_removed || [];
+    const added = asArray(ch.cols_added);
+    const removed = asArray(ch.cols_removed);
     html += '<div class="detail-section"><h4>Column Changes</h4>';
     if (added.length) html += '<p style="font-size:12px;margin-bottom:4px"><span class="diff-positive">+ Added (' + added.length + '):</span> <code style="font-size:11px">' + escHtml(added.join(', ')) + '</code></p>';
     if (removed.length) html += '<p style="font-size:12px;margin-bottom:4px"><span class="diff-negative">- Removed (' + removed.length + '):</span> <code style="font-size:11px">' + escHtml(removed.join(', ')) + '</code></p>';

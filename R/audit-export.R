@@ -447,12 +447,11 @@ read_trail <- function(file, format = NULL) {
 #' @returns The file path (character), invisibly.
 #'
 #' @examples
+#' \donttest{
 #' trail <- audit_trail("demo")
 #' mtcars |> audit_tap(trail, "raw")
 #' dplyr::filter(mtcars, mpg > 20) |> audit_tap(trail, "filtered")
-#' \dontrun{
-#' audit_export(trail)            # opens in browser
-#' audit_export(trail, "my_trail.html")
+#' audit_export(trail, tempfile(fileext = ".html"))
 #' }
 #'
 #' @family audit export
@@ -503,7 +502,7 @@ audit_export <- function(.trail, file = NULL) {
   if (is.null(file)) {
     file <- tempfile(fileext = ".html")
     writeLines(html, con = file)
-    utils::browseURL(file)
+    if (interactive()) utils::browseURL(file)
   } else {
     writeLines(html, con = file)
   }

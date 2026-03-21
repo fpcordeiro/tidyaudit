@@ -20,6 +20,14 @@
 #'   `FALSE`).
 #' @param .warn_threshold Numeric between 0 and 1. If set and the proportion of
 #'   dropped rows exceeds this threshold, a warning is issued.
+#' @param .numeric_summary Logical. If `FALSE`, skip numeric summary
+#'   computation in the snapshot (default `TRUE`).
+#' @param .cols_include Character vector of column names to include in the
+#'   snapshot schema, or `NULL` (the default) to include all columns. Mutually
+#'   exclusive with `.cols_exclude`.
+#' @param .cols_exclude Character vector of column names to exclude from the
+#'   snapshot schema, or `NULL` (the default). Mutually exclusive with
+#'   `.cols_include`.
 #'
 #' @details
 #' When `.trail` is `NULL`:
@@ -59,7 +67,9 @@ NULL
 #' @rdname filter_tap
 #' @export
 filter_tap <- function(.data, ..., .trail = NULL, .label = NULL, .stat = NULL,
-                        .quiet = FALSE, .warn_threshold = NULL) {
+                        .quiet = FALSE, .warn_threshold = NULL,
+                        .numeric_summary = TRUE,
+                        .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   .validate_warn_threshold(.warn_threshold)
   stat_quo <- rlang::enquo(.stat)
@@ -91,14 +101,19 @@ filter_tap <- function(.data, ..., .trail = NULL, .label = NULL, .stat = NULL,
                     .quiet = .quiet, .warn_threshold = .warn_threshold,
                     .filter_fn = dplyr::filter, .filter_type = "keep",
                     .label_prefix = "filter_", .tap_name = "filter_tap",
-                    .action = "Dropped", .data_expr = data_expr)
+                    .action = "Dropped", .data_expr = data_expr,
+                    .numeric_summary = .numeric_summary,
+                    .cols_include = .cols_include,
+                    .cols_exclude = .cols_exclude)
 }
 
 #' @rdname filter_tap
 #' @export
 filter_out_tap <- function(.data, ..., .trail = NULL, .label = NULL,
                             .stat = NULL, .quiet = FALSE,
-                            .warn_threshold = NULL) {
+                            .warn_threshold = NULL,
+                            .numeric_summary = TRUE,
+                            .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   .validate_warn_threshold(.warn_threshold)
   stat_quo <- rlang::enquo(.stat)
@@ -130,7 +145,10 @@ filter_out_tap <- function(.data, ..., .trail = NULL, .label = NULL,
                     .quiet = .quiet, .warn_threshold = .warn_threshold,
                     .filter_fn = dplyr::filter_out, .filter_type = "drop",
                     .label_prefix = "filter_out_", .tap_name = "filter_out_tap",
-                    .action = "Removed", .data_expr = data_expr)
+                    .action = "Removed", .data_expr = data_expr,
+                    .numeric_summary = .numeric_summary,
+                    .cols_include = .cols_include,
+                    .cols_exclude = .cols_exclude)
 }
 
 # ---------------------------------------------------------------------------
@@ -164,7 +182,9 @@ filter_out_tap <- function(.data, ..., .trail = NULL, .label = NULL,
 #' @noRd
 .filter_tap_impl <- function(.data, dots, .trail, .label, .stat_quo, .have_stat,
                               .quiet, .warn_threshold, .filter_fn, .filter_type,
-                              .label_prefix, .tap_name, .action, .data_expr) {
+                              .label_prefix, .tap_name, .action, .data_expr,
+                              .numeric_summary = TRUE,
+                              .cols_include = NULL, .cols_exclude = NULL) {
   # Validate .data
   if (!is.data.frame(.data)) {
     cli::cli_abort(
@@ -234,7 +254,10 @@ filter_out_tap <- function(.data, ..., .trail = NULL, .label = NULL,
     )
   }
 
-  snap <- .build_snapshot(result, label = .label, index = index)
+  snap <- .build_snapshot(result, label = .label, index = index,
+                          .numeric_summary = .numeric_summary,
+                          .cols_include = .cols_include,
+                          .cols_exclude = .cols_exclude)
   snap$pipeline <- tryCatch(.capture_pipeline(.data_expr), error = function(e) NULL)
 
   # Enrich snapshot

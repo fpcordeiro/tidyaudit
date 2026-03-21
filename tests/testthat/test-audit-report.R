@@ -56,3 +56,18 @@ test_that("audit_report shows unnamed .fns with auto-generated names", {
   expect_true(grepl("fn_1", combined))
   expect_true(grepl("fn_2", combined))
 })
+
+test_that("audit_report shows snapshot controls when non-default", {
+  trail <- audit_trail("controls_report")
+  mtcars |> audit_tap(trail, "raw")
+  mtcars |> audit_tap(trail, "filtered_cols",
+                       .cols_include = c("mpg", "cyl"),
+                       .numeric_summary = FALSE)
+
+  output <- capture.output(audit_report(trail), type = "message")
+  combined <- paste(output, collapse = "\n")
+  expect_true(grepl("Snapshot Controls", combined))
+  expect_true(grepl("filtered_cols", combined))
+  expect_true(grepl("cols_include", combined))
+  expect_true(grepl("numeric_summary", combined))
+})

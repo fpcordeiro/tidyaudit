@@ -12,7 +12,10 @@ filter_tap(
   .label = NULL,
   .stat = NULL,
   .quiet = FALSE,
-  .warn_threshold = NULL
+  .warn_threshold = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
 )
 
 filter_out_tap(
@@ -22,7 +25,10 @@ filter_out_tap(
   .label = NULL,
   .stat = NULL,
   .quiet = FALSE,
-  .warn_threshold = NULL
+  .warn_threshold = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
 )
 }
 \arguments{
@@ -48,6 +54,17 @@ auto-generated as \code{"filter_1"} etc.}
 
 \item{.warn_threshold}{Numeric between 0 and 1. If set and the proportion of
 dropped rows exceeds this threshold, a warning is issued.}
+
+\item{.numeric_summary}{Logical. If \code{FALSE}, skip numeric summary
+computation in the snapshot (default \code{TRUE}).}
+
+\item{.cols_include}{Character vector of column names to include in the
+snapshot schema, or \code{NULL} (the default) to include all columns. Mutually
+exclusive with \code{.cols_exclude}.}
+
+\item{.cols_exclude}{Character vector of column names to exclude from the
+snapshot schema, or \code{NULL} (the default). Mutually exclusive with
+\code{.cols_include}.}
 }
 \value{
 The filtered data.frame or tibble.

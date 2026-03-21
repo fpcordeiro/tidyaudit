@@ -103,11 +103,11 @@ test_that("trail_to_df has one row per snapshot", {
   expect_equal(nrow(df), 3L)
 })
 
-test_that("trail_to_df has the expected 13 column names", {
+test_that("trail_to_df has the expected column names", {
   df <- trail_to_df(make_export_trail())
   expected <- c("index", "label", "type", "timestamp", "nrow", "ncol",
-                "total_nas", "schema", "numeric_summary", "changes",
-                "diagnostics", "custom", "pipeline")
+                "total_nas", "all_columns", "schema", "numeric_summary",
+                "changes", "diagnostics", "custom", "pipeline", "controls")
   expect_named(df, expected)
 })
 
@@ -143,7 +143,7 @@ test_that("trail_to_df on empty trail returns zero-row data.frame with correct c
   df <- trail_to_df(audit_trail("empty"))
   expect_s3_class(df, "data.frame")
   expect_equal(nrow(df), 0L)
-  expect_equal(ncol(df), 13L)
+  expect_equal(ncol(df), 15L)
 })
 
 test_that("trail_to_df diagnostics is NULL for plain taps", {
@@ -573,4 +573,84 @@ test_that("audit_export escapes </script> in trail content", {
   # The R function escapes it to <\/script>.
   # Count </script> occurrences — there should be exactly 1 (the real closing tag).
   expect_equal(length(gregexpr("</script>", content, fixed = TRUE)[[1L]]), 1L)
+})
+
+# ---------------------------------------------------------------------------
+# Snapshot controls serialization
+# ---------------------------------------------------------------------------
+
+test_that("JSON round-trip preserves controls", {
+  skip_if_not_installed("jsonlite")
+  trail <- audit_trail("controls_json")
+  mtcars |> audit_tap(trail, "raw", .numeric_summary = FALSE,
+                      .cols_include = c("mpg", "cyl"))
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "json")
+  restored <- read_trail(tmp, format = "json")
+  snap <- restored$snapshots[[1]]
+  expect_null(snap$numeric_summary)
+  expect_equal(snap$schema$column, c("mpg", "cyl"))
+  expect_false(is.null(snap$controls))
+  # jsonlite may deserialize character vectors as lists; compare via unlist
+  expect_equal(unlist(snap$controls$cols_include), c("mpg", "cyl"))
+  expect_false(snap$controls$numeric_summary)
+})
+
+test_that("RDS round-trip preserves controls", {
+  trail <- audit_trail("controls_rds")
+  mtcars |> audit_tap(trail, "raw", .cols_exclude = c("disp", "hp"))
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "rds")
+  restored <- read_trail(tmp, format = "rds")
+  snap <- restored$snapshots[[1]]
+  expect_false("disp" %in% snap$schema$column)
+  expect_false("hp" %in% snap$schema$column)
+  expect_equal(snap$controls$cols_exclude, c("disp", "hp"))
+})
+
+test_that("trail_to_df includes controls column", {
+  trail <- audit_trail("controls_df")
+  mtcars |> audit_tap(trail, "raw", .numeric_summary = FALSE)
+  df <- trail_to_df(trail)
+  expect_true("controls" %in% names(df))
+  expect_false(is.null(df$controls[[1]]))
+})
+
+# ---------------------------------------------------------------------------
+# all_columns serialization
+# ---------------------------------------------------------------------------
+
+test_that("JSON round-trip preserves all_columns", {
+  skip_if_not_installed("jsonlite")
+  trail <- audit_trail("allcols_json")
+  mtcars |> audit_tap(trail, "raw", .cols_include = c("mpg", "cyl"))
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "json")
+  restored <- read_trail(tmp, format = "json")
+  snap <- restored$snapshots[[1]]
+  expect_equal(snap$all_columns, names(mtcars))
+  expect_equal(snap$schema$column, c("mpg", "cyl"))
+})
+
+test_that("RDS round-trip preserves all_columns", {
+  trail <- audit_trail("allcols_rds")
+  mtcars |> audit_tap(trail, "raw", .cols_exclude = "disp")
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "rds")
+  restored <- read_trail(tmp, format = "rds")
+  snap <- restored$snapshots[[1]]
+  expect_equal(snap$all_columns, names(mtcars))
+  expect_false("disp" %in% snap$schema$column)
+})
+
+test_that("trail_to_df includes all_columns list-column", {
+  trail <- audit_trail("allcols_df")
+  mtcars |> audit_tap(trail, "raw")
+  df <- trail_to_df(trail)
+  expect_true("all_columns" %in% names(df))
+  expect_equal(df$all_columns[[1]], names(mtcars))
 })

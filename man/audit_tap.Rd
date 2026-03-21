@@ -4,7 +4,15 @@
 \alias{audit_tap}
 \title{Record a Pipeline Snapshot}
 \usage{
-audit_tap(.data, .trail, .label = NULL, .fns = NULL)
+audit_tap(
+  .data,
+  .trail,
+  .label = NULL,
+  .fns = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
+)
 }
 \arguments{
 \item{.data}{A data.frame or tibble flowing through the pipe.}
@@ -16,6 +24,17 @@ auto-generated label like \code{"step_1"} is used.}
 
 \item{.fns}{Optional named list of diagnostic functions (or formula lambdas)
 to run on \code{.data}. Results are stored in the snapshot.}
+
+\item{.numeric_summary}{Logical. If \code{FALSE}, skip numeric summary
+computation in the snapshot (default \code{TRUE}).}
+
+\item{.cols_include}{Character vector of column names to include in the
+snapshot schema, or \code{NULL} (the default) to include all columns. Mutually
+exclusive with \code{.cols_exclude}.}
+
+\item{.cols_exclude}{Character vector of column names to exclude from the
+snapshot schema, or \code{NULL} (the default). Mutually exclusive with
+\code{.cols_include}.}
 }
 \value{
 \code{.data}, unchanged, returned invisibly. The function is a

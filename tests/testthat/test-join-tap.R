@@ -542,3 +542,20 @@ test_that("join_tap with trail degrades gracefully when validate_join fails", {
   expect_equal(snap$diagnostics$join_type, "left_join")
   expect_null(snap$diagnostics$relation)
 })
+
+# ---------------------------------------------------------------------------
+# Snapshot controls
+# ---------------------------------------------------------------------------
+
+test_that("left_join_tap passes snapshot controls through", {
+  trail <- audit_trail("join_controls")
+  result <- left_join_tap(orders, customers, by = "id",
+                           .trail = trail, .label = "joined",
+                           .numeric_summary = FALSE,
+                           .cols_include = c("id", "amount"))
+  snap <- trail$snapshots[[1]]
+  expect_null(snap$numeric_summary)
+  expect_equal(snap$schema$column, c("id", "amount"))
+  # ncol reflects the actual join result (id, amount, name)
+  expect_equal(snap$ncol, 3L)
+})

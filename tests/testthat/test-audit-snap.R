@@ -7,6 +7,7 @@ test_that(".build_snapshot captures correct dimensions", {
   expect_equal(snap$nrow, 32L)
   expect_equal(snap$ncol, 11L)
   expect_equal(snap$type, "tap")
+  expect_equal(snap$all_columns, names(mtcars))
 })
 
 test_that(".build_snapshot captures schema", {
@@ -59,6 +60,134 @@ test_that("print.audit_snap produces output", {
   output <- capture.output(print(snap), type = "message")
   combined <- paste(output, collapse = "\n")
   expect_true(grepl("Snapshot", combined))
+})
+
+# ── Snapshot controls ─────────────────────────────────────────────────────────
+
+test_that(".numeric_summary = FALSE skips numeric summary", {
+  snap <- tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L,
+                                       .numeric_summary = FALSE)
+  expect_null(snap$numeric_summary)
+  # Schema is still populated
+  expect_equal(nrow(snap$schema), 11L)
+  # Core invariants still computed
+  expect_equal(snap$nrow, 32L)
+  expect_equal(snap$ncol, 11L)
+})
+
+test_that(".cols_include filters schema to specified columns", {
+  df <- data.frame(a = 1:5, b = letters[1:5], c = 1.1:5.1,
+                   stringsAsFactors = FALSE)
+  snap <- tidyaudit:::.build_snapshot(df, label = "test", index = 1L,
+                                       .cols_include = c("a", "c"))
+  expect_equal(snap$schema$column, c("a", "c"))
+  expect_equal(nrow(snap$schema), 2L)
+  # nrow/ncol from full data
+  expect_equal(snap$ncol, 3L)
+  # all_columns always has full set
+  expect_equal(snap$all_columns, c("a", "b", "c"))
+})
+
+test_that(".cols_exclude removes specified columns from schema", {
+  df <- data.frame(a = 1:5, b = letters[1:5], c = 1.1:5.1,
+                   stringsAsFactors = FALSE)
+  snap <- tidyaudit:::.build_snapshot(df, label = "test", index = 1L,
+                                       .cols_exclude = "b")
+  expect_equal(snap$schema$column, c("a", "c"))
+  expect_equal(snap$ncol, 3L)
+})
+
+test_that("total_nas always computed from all columns", {
+  df <- data.frame(a = c(1, NA, 3), b = c(NA, NA, "x"),
+                   stringsAsFactors = FALSE)
+  snap <- tidyaudit:::.build_snapshot(df, label = "test", index = 1L,
+                                       .cols_include = "a")
+  # total_nas counts NAs across ALL columns (a has 1, b has 2 = 3 total)
+  expect_equal(snap$total_nas, 3L)
+  # But schema only has column "a"
+  expect_equal(snap$schema$column, "a")
+  expect_equal(snap$schema$n_na, 1L)
+})
+
+test_that(".cols_include limits numeric summary scope", {
+  df <- data.frame(x = 1:10, y = 11:20, z = letters[1:10],
+                   stringsAsFactors = FALSE)
+  snap <- tidyaudit:::.build_snapshot(df, label = "test", index = 1L,
+                                       .cols_include = c("x", "z"))
+  # Only x is numeric in the filtered schema
+  expect_equal(snap$numeric_summary$column, "x")
+})
+
+test_that("non-existent column names warn and are excluded", {
+  df <- data.frame(a = 1:3, b = 4:6)
+  expect_warning(
+    snap <- tidyaudit:::.build_snapshot(df, label = "test", index = 1L,
+                                         .cols_include = c("a", "nonexistent")),
+    "not found in data"
+  )
+  expect_equal(snap$schema$column, "a")
+})
+
+test_that("empty .cols_include warns", {
+  df <- data.frame(a = 1:3, b = 4:6)
+  expect_warning(
+    snap <- tidyaudit:::.build_snapshot(df, label = "test", index = 1L,
+                                         .cols_include = character(0)),
+    "empty"
+  )
+  expect_equal(nrow(snap$schema), 0L)
+  # Invariants still computed from full data
+  expect_equal(snap$ncol, 2L)
+  expect_equal(snap$nrow, 3L)
+})
+
+test_that("both .cols_include and .cols_exclude errors", {
+  expect_error(
+    tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L,
+                                 .cols_include = "mpg", .cols_exclude = "cyl"),
+    "cols_include.*cols_exclude"
+  )
+})
+
+test_that(".numeric_summary must be logical", {
+  expect_error(
+    tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L,
+                                 .numeric_summary = "yes"),
+    "numeric_summary"
+  )
+})
+
+test_that("controls field stored when non-default", {
+  snap <- tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L,
+                                       .numeric_summary = FALSE)
+  expect_false(is.null(snap$controls))
+  expect_false(snap$controls$numeric_summary)
+
+  snap2 <- tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L,
+                                        .cols_include = c("mpg", "cyl"))
+  expect_false(is.null(snap2$controls))
+  expect_equal(snap2$controls$cols_include, c("mpg", "cyl"))
+})
+
+test_that("controls field is NULL when all defaults", {
+  snap <- tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L)
+  expect_null(snap$controls)
+})
+
+test_that("print.audit_snap shows 'N of M' when schema is filtered", {
+  snap <- tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L,
+                                       .cols_include = c("mpg", "cyl"))
+  output <- capture.output(print(snap), type = "message")
+  combined <- paste(output, collapse = "\n")
+  expect_true(grepl("2 of 11", combined))
+})
+
+test_that("print.audit_snap shows plain count when schema is unfiltered", {
+  snap <- tidyaudit:::.build_snapshot(mtcars, label = "test", index = 1L)
+  output <- capture.output(print(snap), type = "message")
+  combined <- paste(output, collapse = "\n")
+  expect_true(grepl("Columns \\(11\\)", combined))
+  expect_false(grepl("of", combined))
 })
 
 test_that(".decompose_pipe handles simple symbol", {

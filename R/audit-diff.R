@@ -40,8 +40,8 @@ audit_diff <- function(.trail, from, to) {
     row_delta      = snap_to$nrow - snap_from$nrow,
     col_delta      = snap_to$ncol - snap_from$ncol,
     na_delta       = snap_to$total_nas - snap_from$total_nas,
-    cols_added     = setdiff(snap_to$schema$column, snap_from$schema$column),
-    cols_removed   = setdiff(snap_from$schema$column, snap_to$schema$column),
+    cols_added     = setdiff(snap_to$all_columns, snap_from$all_columns),
+    cols_removed   = setdiff(snap_from$all_columns, snap_to$all_columns),
     type_changes   = .detect_type_changes(snap_from$schema, snap_to$schema),
     na_changes     = .compare_na_counts(snap_from$schema, snap_to$schema),
     numeric_shifts = .compare_numeric_summaries(snap_from, snap_to)

@@ -10,6 +10,14 @@
 #'   auto-generated label like `"step_1"` is used.
 #' @param .fns Optional named list of diagnostic functions (or formula lambdas)
 #'   to run on `.data`. Results are stored in the snapshot.
+#' @param .numeric_summary Logical. If `FALSE`, skip numeric summary
+#'   computation in the snapshot (default `TRUE`).
+#' @param .cols_include Character vector of column names to include in the
+#'   snapshot schema, or `NULL` (the default) to include all columns. Mutually
+#'   exclusive with `.cols_exclude`.
+#' @param .cols_exclude Character vector of column names to exclude from the
+#'   snapshot schema, or `NULL` (the default). Mutually exclusive with
+#'   `.cols_include`.
 #'
 #' @returns `.data`, unchanged, returned invisibly. The function is a
 #'   transparent pass-through; its only effect is the side effect on `.trail`.
@@ -24,7 +32,9 @@
 #'
 #' @family audit trail
 #' @export
-audit_tap <- function(.data, .trail, .label = NULL, .fns = NULL) {
+audit_tap <- function(.data, .trail, .label = NULL, .fns = NULL,
+                      .numeric_summary = TRUE,
+                      .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
 
   # Validate arguments that don't require .data evaluation
@@ -64,7 +74,10 @@ audit_tap <- function(.data, .trail, .label = NULL, .fns = NULL) {
 
   # Build snapshot (index computed after forcing .data)
   index <- length(.trail$snapshots) + 1L
-  snap <- .build_snapshot(.data, label = .label, index = index)
+  snap <- .build_snapshot(.data, label = .label, index = index,
+                          .numeric_summary = .numeric_summary,
+                          .cols_include = .cols_include,
+                          .cols_exclude = .cols_exclude)
 
   # Capture pipeline (best-effort)
   snap$pipeline <- tryCatch(.capture_pipeline(data_expr), error = function(e) NULL)
@@ -115,8 +128,8 @@ audit_tap <- function(.data, .trail, .label = NULL, .fns = NULL) {
     row_delta    = curr$nrow - prev$nrow,
     col_delta    = curr$ncol - prev$ncol,
     na_delta     = curr$total_nas - prev$total_nas,
-    cols_added   = setdiff(curr$schema$column, prev$schema$column),
-    cols_removed = setdiff(prev$schema$column, curr$schema$column),
+    cols_added   = setdiff(curr$all_columns, prev$all_columns),
+    cols_removed = setdiff(prev$all_columns, curr$all_columns),
     type_changes = .detect_type_changes(prev$schema, curr$schema)
   )
 }

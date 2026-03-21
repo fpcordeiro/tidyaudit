@@ -13,7 +13,10 @@ tab_tap(
   .sort = c("value_asc", "value_desc", "freq_desc", "freq_asc"),
   .cutoff = NULL,
   .na = c("include", "exclude", "only"),
-  .display = c("count", "row_pct", "col_pct", "total_pct")
+  .display = c("count", "row_pct", "col_pct", "total_pct"),
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
 )
 }
 \arguments{
@@ -46,6 +49,17 @@ only \code{NA} rows.}
 \item{.display}{Cell contents for two-way crosstabulations. One of
 \code{"count"} (default), \code{"row_pct"}, \code{"col_pct"}, or \code{"total_pct"}.
 Ignored for one-way tables.}
+
+\item{.numeric_summary}{Logical. If \code{FALSE}, skip numeric summary
+computation in the snapshot (default \code{TRUE}).}
+
+\item{.cols_include}{Character vector of column names to include in the
+snapshot schema, or \code{NULL} (the default) to include all columns. Mutually
+exclusive with \code{.cols_exclude}.}
+
+\item{.cols_exclude}{Character vector of column names to exclude from the
+snapshot schema, or \code{NULL} (the default). Mutually exclusive with
+\code{.cols_include}.}
 }
 \value{
 \code{.data}, unchanged, returned invisibly.

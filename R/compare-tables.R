@@ -1,3 +1,12 @@
+# Bind a list of data.frames, dropping NULLs. Returns NULL if nothing remains.
+.rbind_compact <- function(xs) {
+  xs <- Filter(Negate(is.null), xs)
+  if (!length(xs)) return(NULL)
+  out <- do.call(rbind, xs)
+  row.names(out) <- NULL
+  out
+}
+
 # Shared helper: compute numeric summary, discrepancies, and row-level disc count
 # from pre-computed col_diffs. key_fn(keep_indices) returns a key data.frame.
 .analyze_numeric_diffs <- function(col_diffs, num_cols, tol, top_n, key_fn) {
@@ -18,12 +27,7 @@
                n_over_tol = n_over,
                stringsAsFactors = FALSE)
   })
-  num_list <- Filter(Negate(is.null), num_list)
-  num_summary <- if (length(num_list)) {
-    out <- do.call(rbind, num_list)
-    row.names(out) <- NULL
-    out
-  }
+  num_summary <- .rbind_compact(num_list)
 
   # Row-level discrepancies (numeric diffs > tol OR NA-vs-value)
   disc_list <- lapply(num_cols, function(nm) {
@@ -41,12 +45,7 @@
     df <- df[order(is.na(df$abs_diff), -replace(df$abs_diff, is.na(df$abs_diff), 0)), ]
     head(df, top_n)
   })
-  disc_list <- Filter(Negate(is.null), disc_list)
-  discrepancies <- if (length(disc_list)) {
-    out <- do.call(rbind, disc_list)
-    row.names(out) <- NULL
-    out
-  }
+  discrepancies <- .rbind_compact(disc_list)
 
   # Count rows with any discrepancy
   n_rows <- length(col_diffs[[1L]]$d)
@@ -175,11 +174,7 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
         NULL
       }
     })
-    type_list <- Filter(Negate(is.null), type_list)
-    if (length(type_list)) {
-      type_mismatches <- do.call(rbind, type_list)
-      row.names(type_mismatches) <- NULL
-    }
+    type_mismatches <- .rbind_compact(type_list)
   }
 
   if (length(common_cols) == 0L) {
@@ -274,8 +269,8 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
       num_summary <- analysis$num_summary
       discrepancies <- analysis$discrepancies
 
-      n_only_x <- if (n1 > maxn) n1 - maxn else 0L
-      n_only_y <- if (n2 > maxn) n2 - maxn else 0L
+      n_only_x <- n1 - maxn
+      n_only_y <- n2 - maxn
       match_summary <- .build_match_summary(
         analysis$n_with_disc, maxn, n_only_x, n_only_y
       )
@@ -298,8 +293,8 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps, top
     } else {
       numeric_method <- "keys"
       # Warn if keys are non-unique — inner_join can cause cartesian expansion
-      x_dup <- nrow(x) != nrow(dplyr::distinct(x[key_cols]))
-      y_dup <- nrow(y) != nrow(dplyr::distinct(y[key_cols]))
+      x_dup <- nrow(x) != nrow(u1)
+      y_dup <- nrow(y) != nrow(u2)
       if (x_dup || y_dup) {
         dup_tbls <- c(if (x_dup) name_x, if (y_dup) name_y)
         cli::cli_warn(

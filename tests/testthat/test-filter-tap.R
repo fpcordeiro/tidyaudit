@@ -613,3 +613,22 @@ test_that("audit_report works with mixed snapshot types (tap + join + filter)", 
   expect_true(any(grepl("filter", output)))
   expect_true(any(grepl("Detailed Diffs", output)))
 })
+
+# ---------------------------------------------------------------------------
+# Snapshot controls
+# ---------------------------------------------------------------------------
+
+test_that("filter_tap passes snapshot controls through", {
+  trail <- audit_trail("filter_controls")
+  suppressMessages({
+    df |>
+      audit_tap(trail, "raw") |>
+      filter_tap(amount > 300, .trail = trail, .label = "big",
+                 .numeric_summary = FALSE, .cols_exclude = "flag")
+  })
+  snap <- trail$snapshots[[2]]
+  expect_null(snap$numeric_summary)
+  expect_false("flag" %in% snap$schema$column)
+  # ncol is still full data column count
+  expect_equal(snap$ncol, 3L)
+})

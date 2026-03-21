@@ -11,15 +11,16 @@ trail_to_df(.trail)
 }
 \value{
 A \code{data.frame} with columns \code{index}, \code{label}, \code{type}, \code{timestamp},
-\code{nrow}, \code{ncol}, \code{total_nas}, \code{schema}, \code{numeric_summary}, \code{changes},
-\code{diagnostics}, \code{custom}, and \code{pipeline}. Trail \code{name} and \code{created_at}
-are stored as attributes \code{"trail_name"} and \code{"created_at"}.
+\code{nrow}, \code{ncol}, \code{total_nas}, \code{all_columns}, \code{schema}, \code{numeric_summary},
+\code{changes}, \code{diagnostics}, \code{custom}, \code{pipeline}, and \code{controls}. Trail
+\code{name} and \code{created_at} are stored as attributes \code{"trail_name"} and
+\code{"created_at"}.
 }
 \description{
 Returns a plain \code{data.frame} with one row per snapshot. Nested fields
-(\code{schema}, \code{numeric_summary}, \code{changes}, \code{diagnostics}, \code{custom},
-\code{pipeline}) become list-columns. Trail metadata is stored as attributes
-on the result.
+(\code{all_columns}, \code{schema}, \code{numeric_summary}, \code{changes}, \code{diagnostics},
+\code{custom}, \code{pipeline}, \code{controls}) become list-columns. Trail metadata is
+stored as attributes on the result.
 }
 \examples{
 trail <- audit_trail("example")

@@ -143,13 +143,15 @@
       type            = s$type,
       nrow            = as.integer(s$nrow),
       ncol            = as.integer(s$ncol),
+      all_columns     = unlist(s$all_columns) %||% character(0),
       schema          = schema,
       total_nas       = as.integer(s$total_nas),
       numeric_summary = numeric_summary,
       diagnostics     = s$diagnostics,
       pipeline        = unlist(s$pipeline),
       changes         = .list_to_changes(s$changes),
-      custom          = s$custom
+      custom          = s$custom,
+      controls        = s$controls
     )
     structure(snap, class = c("audit_snap", "list"))
   })
@@ -193,13 +195,15 @@ trail_to_list <- function(.trail) {
       type            = snap$type,
       nrow            = snap$nrow,
       ncol            = snap$ncol,
+      all_columns     = snap$all_columns,
       total_nas       = snap$total_nas,
       schema          = .df_to_rows(snap$schema),
       numeric_summary = .df_to_rows(snap$numeric_summary),
       diagnostics     = snap$diagnostics,
       pipeline        = snap$pipeline,
       changes         = .changes_to_list(snap$changes),
-      custom          = snap$custom
+      custom          = snap$custom,
+      controls        = snap$controls
     )
   })
 
@@ -221,16 +225,17 @@ trail_to_list <- function(.trail) {
 #' Convert an Audit Trail to a Data Frame
 #'
 #' Returns a plain `data.frame` with one row per snapshot. Nested fields
-#' (`schema`, `numeric_summary`, `changes`, `diagnostics`, `custom`,
-#' `pipeline`) become list-columns. Trail metadata is stored as attributes
-#' on the result.
+#' (`all_columns`, `schema`, `numeric_summary`, `changes`, `diagnostics`,
+#' `custom`, `pipeline`, `controls`) become list-columns. Trail metadata is
+#' stored as attributes on the result.
 #'
 #' @param .trail An [audit_trail()] object.
 #'
 #' @returns A `data.frame` with columns `index`, `label`, `type`, `timestamp`,
-#'   `nrow`, `ncol`, `total_nas`, `schema`, `numeric_summary`, `changes`,
-#'   `diagnostics`, `custom`, and `pipeline`. Trail `name` and `created_at`
-#'   are stored as attributes `"trail_name"` and `"created_at"`.
+#'   `nrow`, `ncol`, `total_nas`, `all_columns`, `schema`, `numeric_summary`,
+#'   `changes`, `diagnostics`, `custom`, `pipeline`, and `controls`. Trail
+#'   `name` and `created_at` are stored as attributes `"trail_name"` and
+#'   `"created_at"`.
 #'
 #' @examples
 #' trail <- audit_trail("example")
@@ -258,12 +263,14 @@ trail_to_df <- function(.trail) {
       nrow            = integer(),
       ncol            = integer(),
       total_nas       = integer(),
+      all_columns     = I(list()),
       schema          = I(list()),
       numeric_summary = I(list()),
       changes         = I(list()),
       diagnostics     = I(list()),
       custom          = I(list()),
       pipeline        = I(list()),
+      controls        = I(list()),
       stringsAsFactors = FALSE
     )
   } else {
@@ -277,12 +284,14 @@ trail_to_df <- function(.trail) {
       nrow            = vapply(.trail$snapshots, `[[`, integer(1L), "nrow"),
       ncol            = vapply(.trail$snapshots, `[[`, integer(1L), "ncol"),
       total_nas       = vapply(.trail$snapshots, `[[`, integer(1L), "total_nas"),
+      all_columns     = I(lapply(.trail$snapshots, `[[`, "all_columns")),
       schema          = I(lapply(.trail$snapshots, `[[`, "schema")),
       numeric_summary = I(lapply(.trail$snapshots, `[[`, "numeric_summary")),
       changes         = I(lapply(.trail$snapshots, `[[`, "changes")),
       diagnostics     = I(lapply(.trail$snapshots, `[[`, "diagnostics")),
       custom          = I(lapply(.trail$snapshots, `[[`, "custom")),
       pipeline        = I(lapply(.trail$snapshots, `[[`, "pipeline")),
+      controls        = I(lapply(.trail$snapshots, `[[`, "controls")),
       stringsAsFactors = FALSE
     )
   }

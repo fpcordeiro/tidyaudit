@@ -217,3 +217,67 @@ test_that("audit_tap returns invisibly", {
   expect_false(result$visible)
   expect_identical(result$value, mtcars)
 })
+
+# ---------------------------------------------------------------------------
+# Snapshot controls
+# ---------------------------------------------------------------------------
+
+test_that("audit_tap passes .numeric_summary = FALSE to snapshot", {
+  trail <- audit_trail("ns_false")
+  mtcars |> audit_tap(trail, "raw", .numeric_summary = FALSE)
+  snap <- trail$snapshots[[1]]
+  expect_null(snap$numeric_summary)
+  expect_equal(snap$nrow, 32L)
+})
+
+test_that("audit_tap passes .cols_include to snapshot", {
+  trail <- audit_trail("cols_inc")
+  mtcars |> audit_tap(trail, "raw", .cols_include = c("mpg", "cyl"))
+  snap <- trail$snapshots[[1]]
+  expect_equal(snap$schema$column, c("mpg", "cyl"))
+  expect_equal(snap$ncol, 11L)
+})
+
+test_that("audit_tap passes .cols_exclude to snapshot", {
+  trail <- audit_trail("cols_exc")
+  df <- data.frame(a = 1:3, b = 4:6, c = 7:9)
+  df |> audit_tap(trail, "raw", .cols_exclude = "b")
+  snap <- trail$snapshots[[1]]
+  expect_equal(snap$schema$column, c("a", "c"))
+  expect_equal(snap$ncol, 3L)
+})
+
+test_that(".detect_changes works with filtered schemas", {
+  trail <- audit_trail("changes_filtered")
+  df1 <- data.frame(a = 1:5, b = 6:10, c = 11:15)
+  df2 <- data.frame(a = 1:3, b = 4:6, c = 7:9)
+  df1 |> audit_tap(trail, "s1", .cols_include = c("a", "b"))
+  df2 |> audit_tap(trail, "s2", .cols_include = c("a", "b"))
+  snap2 <- trail$snapshots[[2]]
+  expect_equal(snap2$changes$row_delta, -2L)
+  expect_equal(length(snap2$changes$cols_added), 0L)
+})
+
+test_that(".detect_changes uses all_columns, not filtered schema", {
+  trail <- audit_trail("changes_diff_filters")
+  df <- data.frame(a = 1:5, b = 6:10, c = 11:15)
+  # Different column filters on same data — no real column changes
+
+  df |> audit_tap(trail, "s1", .cols_include = c("a", "b"))
+  df |> audit_tap(trail, "s2", .cols_include = c("a", "c"))
+  snap2 <- trail$snapshots[[2]]
+  # all_columns are identical, so no phantom additions/removals
+  expect_equal(length(snap2$changes$cols_added), 0L)
+  expect_equal(length(snap2$changes$cols_removed), 0L)
+})
+
+test_that(".detect_changes reports real column addition via all_columns", {
+  trail <- audit_trail("changes_real_add")
+  df1 <- data.frame(a = 1:3, b = 4:6)
+  df2 <- data.frame(a = 1:3, b = 4:6, c = 7:9)
+  df1 |> audit_tap(trail, "s1", .cols_include = "a")
+  df2 |> audit_tap(trail, "s2", .cols_include = "a")
+  snap2 <- trail$snapshots[[2]]
+  expect_equal(snap2$changes$cols_added, "c")
+  expect_equal(snap2$changes$col_delta, 1L)
+})

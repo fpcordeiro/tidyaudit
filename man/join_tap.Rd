@@ -10,17 +10,77 @@
 \alias{semi_join_tap}
 \title{Operation-Aware Join Taps}
 \usage{
-left_join_tap(.data, y, ..., .trail = NULL, .label = NULL, .stat = NULL)
+left_join_tap(
+  .data,
+  y,
+  ...,
+  .trail = NULL,
+  .label = NULL,
+  .stat = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
+)
 
-right_join_tap(.data, y, ..., .trail = NULL, .label = NULL, .stat = NULL)
+right_join_tap(
+  .data,
+  y,
+  ...,
+  .trail = NULL,
+  .label = NULL,
+  .stat = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
+)
 
-inner_join_tap(.data, y, ..., .trail = NULL, .label = NULL, .stat = NULL)
+inner_join_tap(
+  .data,
+  y,
+  ...,
+  .trail = NULL,
+  .label = NULL,
+  .stat = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
+)
 
-full_join_tap(.data, y, ..., .trail = NULL, .label = NULL, .stat = NULL)
+full_join_tap(
+  .data,
+  y,
+  ...,
+  .trail = NULL,
+  .label = NULL,
+  .stat = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
+)
 
-anti_join_tap(.data, y, ..., .trail = NULL, .label = NULL, .stat = NULL)
+anti_join_tap(
+  .data,
+  y,
+  ...,
+  .trail = NULL,
+  .label = NULL,
+  .stat = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
+)
 
-semi_join_tap(.data, y, ..., .trail = NULL, .label = NULL, .stat = NULL)
+semi_join_tap(
+  .data,
+  y,
+  ...,
+  .trail = NULL,
+  .label = NULL,
+  .stat = NULL,
+  .numeric_summary = TRUE,
+  .cols_include = NULL,
+  .cols_exclude = NULL
+)
 }
 \arguments{
 \item{.data}{A data.frame or tibble (left table in the join).}
@@ -41,6 +101,17 @@ auto-generated as \code{"left_join_1"} etc.}
 
 \item{.stat}{An unquoted column name for stat tracking, e.g., \code{amount}.
 Passed to \code{\link[=validate_join]{validate_join()}}.}
+
+\item{.numeric_summary}{Logical. If \code{FALSE}, skip numeric summary
+computation in the snapshot (default \code{TRUE}).}
+
+\item{.cols_include}{Character vector of column names to include in the
+snapshot schema, or \code{NULL} (the default) to include all columns. Mutually
+exclusive with \code{.cols_exclude}.}
+
+\item{.cols_exclude}{Character vector of column names to exclude from the
+snapshot schema, or \code{NULL} (the default). Mutually exclusive with
+\code{.cols_include}.}
 }
 \value{
 The joined data.frame or tibble (same as the corresponding

@@ -18,6 +18,14 @@
 #'   auto-generated as `"left_join_1"` etc.
 #' @param .stat An unquoted column name for stat tracking, e.g., `amount`.
 #'   Passed to [validate_join()].
+#' @param .numeric_summary Logical. If `FALSE`, skip numeric summary
+#'   computation in the snapshot (default `TRUE`).
+#' @param .cols_include Character vector of column names to include in the
+#'   snapshot schema, or `NULL` (the default) to include all columns. Mutually
+#'   exclusive with `.cols_exclude`.
+#' @param .cols_exclude Character vector of column names to exclude from the
+#'   snapshot schema, or `NULL` (the default). Mutually exclusive with
+#'   `.cols_include`.
 #'
 #' @details
 #' Enriched diagnostics (match rates, relationship type, duplicate keys) require
@@ -60,7 +68,8 @@ NULL
 #' @rdname join_tap
 #' @export
 left_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
-                           .stat = NULL) {
+                           .stat = NULL, .numeric_summary = TRUE,
+                           .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
   stat_quo <- rlang::enquo(.stat)
@@ -85,13 +94,17 @@ left_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
                   .stat = stat_str, .join_fn = dplyr::left_join,
                   .join_type = "left_join", .data_expr = data_expr,
-                  .y_name = y_name)
+                  .y_name = y_name,
+                  .numeric_summary = .numeric_summary,
+                  .cols_include = .cols_include,
+                  .cols_exclude = .cols_exclude)
 }
 
 #' @rdname join_tap
 #' @export
 right_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
-                            .stat = NULL) {
+                            .stat = NULL, .numeric_summary = TRUE,
+                            .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
   stat_quo <- rlang::enquo(.stat)
@@ -116,13 +129,17 @@ right_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
                   .stat = stat_str, .join_fn = dplyr::right_join,
                   .join_type = "right_join", .data_expr = data_expr,
-                  .y_name = y_name)
+                  .y_name = y_name,
+                  .numeric_summary = .numeric_summary,
+                  .cols_include = .cols_include,
+                  .cols_exclude = .cols_exclude)
 }
 
 #' @rdname join_tap
 #' @export
 inner_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
-                            .stat = NULL) {
+                            .stat = NULL, .numeric_summary = TRUE,
+                            .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
   stat_quo <- rlang::enquo(.stat)
@@ -147,13 +164,17 @@ inner_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
                   .stat = stat_str, .join_fn = dplyr::inner_join,
                   .join_type = "inner_join", .data_expr = data_expr,
-                  .y_name = y_name)
+                  .y_name = y_name,
+                  .numeric_summary = .numeric_summary,
+                  .cols_include = .cols_include,
+                  .cols_exclude = .cols_exclude)
 }
 
 #' @rdname join_tap
 #' @export
 full_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
-                           .stat = NULL) {
+                           .stat = NULL, .numeric_summary = TRUE,
+                           .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
   stat_quo <- rlang::enquo(.stat)
@@ -178,13 +199,17 @@ full_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
                   .stat = stat_str, .join_fn = dplyr::full_join,
                   .join_type = "full_join", .data_expr = data_expr,
-                  .y_name = y_name)
+                  .y_name = y_name,
+                  .numeric_summary = .numeric_summary,
+                  .cols_include = .cols_include,
+                  .cols_exclude = .cols_exclude)
 }
 
 #' @rdname join_tap
 #' @export
 anti_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
-                           .stat = NULL) {
+                           .stat = NULL, .numeric_summary = TRUE,
+                           .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
   stat_quo <- rlang::enquo(.stat)
@@ -209,13 +234,17 @@ anti_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
                   .stat = stat_str, .join_fn = dplyr::anti_join,
                   .join_type = "anti_join", .data_expr = data_expr,
-                  .y_name = y_name)
+                  .y_name = y_name,
+                  .numeric_summary = .numeric_summary,
+                  .cols_include = .cols_include,
+                  .cols_exclude = .cols_exclude)
 }
 
 #' @rdname join_tap
 #' @export
 semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
-                           .stat = NULL) {
+                           .stat = NULL, .numeric_summary = TRUE,
+                           .cols_include = NULL, .cols_exclude = NULL) {
   data_expr <- substitute(.data)
   y_name <- deparse(substitute(y))
   stat_quo <- rlang::enquo(.stat)
@@ -240,7 +269,10 @@ semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   .join_tap_impl(.data, y, ..., .trail = .trail, .label = .label,
                   .stat = stat_str, .join_fn = dplyr::semi_join,
                   .join_type = "semi_join", .data_expr = data_expr,
-                  .y_name = y_name)
+                  .y_name = y_name,
+                  .numeric_summary = .numeric_summary,
+                  .cols_include = .cols_include,
+                  .cols_exclude = .cols_exclude)
 }
 
 # ---------------------------------------------------------------------------
@@ -323,7 +355,9 @@ semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
 #'
 #' @noRd
 .join_tap_impl <- function(.data, y, ..., .trail, .label, .stat,
-                            .join_fn, .join_type, .data_expr, .y_name) {
+                            .join_fn, .join_type, .data_expr, .y_name,
+                            .numeric_summary = TRUE,
+                            .cols_include = NULL, .cols_exclude = NULL) {
   # Validate .data
   if (!is.data.frame(.data)) {
     cli::cli_abort(
@@ -373,7 +407,10 @@ semi_join_tap <- function(.data, y, ..., .trail = NULL, .label = NULL,
   }
 
   # Build snapshot of the join result
-  snap <- .build_snapshot(result, label = .label, index = index)
+  snap <- .build_snapshot(result, label = .label, index = index,
+                          .numeric_summary = .numeric_summary,
+                          .cols_include = .cols_include,
+                          .cols_exclude = .cols_exclude)
 
   # Capture pipeline (best-effort)
   snap$pipeline <- tryCatch(.capture_pipeline(.data_expr), error = function(e) NULL)

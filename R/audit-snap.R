@@ -6,50 +6,109 @@
 #' @param .data A data.frame or tibble.
 #' @param label Character label for this snapshot.
 #' @param index Integer position in the trail.
+#' @param .numeric_summary Logical. If `FALSE`, skip numeric summary
+#'   computation.
+#' @param .cols_include Character vector of column names to include in the
+#'   schema, or `NULL` (the default) to include all columns.
+#' @param .cols_exclude Character vector of column names to exclude from the
+#'   schema, or `NULL` (the default) to exclude none.
 #'
 #' @returns An `audit_snap` object (S3 list).
 #'
 #' @noRd
-.build_snapshot <- function(.data, label, index) {
+.build_snapshot <- function(.data, label, index,
+                            .numeric_summary = TRUE,
+                            .cols_include = NULL,
+                            .cols_exclude = NULL) {
+  # --- Validate snapshot controls ---
+  if (!is.logical(.numeric_summary) || length(.numeric_summary) != 1L ||
+      is.na(.numeric_summary)) {
+    cli::cli_abort("{.arg .numeric_summary} must be {.val TRUE} or {.val FALSE}.")
+  }
+  if (!is.null(.cols_include) && !is.character(.cols_include)) {
+    cli::cli_abort("{.arg .cols_include} must be a character vector or {.val NULL}.")
+  }
+  if (!is.null(.cols_exclude) && !is.character(.cols_exclude)) {
+    cli::cli_abort("{.arg .cols_exclude} must be a character vector or {.val NULL}.")
+  }
+  if (!is.null(.cols_include) && !is.null(.cols_exclude)) {
+    cli::cli_abort(
+      "Supply {.arg .cols_include} or {.arg .cols_exclude}, not both."
+    )
+  }
+
   # Diagnostic aggregates on ungrouped data for deterministic results
   ungrouped <- dplyr::ungroup(.data)
 
-  schema <- data.frame(
+  # Full schema — always computed for invariants (nrow, ncol, total_nas)
+  full_schema <- data.frame(
     column = names(ungrouped),
     type   = vapply(ungrouped, function(x) class(x)[[1L]], character(1)),
     n_na   = vapply(ungrouped, function(x) sum(is.na(x)), integer(1)),
     stringsAsFactors = FALSE
   )
+  total_nas <- as.integer(sum(full_schema$n_na))
 
-  # Numeric summaries
-  numeric_cols <- schema$column[schema$type %in% c("numeric", "integer")]
-  numeric_summary <- if (length(numeric_cols) > 0L) {
-    summaries <- lapply(numeric_cols, function(col) {
-      vals <- ungrouped[[col]]
-      vals_clean <- vals[!is.na(vals)]
-      if (length(vals_clean) == 0L) {
-        data.frame(
-          column = col, min = NA_real_, q25 = NA_real_, median = NA_real_,
-          mean = NA_real_, q75 = NA_real_, max = NA_real_,
-          stringsAsFactors = FALSE
-        )
-      } else {
-        qs <- quantile(vals_clean, probs = c(0.25, 0.75), names = FALSE)
-        data.frame(
-          column = col,
-          min    = min(vals_clean),
-          q25    = qs[1L],
-          median = median(vals_clean),
-          mean   = mean(vals_clean),
-          q75    = qs[2L],
-          max    = max(vals_clean),
-          stringsAsFactors = FALSE
-        )
-      }
-    })
-    do.call(rbind, summaries)
+  # Apply column filter for the stored schema
+  if (!is.null(.cols_include)) {
+    if (length(.cols_include) == 0L) {
+      cli::cli_warn("{.arg .cols_include} is empty; snapshot schema will have no columns.")
+    }
+    unmatched <- setdiff(.cols_include, names(ungrouped))
+    if (length(unmatched) > 0L) {
+      cli::cli_warn(
+        "{.arg .cols_include} column{?s} not found in data: {.val {unmatched}}."
+      )
+    }
+    schema <- full_schema[full_schema$column %in% .cols_include, , drop = FALSE]
+  } else if (!is.null(.cols_exclude)) {
+    schema <- full_schema[!full_schema$column %in% .cols_exclude, , drop = FALSE]
   } else {
-    NULL
+    schema <- full_schema
+  }
+  row.names(schema) <- NULL
+
+  # Numeric summaries (gated on .numeric_summary; scoped to filtered schema)
+  numeric_summary <- NULL
+  if (.numeric_summary) {
+    numeric_cols <- schema$column[schema$type %in% c("numeric", "integer")]
+    if (length(numeric_cols) > 0L) {
+      summaries <- lapply(numeric_cols, function(col) {
+        vals <- ungrouped[[col]]
+        vals_clean <- vals[!is.na(vals)]
+        if (length(vals_clean) == 0L) {
+          data.frame(
+            column = col, min = NA_real_, q25 = NA_real_, median = NA_real_,
+            mean = NA_real_, q75 = NA_real_, max = NA_real_,
+            stringsAsFactors = FALSE
+          )
+        } else {
+          qs <- quantile(vals_clean, probs = c(0.25, 0.75), names = FALSE)
+          data.frame(
+            column = col,
+            min    = min(vals_clean),
+            q25    = qs[1L],
+            median = median(vals_clean),
+            mean   = mean(vals_clean),
+            q75    = qs[2L],
+            max    = max(vals_clean),
+            stringsAsFactors = FALSE
+          )
+        }
+      })
+      numeric_summary <- do.call(rbind, summaries)
+    }
+  }
+
+  # Store controls metadata when non-default
+  has_controls <- !isTRUE(.numeric_summary) || !is.null(.cols_include) ||
+    !is.null(.cols_exclude)
+  controls <- if (has_controls) {
+    list(
+      numeric_summary = .numeric_summary,
+      cols_include    = .cols_include,
+      cols_exclude    = .cols_exclude
+    )
   }
 
   snap <- list(
@@ -59,13 +118,15 @@
     type            = "tap",
     nrow            = as.integer(nrow(ungrouped)),
     ncol            = as.integer(ncol(ungrouped)),
+    all_columns     = names(ungrouped),
     schema          = schema,
-    total_nas       = as.integer(sum(schema$n_na)),
+    total_nas       = total_nas,
     numeric_summary = numeric_summary,
     diagnostics     = NULL,
     pipeline        = NULL,
     changes         = NULL,
-    custom          = NULL
+    custom          = NULL,
+    controls        = controls
   )
   structure(snap, class = c("audit_snap", "list"))
 }
@@ -97,7 +158,13 @@ print.audit_snap <- function(x, ...) {
 
   # Schema — grouped by type
   cli::cli_text("")
-  cli::cli_text("{.strong Columns ({x$ncol}):}")
+  n_shown <- nrow(x$schema)
+  n_total <- x$ncol
+  if (n_shown < n_total) {
+    cli::cli_text("{.strong Columns ({n_shown} of {n_total}):}")
+  } else {
+    cli::cli_text("{.strong Columns ({n_total}):}")
+  }
   schema <- x$schema
   types <- unique(schema$type)
   for (tp in types) {

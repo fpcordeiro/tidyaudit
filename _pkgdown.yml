@@ -1,0 +1,61 @@
+url: https://fpcordeiro.github.io/tidyaudit/
+
+template:
+  bootstrap: 5
+
+reference:
+  - title: "Audit Trail"
+    desc: "Create and inspect pipeline audit trails"
+    contents:
+      - audit_trail
+      - audit_tap
+      - audit_diff
+      - audit_report
+
+  - title: "Operation-Aware Taps"
+    desc: "Pipeline taps with enriched diagnostics"
+    contents:
+      - left_join_tap
+      - right_join_tap
+      - inner_join_tap
+      - full_join_tap
+      - anti_join_tap
+      - semi_join_tap
+      - filter_tap
+      - filter_out_tap
+      - tab_tap
+
+  - title: "Export & Serialization"
+    desc: "Save, load, and visualize trails"
+    contents:
+      - audit_export
+      - trail_to_list
+      - trail_to_df
+      - write_trail
+      - read_trail
+
+  - title: "Diagnostic Functions"
+    desc: "Analyze joins, keys, and table differences"
+    contents:
+      - validate_join
+      - validate_primary_keys
+      - validate_var_relationship
+      - compare_tables
+
+  - title: "Data Quality"
+    desc: "Filter diagnostics, missing values, string cleaning, and tabulation"
+    contents:
+      - filter_keep
+      - filter_drop
+      - diagnose_nas
+      - summarize_column
+      - get_summary_table
+      - diagnose_strings
+      - audit_transform
+      - tab
+
+articles:
+  - title: "Getting Started"
+    contents:
+      - tidyaudit
+      - diagnostics

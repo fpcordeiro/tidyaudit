@@ -80,6 +80,19 @@ audit_diff(trail, "raw", "high_value")
 #>     region_id         3.08        3.05   -0.03
 ```
 
+### Export as HTML
+
+Generate a self-contained HTML visualization of any trail — one file you can
+email, attach to a report, or drop into a compliance folder:
+
+```r
+audit_export(trail, "order_pipeline.html")
+```
+
+The output is an interactive pipeline flow diagram with clickable nodes and
+edges, light/dark theme toggle, and embedded JSON export — no server or internet
+required.
+
 ## Features
 
 **Audit trail system** — the core innovation:
@@ -89,6 +102,14 @@ audit_diff(trail, "raw", "high_value")
   enriched diagnostics (match rates, drop statistics)
 - `audit_diff()` — detailed before/after comparison of any two snapshots
 - `audit_report()` — full pipeline report in one call
+- `audit_export()` — self-contained HTML trail visualization (interactive flow
+  diagram, no server required)
+- `write_trail()` / `read_trail()` — serialize trails to RDS or JSON for CI
+  pipelines and dashboards
+- `tab_tap()` — tabulation snapshots within pipelines (one-way and two-way
+  frequency tables)
+- Snapshot controls (`.numeric_summary`, `.cols_include`, `.cols_exclude`) —
+  fine-tune what each tap captures
 
 **Diagnostic functions** — tidyverse ports from
 [dtaudit](https://github.com/fpcordeiro/dtaudit):
@@ -99,9 +120,12 @@ audit_diff(trail, "raw", "high_value")
 - `filter_keep()` / `filter_drop()` — filter with diagnostic output
 - `diagnose_nas()` / `summarize_column()` / `get_summary_table()` — data quality
 - `diagnose_strings()` / `audit_transform()` — string quality auditing and transformation
+- `tab()` — frequency tables and crosstabulations with sorting, cutoffs, and
+  weighting
 
-See `vignette("tidyaudit")` for the audit trail walkthrough and
-`vignette("diagnostics")` for the diagnostic functions guide.
+See the [audit trail walkthrough](https://fpcordeiro.github.io/tidyaudit/articles/tidyaudit.html)
+and [diagnostic functions guide](https://fpcordeiro.github.io/tidyaudit/articles/diagnostics.html)
+for detailed documentation.
 
 ## Relationship to dtaudit
 

@@ -176,6 +176,42 @@ summarize_column(c("apple", "banana", "apple", "cherry", NA))
 get_summary_table(messy)
 ```
 
+## Frequency tables
+
+`tab()` produces one-way frequency tables or two-way crosstabulations with
+counts, percentages, and cumulative percentages.
+
+### One-way tables
+
+```{r tab-oneway}
+tab(mtcars, cyl)
+```
+
+### Sorting and cutoffs
+
+```{r tab-sort}
+# Sort by frequency
+tab(mtcars, carb, .sort = "freq_desc")
+
+# Keep only top-2 values, collapse rest into (Other)
+tab(mtcars, carb, .cutoff = 2)
+```
+
+### Two-way crosstabulations
+
+```{r tab-twoway}
+tab(mtcars, cyl, gear)
+
+# Show row percentages instead of counts
+tab(mtcars, cyl, gear, .display = "row_pct")
+```
+
+### Weighted tabulation
+
+```{r tab-weighted}
+tab(mtcars, cyl, .wt = mpg)
+```
+
 ## String cleaning
 
 These functions require the **stringi** package (listed in Suggests).
@@ -191,9 +227,50 @@ diagnose_strings(firms)
 
 ### audit_transform
 
-`audit_transform()` shows exactly what a transformation function changes:
+`audit_transform()` shows exactly what a transformation function changes.
+It automatically detects the vector type and computes type-appropriate
+diagnostics:
+
+- **Numeric**: mean/min/max shift, proportion changed
+- **Date/POSIXct**: range change, proportion shifted
+- **Factor**: level remapping (gained/lost levels)
+- **Logical**: TRUE/FALSE/NA balance shift
+- **Character**: string-level before/after comparison
+
+#### Character vectors
 
 ```{r audit-transform}
 audit_transform(firms, trimws)
 audit_transform(firms, tolower)
+```
+
+#### Numeric vectors
+
+```{r audit-transform-numeric}
+prices <- c(10.456, 20.789, 30.123, NA, 50.999)
+audit_transform(prices, round)
+```
+
+#### Date vectors
+
+```{r audit-transform-date}
+dates <- as.Date(c("2024-01-15", "2024-06-30", "2024-12-01", NA))
+audit_transform(dates, function(d) d + 30)
+```
+
+#### Factor vectors
+
+```{r audit-transform-factor}
+sizes <- factor(c("S", "M", "L", "XL", "XXL", "S", "M"))
+audit_transform(sizes, function(f) {
+  levels(f)[levels(f) %in% c("XL", "XXL")] <- "XL+"
+  f
+})
+```
+
+#### Logical vectors
+
+```{r audit-transform-logical}
+flags <- c(TRUE, FALSE, TRUE, NA, FALSE)
+audit_transform(flags, function(x) !x)
 ```

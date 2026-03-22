@@ -6,8 +6,6 @@
 #'
 #' @param .trail An [audit_trail()] object.
 #' @param format Report format. Currently only `"console"` is supported.
-#'   `"rmd"` is planned for a future version.
-#' @param file Output file path (used only with `format = "rmd"`).
 #'
 #' @returns `.trail`, invisibly.
 #'
@@ -21,15 +19,11 @@
 #'
 #' @family audit trail
 #' @export
-audit_report <- function(.trail, format = c("console", "rmd"), file = NULL) {
+audit_report <- function(.trail, format = "console") {
   format <- match.arg(format)
 
   if (!inherits(.trail, "audit_trail")) {
     cli::cli_abort("{.arg .trail} must be an {.cls audit_trail} object.")
-  }
-
-  if (format == "rmd") {
-    cli::cli_abort("Rmd report format is not yet implemented. Use {.val console}.")
   }
 
   .print_full_report(.trail)

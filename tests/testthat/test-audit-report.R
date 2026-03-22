@@ -22,9 +22,9 @@ test_that("audit_report errors on non-trail", {
   expect_error(audit_report("not_a_trail"), "audit_trail")
 })
 
-test_that("audit_report errors on rmd format", {
-  trail <- audit_trail("rmd_test")
-  expect_error(audit_report(trail, format = "rmd"), "not yet implemented")
+test_that("audit_report rejects unknown format", {
+  trail <- audit_trail("format_test")
+  expect_error(audit_report(trail, format = "rmd"))
 })
 
 test_that("audit_report works with empty trail", {

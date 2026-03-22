@@ -4,15 +4,12 @@
 \alias{audit_report}
 \title{Generate an Audit Report}
 \usage{
-audit_report(.trail, format = c("console", "rmd"), file = NULL)
+audit_report(.trail, format = "console")
 }
 \arguments{
 \item{.trail}{An \code{\link[=audit_trail]{audit_trail()}} object.}
 
-\item{format}{Report format. Currently only \code{"console"} is supported.
-\code{"rmd"} is planned for a future version.}
-
-\item{file}{Output file path (used only with \code{format = "rmd"}).}
+\item{format}{Report format. Currently only \code{"console"} is supported.}
 }
 \value{
 \code{.trail}, invisibly.

@@ -209,3 +209,112 @@ orders |> filter_tap(amount > 100, .stat = amount) |> invisible()
 
 This makes it easy to add quick diagnostics to any pipeline without setting up a
 full trail.
+
+## Snapshot controls
+
+On wide datasets, computing numeric summaries for every column is unnecessary
+and slows down the pipeline. Three parameters on all tap functions let you
+control what gets captured:
+
+- `.numeric_summary = FALSE` — skips quantile computation entirely.
+- `.cols_include` — character vector of column names to include in the
+  snapshot's schema (mutually exclusive with `.cols_exclude`).
+- `.cols_exclude` — character vector of column names to exclude.
+
+Core invariants — `nrow`, `ncol`, and `total_nas` — are always recorded
+regardless of these settings.
+
+```{r snapshot-controls}
+wide_data <- cbind(orders, matrix(rnorm(20 * 50), nrow = 20))
+
+trail_ctrl <- audit_trail("snapshot_controls")
+
+wide_data |>
+  audit_tap(trail_ctrl, "full_snapshot") |>
+  audit_tap(trail_ctrl, "minimal",
+            .numeric_summary = FALSE,
+            .cols_include = c("id", "amount", "status"))
+
+print(trail_ctrl)
+```
+
+The "minimal" snapshot still knows the data has `r ncol(wide_data)` columns and
+20 rows, but its schema only describes the three columns you asked for and
+contains no numeric summaries.
+
+## Tabulation in pipelines
+
+`tab()` produces one-way frequency tables or two-way crosstabulations:
+
+```{r tab-standalone}
+tab(orders, status)
+tab(orders, status, customer)
+```
+
+`tab_tap()` embeds a tabulation inside a pipeline as a custom diagnostic
+annotation. It runs `tab()` on the data, stores the result in the snapshot, and
+returns `.data` unchanged — a transparent pass-through. This is useful for
+tracking how distributions shift across pipeline steps.
+
+```{r tab-tap}
+trail_tab <- audit_trail("tab_pipeline")
+
+result_tab <- orders |>
+  tab_tap(status, .trail = trail_tab, .label = "status_dist") |>
+  filter(status == "complete") |>
+  tab_tap(customer, .trail = trail_tab, .label = "customer_dist",
+          .sort = "freq_desc")
+
+print(trail_tab)
+```
+
+## Exporting and serializing trails
+
+Trails live in-memory as environment-based S3 objects. To share them with CI
+systems, dashboards, or documentation you need to convert them to portable
+formats. tidyaudit provides four serialization functions plus an HTML
+visualization.
+
+### Converting trails to R objects
+
+```{r trail-to-objects}
+# As a plain R list (suitable for jsonlite::toJSON())
+trail_list <- trail_to_list(trail3)
+str(trail_list, max.level = 2)
+
+# As a data.frame (one row per snapshot)
+trail_df <- trail_to_df(trail3)
+print(trail_df)
+```
+
+### Saving and loading trails
+
+RDS format preserves all R types and round-trips perfectly:
+
+```{r trail-rds}
+tmp_rds <- tempfile(fileext = ".rds")
+write_trail(trail3, tmp_rds)
+restored <- read_trail(tmp_rds)
+print(restored)
+```
+
+JSON format is available for interoperability (requires jsonlite):
+
+```{r trail-json}
+tmp_json <- tempfile(fileext = ".json")
+write_trail(trail3, tmp_json, format = "json")
+```
+
+### HTML visualization
+
+`audit_export()` produces a self-contained HTML file — one file you can email
+or embed in documentation:
+
+```{r trail-html}
+audit_export(trail3, tempfile(fileext = ".html"))
+```
+
+The HTML page renders an interactive pipeline flow diagram with light/dark theme
+toggle. Nodes are clickable and expand to show column schema and diagnostics.
+Edges are clickable and show the full diff between adjacent snapshots. No server
+or internet connection is required to view the file.

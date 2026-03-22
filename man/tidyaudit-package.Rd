@@ -6,11 +6,12 @@
 \alias{tidyaudit-package}
 \title{tidyaudit: Pipeline Audit Trails and Data Diagnostics for 'tidyverse' Workflows}
 \description{
-Provides pipeline audit trails and data diagnostics for 'tidyverse' workflows. The audit trail system captures lightweight metadata snapshots at each step of a pipeline, building a structured audit report without storing the data itself. Also includes diagnostic functions for interactive data analysis.
+Provides pipeline audit trails and data diagnostics for 'tidyverse' workflows. The audit trail system captures lightweight metadata snapshots at each step of a pipeline, building a structured record without storing the data itself. Operation-aware taps enrich snapshots with join match rates and filter drop statistics. Trails can be serialized to 'JSON' or 'RDS' and exported as self-contained 'HTML' visualizations. Also includes diagnostic functions for interactive data analysis including frequency tables, string quality auditing, and data comparison.
 }
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://fpcordeiro.github.io/tidyaudit/}
   \item \url{https://github.com/fpcordeiro/tidyaudit}
   \item Report bugs at \url{https://github.com/fpcordeiro/tidyaudit/issues}
 }

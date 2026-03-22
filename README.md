@@ -4,6 +4,7 @@
 [![CRAN status](https://www.r-pkg.org/badges/version/tidyaudit)](https://CRAN.R-project.org/package=tidyaudit)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/tidyaudit)](https://cran.r-project.org/package=tidyaudit)
 [![R-CMD-check](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fpcordeiro/tidyaudit/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/fpcordeiro/tidyaudit/graph/badge.svg)](https://app.codecov.io/gh/fpcordeiro/tidyaudit)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 <!-- badges: end -->
 
@@ -19,10 +20,10 @@ development and **production**-oriented tools for data quality.
 ## Installation
 
 ```r
-# Install CRAN version using
+# Install from CRAN
 install.packages("tidyaudit")
 
-# Install development version using using `pak`
+# Install development version using pak
 pak::pak("fpcordeiro/tidyaudit")
 ```
 

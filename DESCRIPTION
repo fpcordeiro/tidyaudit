@@ -1,15 +1,19 @@
 Package: tidyaudit
 Title: Pipeline Audit Trails and Data Diagnostics for 'tidyverse' Workflows
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     person("Fernando", "Cordeiro", , "fernandolpcordeiro@gmail.com", role = c("aut", "cre", "cph"))
 Description: Provides pipeline audit trails and data diagnostics for
     'tidyverse' workflows. The audit trail system captures lightweight
-    metadata snapshots at each step of a pipeline, building a structured audit
-    report without storing the data itself. Also includes diagnostic functions
-    for interactive data analysis.
+    metadata snapshots at each step of a pipeline, building a structured
+    record without storing the data itself. Operation-aware taps enrich
+    snapshots with join match rates and filter drop statistics.
+    Trails can be serialized to 'JSON' or 'RDS' and exported as
+    self-contained 'HTML' visualizations. Also includes diagnostic
+    functions for interactive data analysis including frequency tables,
+    string quality auditing, and data comparison.
 License: LGPL (>= 3)
-URL: https://github.com/fpcordeiro/tidyaudit
+URL: https://fpcordeiro.github.io/tidyaudit/, https://github.com/fpcordeiro/tidyaudit
 BugReports: https://github.com/fpcordeiro/tidyaudit/issues
 Depends:
     R (>= 4.1.0)
@@ -21,9 +25,12 @@ Imports:
     stats,
     utils
 Suggests:
+    covr,
     jsonlite,
     knitr,
+    pkgdown,
     rmarkdown,
+    spelling,
     stringi,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr

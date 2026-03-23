@@ -23,6 +23,7 @@ Imports:
     glue,
     rlang (>= 1.0.0),
     stats,
+    tools,
     utils
 Suggests:
     covr,

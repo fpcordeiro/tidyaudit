@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   diagnostics: diagnostics.html
   tidyaudit: tidyaudit.html
-last_built: 2026-03-22T18:31Z
+last_built: 2026-03-23T11:48Z
 urls:
   reference: https://fpcordeiro.github.io/tidyaudit/reference
   article: https://fpcordeiro.github.io/tidyaudit/articles

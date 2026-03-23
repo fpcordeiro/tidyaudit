@@ -53,7 +53,7 @@ restored <- read_trail(tmp)
 print(restored)
 #> 
 #> ── Audit Trail: "example" ──────────────────────────────────────────────────────
-#> Created: 2026-03-22 18:31:40
+#> Created: 2026-03-23 11:48:35
 #> Snapshots: 1
 #> 
 #>   #  Label  Rows  Cols  NAs  Type

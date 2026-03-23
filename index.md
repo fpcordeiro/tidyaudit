@@ -86,6 +86,10 @@ The output is an interactive pipeline flow diagram with clickable nodes
 and edges, light/dark theme toggle, and embedded JSON export — no server
 or internet required.
 
+![audit_export demo](reference/figures/audit_export_readme.gif)
+
+audit_export demo
+
 ## Features
 
 **Audit trail system** — the core innovation:

@@ -3,11 +3,22 @@
 \name{compare_tables}
 \alias{compare_tables}
 \alias{print.compare_tbl}
+\alias{as.data.frame.compare_tbl}
 \title{Compare Two Tables}
 \usage{
-compare_tables(x, y, key_cols = NULL, tol = .Machine$double.eps, top_n = Inf)
+compare_tables(
+  x,
+  y,
+  key_cols = NULL,
+  tol = .Machine$double.eps,
+  top_n = Inf,
+  compare_cols = NULL,
+  exclude_cols = NULL
+)
 
 \method{print}{compare_tbl}(x, show_n = 5L, ...)
+
+\method{as.data.frame}{compare_tbl}(x, row.names = NULL, optional = FALSE, ...)
 }
 \arguments{
 \item{x}{First data.frame or tibble to compare.}
@@ -22,14 +33,26 @@ integer columns as keys.}
 less than or equal to \code{tol} are considered equal. Defaults to
 \code{\link[=.Machine]{.Machine$double.eps}} (machine double-precision).}
 
-\item{top_n}{Maximum number of row-level discrepancies to store \strong{per numeric
-column}, and maximum unmatched keys to store. Defaults to \code{Inf} (all).
-Unmatched keys are stored in arbitrary order.}
+\item{top_n}{Maximum number of row-level discrepancies to store \strong{per
+column} (numeric and categorical), and maximum unmatched keys to store.
+Defaults to \code{Inf} (all). Unmatched keys are stored in arbitrary order.}
+
+\item{compare_cols}{Character vector of column names to compare. If \code{NULL}
+(default), all common non-key columns are compared. Mutually exclusive
+with \code{exclude_cols}.}
+
+\item{exclude_cols}{Character vector of column names to exclude from
+comparison. If \code{NULL} (default), no columns are excluded. Mutually
+exclusive with \code{compare_cols}.}
 
 \item{show_n}{Maximum number of rows to display for discrepancies and
 unmatched keys in the printed output. Defaults to \code{5L}.}
 
 \item{...}{Additional arguments (currently unused).}
+
+\item{row.names}{Passed to \code{\link[=as.data.frame]{as.data.frame()}}. Default \code{NULL}.}
+
+\item{optional}{Passed to \code{\link[=as.data.frame]{as.data.frame()}}. Default \code{FALSE}.}
 }
 \value{
 An S3 object of class \code{compare_tbl} containing:
@@ -44,26 +67,39 @@ An S3 object of class \code{compare_tbl} containing:
 \item{key_summary}{Summary of key overlap, or NULL}
 \item{numeric_summary}{Data.frame of numeric discrepancy quantiles (with
 \code{n_over_tol} count), or NULL}
-\item{numeric_method}{How numeric columns were compared}
+\item{comparison_method}{How columns were compared (\code{"keys"},
+\code{"row_index"}, or \code{NA})}
 \item{rows_matched}{Number of rows matched on keys}
 \item{tol}{The tolerance used}
 \item{top_n}{The top_n used}
 \item{discrepancies}{Data.frame of row-level numeric discrepancies
 exceeding \code{tol} (or where one side is \code{NA}), with key columns (or
-\code{row_index}), \code{column}, \code{value_x}, \code{value_y}, and \code{abs_diff}. Rows with
-\code{abs_diff = NA} indicate that one value is \code{NA}. NULL if none.}
+\code{row_index}), \code{column}, \code{value_x}, \code{value_y}, \code{abs_diff}, and
+\code{pct_diff} (relative difference as a proportion). NULL if none.}
+\item{categorical_summary}{Data.frame with \code{column}, \code{n_compared},
+\code{n_mismatched}, \code{pct_mismatched} (proportion, 0--1), \code{n_na_mismatch},
+or NULL}
+\item{categorical_discrepancies}{Data.frame of row-level categorical
+discrepancies with key columns (or \code{row_index}), \code{column}, \code{value_x},
+\code{value_y}. NULL if none.}
+\item{total_discrepancies}{Total number of cell-level discrepancies
+across all column types (not limited by \code{top_n})}
 \item{only_x_keys}{Data.frame of key combinations only in x (up to
 \code{top_n} rows), or NULL}
 \item{only_y_keys}{Data.frame of key combinations only in y (up to
 \code{top_n} rows), or NULL}
 \item{match_summary}{List with \code{only_x}, \code{only_y}, \code{matched_no_disc},
-\code{matched_with_disc}, \code{pct_no_disc}, \code{pct_with_disc}}
+\code{matched_with_disc}, \code{pct_no_disc} (proportion, 0--1),
+\code{pct_with_disc} (proportion, 0--1)}
 }
+
+Use \code{\link[=as.data.frame]{as.data.frame()}} to extract all discrepancies (numeric and categorical)
+as a single tidy data.frame.
 }
 \description{
 Compares two data.frames or tibbles by examining column names, row counts,
-key overlap, and numeric discrepancies. Useful for validating data processing
-pipelines.
+key overlap, numeric discrepancies, and categorical discrepancies. Useful for
+validating data processing pipelines.
 }
 \examples{
 x <- data.frame(id = 1:3, value = c(10.0, 20.0, 30.0))
@@ -72,6 +108,13 @@ compare_tables(x, y)
 
 # With tolerance — differences <= 0.15 are considered equal
 compare_tables(x, y, tol = 0.15)
+
+# Categorical columns are also compared
+a <- data.frame(id = 1:3, status = c("ok", "warn", "fail"),
+                 stringsAsFactors = FALSE)
+b <- data.frame(id = 1:3, status = c("ok", "warn", "error"),
+                 stringsAsFactors = FALSE)
+compare_tables(a, b)
 
 }
 \seealso{

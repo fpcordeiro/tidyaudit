@@ -64,6 +64,7 @@ Analyze joins, keys, and table differences
   : Validate Variable Relationship
 - [`compare_tables()`](https://fpcordeiro.github.io/tidyaudit/reference/compare_tables.md)
   [`print(`*`<compare_tbl>`*`)`](https://fpcordeiro.github.io/tidyaudit/reference/compare_tables.md)
+  [`as.data.frame(`*`<compare_tbl>`*`)`](https://fpcordeiro.github.io/tidyaudit/reference/compare_tables.md)
   : Compare Two Tables
 
 ## Data Quality

@@ -305,6 +305,7 @@ columns, row counts, key overlap, and numeric discrepancies:</p>
 <span><span class="co">#&gt; Only in after: 0</span></span>
 <span><span class="co">#&gt; Matched, no discrepancies: 3 (60%)</span></span>
 <span><span class="co">#&gt; Matched, with discrepancies: 2 (40%)</span></span>
+<span><span class="co">#&gt; Total cell discrepancies: 2 (2 numeric, 0 categorical)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-weight: bold;">5. Numeric discrepancies (absolute differences)</span></span></span>
 <span><span class="co">#&gt; Compared after merging on keys.</span></span>
@@ -315,10 +316,13 @@ columns, row counts, key overlap, and numeric discrepancies:</p>
 <span><span class="co">#&gt;     value   5    0    0       0  2.5    5     2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Top discrepancies:</span></span>
-<span><span class="co">#&gt;     id  column  value_x  value_y  abs_diff</span></span>
-<span><span class="co">#&gt;     ──  ──────  ───────  ───────  ────────</span></span>
-<span><span class="co">#&gt;     5   value        50     55.0       5.0</span></span>
-<span><span class="co">#&gt;     2   value        20     22.5       2.5</span></span></code></pre></div>
+<span><span class="co">#&gt;     id  column  value_x  value_y  abs_diff  pct_diff</span></span>
+<span><span class="co">#&gt;     ──  ──────  ───────  ───────  ────────  ────────</span></span>
+<span><span class="co">#&gt;     5   value        50     55.0       5.0      9.1%</span></span>
+<span><span class="co">#&gt;     2   value        20     22.5       2.5     11.1%</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="font-weight: bold;">6. Categorical discrepancies</span></span></span>
+<span><span class="co">#&gt; No categorical discrepancies found.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="filter-diagnostics">Filter diagnostics<a class="anchor" aria-label="anchor" href="#filter-diagnostics"></a>

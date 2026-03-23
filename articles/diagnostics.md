@@ -249,6 +249,7 @@ compare_tables(before, after)
 #> Only in after: 0
 #> Matched, no discrepancies: 3 (60%)
 #> Matched, with discrepancies: 2 (40%)
+#> Total cell discrepancies: 2 (2 numeric, 0 categorical)
 #> 
 #> 5. Numeric discrepancies (absolute differences)
 #> Compared after merging on keys.
@@ -259,10 +260,13 @@ compare_tables(before, after)
 #>     value   5    0    0       0  2.5    5     2
 #> 
 #> Top discrepancies:
-#>     id  column  value_x  value_y  abs_diff
-#>     ──  ──────  ───────  ───────  ────────
-#>     5   value        50     55.0       5.0
-#>     2   value        20     22.5       2.5
+#>     id  column  value_x  value_y  abs_diff  pct_diff
+#>     ──  ──────  ───────  ───────  ────────  ────────
+#>     5   value        50     55.0       5.0      9.1%
+#>     2   value        20     22.5       2.5     11.1%
+#> 
+#> 6. Categorical discrepancies
+#> No categorical discrepancies found.
 ```
 
 ## Filter diagnostics

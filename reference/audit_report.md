@@ -44,12 +44,12 @@ mtcars |>
   audit_tap(trail, "filtered")
 audit_report(trail)
 #> ── Audit Report: "example" ─────────────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:14
+#> Created: 2026-03-24 11:22:43
 #> Total snapshots: 2
 #> 
 #> 
 #> ── Audit Trail: "example" ──────────────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:14
+#> Created: 2026-03-24 11:22:43
 #> Snapshots: 2
 #> 
 #>   #  Label     Rows  Cols  NAs  Type

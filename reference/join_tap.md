@@ -182,7 +182,7 @@ result <- orders |>
 print(trail)
 #> 
 #> ── Audit Trail: "join_example" ─────────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:17
+#> Created: 2026-03-24 11:22:46
 #> Snapshots: 2
 #> 
 #>   #  Label   Rows  Cols  NAs  Type                               

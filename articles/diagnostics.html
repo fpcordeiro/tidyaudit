@@ -63,26 +63,25 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fpcordeiro.github.io/tidyaudit/">tidyaudit</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'dplyr'</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:stats':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     filter, lag</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span></code></pre></div>
-<p>tidyaudit includes tidyverse ports of the diagnostic functions from
-<a href="https://github.com/fpcordeiro/dtaudit" class="external-link">dtaudit</a>. These
-functions help you understand joins, validate keys, compare tables,
-diagnose missing values and string quality, and filter with full
-visibility.</p>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
+<p>Before you build a pipeline, you need to understand your data. Before
+you trust a join, you need to verify the keys. Before you filter, you
+want to know what you’ll lose. tidyaudit’s diagnostic functions help
+with the detective work that comes before, during, and after every
+analysis.</p>
+<p>These functions are designed for <strong>interactive use</strong> —
+the questions you ask in the console while exploring a dataset or
+debugging a transformation. They complement the <a href="tidyaudit.html">audit trail system</a>, which instruments
+production pipelines.</p>
 <div class="section level2">
-<h2 id="join-diagnostics">Join diagnostics<a class="anchor" aria-label="anchor" href="#join-diagnostics"></a>
+<h2 id="before-you-join">Before you join<a class="anchor" aria-label="anchor" href="#before-you-join"></a>
 </h2>
+<p>You’re about to left-join orders to customers. Will every order
+match? Will the join create duplicates? How many rows will end up with
+NAs?</p>
 <p><code><a href="../reference/validate_join.html">validate_join()</a></code> analyzes a potential join
 <strong>without performing it</strong>, reporting match rates,
-relationship type, duplicate keys, and unmatched rows.</p>
+relationship type, duplicate keys, and unmatched rows:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">orders</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  id     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span>, <span class="fl">3L</span>, <span class="fl">3L</span>, <span class="fl">4L</span>, <span class="fl">5L</span><span class="op">)</span>,</span>
@@ -149,11 +148,11 @@ relationship type, duplicate keys, and unmatched rows.</p>
 <span><span class="co">#&gt; Duplicates: products=no sales=yes</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="stat-tracking">Stat tracking<a class="anchor" aria-label="anchor" href="#stat-tracking"></a>
+<h3 id="tracking-the-impact-on-a-metric">Tracking the impact on a metric<a class="anchor" aria-label="anchor" href="#tracking-the-impact-on-a-metric"></a>
 </h3>
-<p>Track the impact on a numeric column with <code>stat</code> (same
-column name in both tables) or <code>stat_x</code>/<code>stat_y</code>
-(different column names):</p>
+<p>Want to know the revenue at risk from unmatched keys? Use
+<code>stat</code> (same column name in both tables) or
+<code>stat_x</code>/<code>stat_y</code> (different column names):</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, revenue <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">200</span>, <span class="fl">300</span>, <span class="fl">400</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2L</span>, <span class="fl">3L</span>, <span class="fl">5L</span><span class="op">)</span>, cost <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
@@ -196,13 +195,12 @@ column name in both tables) or <code>stat_x</code>/<code>stat_y</code>
 </div>
 </div>
 <div class="section level2">
-<h2 id="key-validation">Key validation<a class="anchor" aria-label="anchor" href="#key-validation"></a>
+<h2 id="are-your-keys-unique">Are your keys unique?<a class="anchor" aria-label="anchor" href="#are-your-keys-unique"></a>
 </h2>
-<div class="section level3">
-<h3 id="primary-keys">Primary keys<a class="anchor" aria-label="anchor" href="#primary-keys"></a>
-</h3>
+<p>You assume <code>id</code> uniquely identifies every row. Does
+it?</p>
 <p><code><a href="../reference/validate_primary_keys.html">validate_primary_keys()</a></code> tests whether a set of columns
-uniquely identify every row:</p>
+forms a valid primary key:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  id    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span>, <span class="fl">3L</span>, <span class="fl">3L</span>, <span class="fl">4L</span><span class="op">)</span>,</span>
@@ -210,7 +208,7 @@ uniquely identify every row:</p>
 <span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span>, <span class="fl">40</span>, <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Single column — not unique</span></span>
+<span><span class="co"># Single column -- not unique</span></span>
 <span><span class="fu"><a href="../reference/validate_primary_keys.html">validate_primary_keys</a></span><span class="op">(</span><span class="va">df</span>, <span class="st">"id"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Primary Key Validation</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -229,7 +227,7 @@ uniquely identify every row:</p>
 <span><span class="co">#&gt;   id n</span></span>
 <span><span class="co">#&gt; 1  3 2</span></span>
 <span></span>
-<span><span class="co"># Composite key — unique</span></span>
+<span><span class="co"># Composite key -- unique</span></span>
 <span><span class="fu"><a href="../reference/validate_primary_keys.html">validate_primary_keys</a></span><span class="op">(</span><span class="va">df</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"group"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Primary Key Validation</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -243,12 +241,12 @@ uniquely identify every row:</p>
 <span><span class="co">#&gt;   Duplicate key combos         0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> YES - Keys uniquely identify all rows.</span></span></code></pre></div>
-</div>
 <div class="section level3">
-<h3 id="variable-relationships">Variable relationships<a class="anchor" aria-label="anchor" href="#variable-relationships"></a>
+<h3 id="beyond-uniqueness-whats-the-relationship">Beyond uniqueness: what’s the relationship?<a class="anchor" aria-label="anchor" href="#beyond-uniqueness-whats-the-relationship"></a>
 </h3>
-<p><code><a href="../reference/validate_var_relationship.html">validate_var_relationship()</a></code> determines the relationship
-between two columns:</p>
+<p><code><a href="../reference/validate_var_relationship.html">validate_var_relationship()</a></code> determines the functional
+relationship between two columns — one-to-one, one-to-many, many-to-one,
+or many-to-many:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  dept    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Sales"</span>, <span class="st">"Sales"</span>, <span class="st">"Engineering"</span>, <span class="st">"Engineering"</span><span class="op">)</span>,</span>
@@ -273,9 +271,11 @@ between two columns:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="table-comparison">Table comparison<a class="anchor" aria-label="anchor" href="#table-comparison"></a>
+<h2 id="what-changed-between-versions">What changed between versions?<a class="anchor" aria-label="anchor" href="#what-changed-between-versions"></a>
 </h2>
-<p><code><a href="../reference/compare_tables.html">compare_tables()</a></code> compares two data.frames by examining
+<p>You have yesterday’s extract and today’s extract. Or the data before
+your transformation and after. What’s different?</p>
+<p><code><a href="../reference/compare_tables.html">compare_tables()</a></code> compares two data frames by examining
 columns, row counts, key overlap, and numeric discrepancies:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">before</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10.0</span>, <span class="fl">20.0</span>, <span class="fl">30.0</span>, <span class="fl">40.0</span>, <span class="fl">50.0</span><span class="op">)</span><span class="op">)</span></span>
@@ -325,15 +325,18 @@ columns, row counts, key overlap, and numeric discrepancies:</p>
 <span><span class="co">#&gt; No categorical discrepancies found.</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="filter-diagnostics">Filter diagnostics<a class="anchor" aria-label="anchor" href="#filter-diagnostics"></a>
+<h2 id="filter-with-visibility">Filter with visibility<a class="anchor" aria-label="anchor" href="#filter-with-visibility"></a>
 </h2>
-<p><code><a href="../reference/filter_keep.html">filter_keep()</a></code> and <code><a href="../reference/filter_drop.html">filter_drop()</a></code> filter data
-while printing diagnostics about what was removed.</p>
+<p><code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">dplyr::filter()</a></code> silently removes rows. You apply the
+condition, the rows vanish, and you move on. <code><a href="../reference/filter_keep.html">filter_keep()</a></code>
+and <code><a href="../reference/filter_drop.html">filter_drop()</a></code> do the same filtering but tell you
+exactly what was removed — and optionally warn you when too much is
+gone.</p>
 <div class="section level3">
 <h3 id="filter_keep">filter_keep<a class="anchor" aria-label="anchor" href="#filter_keep"></a>
 </h3>
 <p>Keeps rows where the condition is <code>TRUE</code> (same as
-<code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">dplyr::filter()</a></code>):</p>
+<code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">dplyr::filter()</a></code>), with diagnostic output:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sales</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  id     <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span>,</span>
@@ -361,7 +364,7 @@ inverse):</p>
 <h3 id="warning-thresholds">Warning thresholds<a class="anchor" aria-label="anchor" href="#warning-thresholds"></a>
 </h3>
 <p>Set <code>.warn_threshold</code> to get a warning when too many rows
-are dropped:</p>
+are dropped — a safety net for production pipelines:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/filter_keep.html">filter_keep</a></span><span class="op">(</span><span class="va">sales</span>, <span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">1000</span>, .stat <span class="op">=</span> <span class="va">amount</span>, .warn_threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="co">#&gt; filter_keep(sales, amount &gt; 1000)</span></span>
@@ -375,10 +378,11 @@ are dropped:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="data-quality">Data quality<a class="anchor" aria-label="anchor" href="#data-quality"></a>
+<h2 id="diagnose-data-quality">Diagnose data quality<a class="anchor" aria-label="anchor" href="#diagnose-data-quality"></a>
 </h2>
+<p>You just received a dataset. Where are the gaps?</p>
 <div class="section level3">
-<h3 id="missing-value-diagnosis">Missing value diagnosis<a class="anchor" aria-label="anchor" href="#missing-value-diagnosis"></a>
+<h3 id="missing-values">Missing values<a class="anchor" aria-label="anchor" href="#missing-values"></a>
 </h3>
 <p><code><a href="../reference/diagnose_nas.html">diagnose_nas()</a></code> reports NA counts and percentages for
 every column:</p>
@@ -405,7 +409,8 @@ every column:</p>
 <h3 id="column-summaries">Column summaries<a class="anchor" aria-label="anchor" href="#column-summaries"></a>
 </h3>
 <p><code><a href="../reference/summarize_column.html">summarize_column()</a></code> gives type-appropriate statistics for
-a single vector:</p>
+a single vector — quantiles for numeric, value counts for character,
+balance for logical:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/summarize_column.html">summarize_column</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="cn">NA</span>, <span class="fl">5</span>, <span class="fl">10</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                type            n_unique             missing       missing_share </span></span>
@@ -423,8 +428,8 @@ a single vector:</p>
 <span><span class="co">#&gt;            NA            NA       "apple"            NA            NA </span></span>
 <span><span class="co">#&gt;           q75           max      example1      example2      example3 </span></span>
 <span><span class="co">#&gt;            NA      "cherry"       "apple"      "banana"       "apple"</span></span></code></pre></div>
-<p><code><a href="../reference/get_summary_table.html">get_summary_table()</a></code> applies this to all columns (or
-selected ones):</p>
+<p><code><a href="../reference/get_summary_table.html">get_summary_table()</a></code> applies this across all columns (or
+a selection):</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_summary_table.html">get_summary_table</a></span><span class="op">(</span><span class="va">messy</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   variable      type n_unique missing     missing_share most_frequent</span></span>
@@ -447,9 +452,9 @@ selected ones):</p>
 <div class="section level2">
 <h2 id="frequency-tables">Frequency tables<a class="anchor" aria-label="anchor" href="#frequency-tables"></a>
 </h2>
-<p><code><a href="../reference/tab.html">tab()</a></code> produces one-way frequency tables or two-way
-crosstabulations with counts, percentages, and cumulative
-percentages.</p>
+<p>Base R’s <code><a href="https://rdrr.io/r/base/table.html" class="external-link">table()</a></code> gives you raw counts.
+<code><a href="../reference/tab.html">tab()</a></code> gives you percentages, cumulative totals, sorting,
+cutoffs, weighting, and two-way crosstabulations.</p>
 <div class="section level3">
 <h3 id="one-way-tables">One-way tables<a class="anchor" aria-label="anchor" href="#one-way-tables"></a>
 </h3>
@@ -554,15 +559,13 @@ percentages.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="string-cleaning">String cleaning<a class="anchor" aria-label="anchor" href="#string-cleaning"></a>
+<h2 id="string-quality">String quality<a class="anchor" aria-label="anchor" href="#string-quality"></a>
 </h2>
-<p>These functions require the <strong>stringi</strong> package (listed
-in Suggests).</p>
-<div class="section level3">
-<h3 id="diagnose_strings">diagnose_strings<a class="anchor" aria-label="anchor" href="#diagnose_strings"></a>
-</h3>
-<p><code><a href="../reference/diagnose_strings.html">diagnose_strings()</a></code> audits a character vector for common
-quality issues:</p>
+<p>Duplicates hiding behind case differences, leading spaces, and
+encoding issues are among the most common causes of failed joins and
+inflated group counts.</p>
+<p><code><a href="../reference/diagnose_strings.html">diagnose_strings()</a></code> audits a character vector for these
+problems:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">firms</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Apple"</span>, <span class="st">"APPLE"</span>, <span class="st">"apple"</span>, <span class="st">"  Microsoft "</span>, <span class="st">"Google"</span>, <span class="cn">NA</span>, <span class="st">""</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/diagnose_strings.html">diagnose_strings</a></span><span class="op">(</span><span class="va">firms</span><span class="op">)</span></span>
@@ -590,11 +593,14 @@ quality issues:</p>
 <span><span class="co">#&gt;  lower n_variants            examples</span></span>
 <span><span class="co">#&gt;  apple          3 Apple, APPLE, apple</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="audit_transform">audit_transform<a class="anchor" aria-label="anchor" href="#audit_transform"></a>
-</h3>
+<div class="section level2">
+<h2 id="audit-your-transformations">Audit your transformations<a class="anchor" aria-label="anchor" href="#audit-your-transformations"></a>
+</h2>
+<p>You’re about to apply <code><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws()</a></code> to a column, or
+<code><a href="https://rdrr.io/r/base/Round.html" class="external-link">round()</a></code> to a price vector. How many values will actually
+change? What will they look like afterward?</p>
 <p><code><a href="../reference/audit_transform.html">audit_transform()</a></code> shows exactly what a transformation
-function changes. It automatically detects the vector type and computes
+does. It automatically detects the vector type and computes
 type-appropriate diagnostics:</p>
 <ul>
 <li>
@@ -610,9 +616,9 @@ changed</li>
 <strong>Character</strong>: string-level before/after
 comparison</li>
 </ul>
-<div class="section level4">
-<h4 id="character-vectors">Character vectors<a class="anchor" aria-label="anchor" href="#character-vectors"></a>
-</h4>
+<div class="section level3">
+<h3 id="character-vectors">Character vectors<a class="anchor" aria-label="anchor" href="#character-vectors"></a>
+</h3>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/audit_transform.html">audit_transform</a></span><span class="op">(</span><span class="va">firms</span>, <span class="va">trimws</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -654,9 +660,9 @@ comparison</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Access cleaned vector with: `result$cleaned`</span></span></code></pre></div>
 </div>
-<div class="section level4">
-<h4 id="numeric-vectors">Numeric vectors<a class="anchor" aria-label="anchor" href="#numeric-vectors"></a>
-</h4>
+<div class="section level3">
+<h3 id="numeric-vectors">Numeric vectors<a class="anchor" aria-label="anchor" href="#numeric-vectors"></a>
+</h3>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prices</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10.456</span>, <span class="fl">20.789</span>, <span class="fl">30.123</span>, <span class="cn">NA</span>, <span class="fl">50.999</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/audit_transform.html">audit_transform</a></span><span class="op">(</span><span class="va">prices</span>, <span class="va">round</span><span class="op">)</span></span>
@@ -695,9 +701,9 @@ comparison</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Access cleaned vector with: `result$cleaned`</span></span></code></pre></div>
 </div>
-<div class="section level4">
-<h4 id="date-vectors">Date vectors<a class="anchor" aria-label="anchor" href="#date-vectors"></a>
-</h4>
+<div class="section level3">
+<h3 id="date-vectors">Date vectors<a class="anchor" aria-label="anchor" href="#date-vectors"></a>
+</h3>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-01-15"</span>, <span class="st">"2024-06-30"</span>, <span class="st">"2024-12-01"</span>, <span class="cn">NA</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/audit_transform.html">audit_transform</a></span><span class="op">(</span><span class="va">dates</span>, <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="va">d</span> <span class="op">+</span> <span class="fl">30</span><span class="op">)</span></span>
@@ -728,9 +734,9 @@ comparison</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Access cleaned vector with: `result$cleaned`</span></span></code></pre></div>
 </div>
-<div class="section level4">
-<h4 id="factor-vectors">Factor vectors<a class="anchor" aria-label="anchor" href="#factor-vectors"></a>
-</h4>
+<div class="section level3">
+<h3 id="factor-vectors">Factor vectors<a class="anchor" aria-label="anchor" href="#factor-vectors"></a>
+</h3>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sizes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S"</span>, <span class="st">"M"</span>, <span class="st">"L"</span>, <span class="st">"XL"</span>, <span class="st">"XXL"</span>, <span class="st">"S"</span>, <span class="st">"M"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/audit_transform.html">audit_transform</a></span><span class="op">(</span><span class="va">sizes</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
@@ -772,9 +778,9 @@ comparison</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Access cleaned vector with: `result$cleaned`</span></span></code></pre></div>
 </div>
-<div class="section level4">
-<h4 id="logical-vectors">Logical vectors<a class="anchor" aria-label="anchor" href="#logical-vectors"></a>
-</h4>
+<div class="section level3">
+<h3 id="logical-vectors">Logical vectors<a class="anchor" aria-label="anchor" href="#logical-vectors"></a>
+</h3>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">flags</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="cn">FALSE</span>, <span class="cn">TRUE</span>, <span class="cn">NA</span>, <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/audit_transform.html">audit_transform</a></span><span class="op">(</span><span class="va">flags</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">!</span><span class="va">x</span><span class="op">)</span></span>
@@ -805,7 +811,6 @@ comparison</li>
 <span><span class="co">#&gt;   FALSE  TRUE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Access cleaned vector with: `result$cleaned`</span></span></code></pre></div>
-</div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

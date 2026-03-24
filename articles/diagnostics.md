@@ -3,26 +3,28 @@
 ``` r
 library(tidyaudit)
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 ```
 
-tidyaudit includes tidyverse ports of the diagnostic functions from
-[dtaudit](https://github.com/fpcordeiro/dtaudit). These functions help
-you understand joins, validate keys, compare tables, diagnose missing
-values and string quality, and filter with full visibility.
+Before you build a pipeline, you need to understand your data. Before
+you trust a join, you need to verify the keys. Before you filter, you
+want to know what you’ll lose. tidyaudit’s diagnostic functions help
+with the detective work that comes before, during, and after every
+analysis.
 
-## Join diagnostics
+These functions are designed for **interactive use** — the questions you
+ask in the console while exploring a dataset or debugging a
+transformation. They complement the [audit trail
+system](https://fpcordeiro.github.io/tidyaudit/articles/tidyaudit.md),
+which instruments production pipelines.
+
+## Before you join
+
+You’re about to left-join orders to customers. Will every order match?
+Will the join create duplicates? How many rows will end up with NAs?
 
 [`validate_join()`](https://fpcordeiro.github.io/tidyaudit/reference/validate_join.md)
 analyzes a potential join **without performing it**, reporting match
-rates, relationship type, duplicate keys, and unmatched rows.
+rates, relationship type, duplicate keys, and unmatched rows:
 
 ``` r
 orders <- data.frame(
@@ -92,10 +94,11 @@ validate_join(products, sales, by = c("prod_id" = "item_id"))
 #> Duplicates: products=no sales=yes
 ```
 
-### Stat tracking
+### Tracking the impact on a metric
 
-Track the impact on a numeric column with `stat` (same column name in
-both tables) or `stat_x`/`stat_y` (different column names):
+Want to know the revenue at risk from unmatched keys? Use `stat` (same
+column name in both tables) or `stat_x`/`stat_y` (different column
+names):
 
 ``` r
 x <- data.frame(id = 1:4, revenue = c(100, 200, 300, 400))
@@ -138,12 +141,12 @@ validate_join(x, y, by = "id", stat_x = "revenue", stat_y = "cost")
 #> Duplicates: x=no y=no
 ```
 
-## Key validation
+## Are your keys unique?
 
-### Primary keys
+You assume `id` uniquely identifies every row. Does it?
 
 [`validate_primary_keys()`](https://fpcordeiro.github.io/tidyaudit/reference/validate_primary_keys.md)
-tests whether a set of columns uniquely identify every row:
+tests whether a set of columns forms a valid primary key:
 
 ``` r
 df <- data.frame(
@@ -152,7 +155,7 @@ df <- data.frame(
   value = c(10, 20, 30, 40, 50)
 )
 
-# Single column — not unique
+# Single column -- not unique
 validate_primary_keys(df, "id")
 #> 
 #> ── Primary Key Validation ──────────────────────────────────────────────────────
@@ -171,7 +174,7 @@ validate_primary_keys(df, "id")
 #>   id n
 #> 1  3 2
 
-# Composite key — unique
+# Composite key -- unique
 validate_primary_keys(df, c("id", "group"))
 #> 
 #> ── Primary Key Validation ──────────────────────────────────────────────────────
@@ -187,10 +190,11 @@ validate_primary_keys(df, c("id", "group"))
 #> ✔ YES - Keys uniquely identify all rows.
 ```
 
-### Variable relationships
+### Beyond uniqueness: what’s the relationship?
 
 [`validate_var_relationship()`](https://fpcordeiro.github.io/tidyaudit/reference/validate_var_relationship.md)
-determines the relationship between two columns:
+determines the functional relationship between two columns — one-to-one,
+one-to-many, many-to-one, or many-to-many:
 
 ``` r
 df2 <- data.frame(
@@ -215,10 +219,13 @@ validate_var_relationship(df2, "dept", "manager")
 #> Relationship: ONE-TO-ONE
 ```
 
-## Table comparison
+## What changed between versions?
+
+You have yesterday’s extract and today’s extract. Or the data before
+your transformation and after. What’s different?
 
 [`compare_tables()`](https://fpcordeiro.github.io/tidyaudit/reference/compare_tables.md)
-compares two data.frames by examining columns, row counts, key overlap,
+compares two data frames by examining columns, row counts, key overlap,
 and numeric discrepancies:
 
 ``` r
@@ -269,17 +276,22 @@ compare_tables(before, after)
 #> No categorical discrepancies found.
 ```
 
-## Filter diagnostics
+## Filter with visibility
 
+[`dplyr::filter()`](https://dplyr.tidyverse.org/reference/filter.html)
+silently removes rows. You apply the condition, the rows vanish, and you
+move on.
 [`filter_keep()`](https://fpcordeiro.github.io/tidyaudit/reference/filter_keep.md)
 and
 [`filter_drop()`](https://fpcordeiro.github.io/tidyaudit/reference/filter_drop.md)
-filter data while printing diagnostics about what was removed.
+do the same filtering but tell you exactly what was removed — and
+optionally warn you when too much is gone.
 
 ### filter_keep
 
 Keeps rows where the condition is `TRUE` (same as
-[`dplyr::filter()`](https://dplyr.tidyverse.org/reference/filter.html)):
+[`dplyr::filter()`](https://dplyr.tidyverse.org/reference/filter.html)),
+with diagnostic output:
 
 ``` r
 sales <- data.frame(
@@ -307,7 +319,8 @@ result2 <- filter_drop(sales, status == "suspect", .stat = amount)
 
 ### Warning thresholds
 
-Set `.warn_threshold` to get a warning when too many rows are dropped:
+Set `.warn_threshold` to get a warning when too many rows are dropped —
+a safety net for production pipelines:
 
 ``` r
 filter_keep(sales, amount > 1000, .stat = amount, .warn_threshold = 0.5)
@@ -321,9 +334,11 @@ filter_keep(sales, amount > 1000, .stat = amount, .warn_threshold = 0.5)
 #> 3  9   2000  valid
 ```
 
-## Data quality
+## Diagnose data quality
 
-### Missing value diagnosis
+You just received a dataset. Where are the gaps?
+
+### Missing values
 
 [`diagnose_nas()`](https://fpcordeiro.github.io/tidyaudit/reference/diagnose_nas.md)
 reports NA counts and percentages for every column:
@@ -351,7 +366,8 @@ diagnose_nas(messy)
 ### Column summaries
 
 [`summarize_column()`](https://fpcordeiro.github.io/tidyaudit/reference/summarize_column.md)
-gives type-appropriate statistics for a single vector:
+gives type-appropriate statistics for a single vector — quantiles for
+numeric, value counts for character, balance for logical:
 
 ``` r
 summarize_column(c(1, 2, 3, NA, 5, 10, 100))
@@ -373,7 +389,7 @@ summarize_column(c("apple", "banana", "apple", "cherry", NA))
 ```
 
 [`get_summary_table()`](https://fpcordeiro.github.io/tidyaudit/reference/get_summary_table.md)
-applies this to all columns (or selected ones):
+applies this across all columns (or a selection):
 
 ``` r
 get_summary_table(messy)
@@ -396,9 +412,11 @@ get_summary_table(messy)
 
 ## Frequency tables
 
-[`tab()`](https://fpcordeiro.github.io/tidyaudit/reference/tab.md)
-produces one-way frequency tables or two-way crosstabulations with
-counts, percentages, and cumulative percentages.
+Base R’s [`table()`](https://rdrr.io/r/base/table.html) gives you raw
+counts.
+[`tab()`](https://fpcordeiro.github.io/tidyaudit/reference/tab.md) gives
+you percentages, cumulative totals, sorting, cutoffs, weighting, and
+two-way crosstabulations.
 
 ### One-way tables
 
@@ -502,14 +520,14 @@ tab(mtcars, cyl, .wt = mpg)
 #>   Total  642.9   100.0%
 ```
 
-## String cleaning
+## String quality
 
-These functions require the **stringi** package (listed in Suggests).
-
-### diagnose_strings
+Duplicates hiding behind case differences, leading spaces, and encoding
+issues are among the most common causes of failed joins and inflated
+group counts.
 
 [`diagnose_strings()`](https://fpcordeiro.github.io/tidyaudit/reference/diagnose_strings.md)
-audits a character vector for common quality issues:
+audits a character vector for these problems:
 
 ``` r
 firms <- c("Apple", "APPLE", "apple", "  Microsoft ", "Google", NA, "")
@@ -539,11 +557,16 @@ diagnose_strings(firms)
 #>  apple          3 Apple, APPLE, apple
 ```
 
-### audit_transform
+## Audit your transformations
+
+You’re about to apply [`trimws()`](https://rdrr.io/r/base/trimws.html)
+to a column, or [`round()`](https://rdrr.io/r/base/Round.html) to a
+price vector. How many values will actually change? What will they look
+like afterward?
 
 [`audit_transform()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_transform.md)
-shows exactly what a transformation function changes. It automatically
-detects the vector type and computes type-appropriate diagnostics:
+shows exactly what a transformation does. It automatically detects the
+vector type and computes type-appropriate diagnostics:
 
 - **Numeric**: mean/min/max shift, proportion changed
 - **Date/POSIXct**: range change, proportion shifted
@@ -551,7 +574,7 @@ detects the vector type and computes type-appropriate diagnostics:
 - **Logical**: TRUE/FALSE/NA balance shift
 - **Character**: string-level before/after comparison
 
-#### Character vectors
+### Character vectors
 
 ``` r
 audit_transform(firms, trimws)
@@ -595,7 +618,7 @@ audit_transform(firms, tolower)
 #> Access cleaned vector with: `result$cleaned`
 ```
 
-#### Numeric vectors
+### Numeric vectors
 
 ``` r
 prices <- c(10.456, 20.789, 30.123, NA, 50.999)
@@ -636,7 +659,7 @@ audit_transform(prices, round)
 #> Access cleaned vector with: `result$cleaned`
 ```
 
-#### Date vectors
+### Date vectors
 
 ``` r
 dates <- as.Date(c("2024-01-15", "2024-06-30", "2024-12-01", NA))
@@ -669,7 +692,7 @@ audit_transform(dates, function(d) d + 30)
 #> Access cleaned vector with: `result$cleaned`
 ```
 
-#### Factor vectors
+### Factor vectors
 
 ``` r
 sizes <- factor(c("S", "M", "L", "XL", "XXL", "S", "M"))
@@ -713,7 +736,7 @@ audit_transform(sizes, function(f) {
 #> Access cleaned vector with: `result$cleaned`
 ```
 
-#### Logical vectors
+### Logical vectors
 
 ``` r
 flags <- c(TRUE, FALSE, TRUE, NA, FALSE)

@@ -3,35 +3,31 @@
 ``` r
 library(tidyaudit)
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 ```
 
-## What is an audit trail?
+## Tracking what happens in your pipeline
 
-When building data pipelines, it’s easy to lose track of what happens at
-each step. How many rows were dropped by that filter? Did the join
-introduce duplicates? Which columns have missing values now?
+Every filter, join, and transformation in a data pipeline encodes an
+assumption about the data. How many rows did that filter actually drop?
+Did the join introduce NAs or duplicates? Which records did not match?
+How much revenue was lost at each step?
 
-tidyaudit’s audit trail captures **metadata-only snapshots** at each
-step of a pipe — row counts, column counts, NA totals, numeric summaries
-— without storing the data itself. This gives you a lightweight,
-structured record of your pipeline’s behavior. The trail object also
-allows for custom functions to increase flexibility and capture
-domain-specific diagnostics.
+These questions matter. Even when these answers are clear in the moment,
+they become hard to recall during code review, debugging, or when
+someone inherits your pipeline months later. An audit trail keeps that
+record for you.
 
-## Building a basic trail
+tidyaudit captures **metadata-only snapshots** at each step of a pipe —
+row counts, column counts, NA totals, numeric summaries — without
+storing the data itself. The trail is a lightweight, structured record
+of your pipeline’s behavior that you can print, diff, export, and share.
 
-Start by creating a trail object and inserting
+## Your first trail
+
+Create a trail object and insert
 [`audit_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_tap.md)
 calls into your pipeline. Each tap records a snapshot and passes the
-data through unchanged.
+data through unchanged — three taps, three snapshots, one timeline.
 
 ``` r
 # Sample data
@@ -53,13 +49,13 @@ result <- orders |>
   audit_tap(trail, "with_tax")
 ```
 
-Now print the trail to see the snapshot timeline:
+Print the trail to see the full timeline:
 
 ``` r
 print(trail)
 #> 
 #> ── Audit Trail: "order_pipeline" ───────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:25
+#> Created: 2026-03-24 11:22:54
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -76,28 +72,27 @@ print(trail)
 ```
 
 The timeline shows row counts, column counts, NA totals, and change
-summaries between consecutive steps. You can see exactly how many rows
-each filter removed and when columns were added.
+summaries between consecutive steps. Notice how the filter reduced 20
+rows to 12, and the mutate added a column — all captured automatically.
 
 ## Operation-aware taps
 
 Plain
 [`audit_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_tap.md)
-records what the data looks like, but it can’t tell you *why* it
-changed. Operation-aware taps —
-[`left_join_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/join_tap.md),
-[`filter_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/filter_tap.md),
-etc. — perform the operation AND record enriched diagnostics.
+records what the data looks like at a given point, but it can’t tell you
+*why* it changed. Operation-aware taps solve this — they perform the
+dplyr operation AND record enriched diagnostics in a single step.
 
 ### Join taps
 
-Replace
-[`dplyr::left_join()`](https://dplyr.tidyverse.org/reference/mutate-joins.html) +
-[`audit_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_tap.md)
+Joins are where data quality problems hide. A left join can silently
+introduce NAs, inflate row counts, or produce unexpected many-to-many
+relationships. Replace
+[`dplyr::left_join()`](https://dplyr.tidyverse.org/reference/mutate-joins.html)
 with
 [`left_join_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/join_tap.md)
-to capture match rates, relationship type, and duplicate key
-information:
+to capture match rates, relationship type, and duplicate key information
+automatically:
 
 ``` r
 customers <- data.frame(
@@ -115,7 +110,7 @@ result2 <- orders |>
 print(trail2)
 #> 
 #> ── Audit Trail: "join_pipeline" ────────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:25
+#> Created: 2026-03-24 11:22:54
 #> Snapshots: 2
 #> 
 #>   #  Label        Rows  Cols  NAs  Type                                
@@ -130,9 +125,7 @@ print(trail2)
 ```
 
 The `Type` column now shows the join type, relationship, and match rate
-— all without leaving the pipe.
-
-All six dplyr join types are supported:
+— all without leaving the pipe. All six dplyr join types are supported:
 [`left_join_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/join_tap.md),
 [`right_join_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/join_tap.md),
 [`inner_join_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/join_tap.md),
@@ -142,10 +135,12 @@ All six dplyr join types are supported:
 
 ### Filter taps
 
+Filters are invisible by default — you remove rows and never know what
+you lost.
 [`filter_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/filter_tap.md)
 keeps matching rows (like
 [`dplyr::filter()`](https://dplyr.tidyverse.org/reference/filter.html))
-while recording how many rows were dropped:
+while recording exactly how many rows were dropped:
 
 ``` r
 trail3 <- audit_trail("filter_pipeline")
@@ -166,7 +161,7 @@ result3 <- orders |>
 print(trail3)
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:25
+#> Created: 2026-03-24 11:22:54
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -182,9 +177,10 @@ print(trail3)
 #>   complete_only  high_value       -8     =    =
 ```
 
-The `.stat` argument tracks a numeric column through the filter,
-reporting how much of the total was dropped — useful for financial
-pipelines where you want to know the monetary impact of each filter.
+The `.stat` argument is the feature that makes filter taps indispensable
+for financial and business pipelines: it tracks how much of a numeric
+column was removed at each step. You can see not just that you dropped 4
+rows, but that those rows represented a specific dollar amount.
 
 [`filter_out_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/filter_tap.md)
 works the same way but drops matching rows (the inverse).
@@ -193,7 +189,7 @@ works the same way but drops matching rows (the inverse).
 
 [`audit_diff()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_diff.md)
 gives you a detailed before/after comparison between any two snapshots
-in the trail:
+in the trail — not just adjacent ones:
 
 ``` r
 audit_diff(trail3, "raw", "high_value")
@@ -216,22 +212,22 @@ audit_diff(trail3, "raw", "high_value")
 ```
 
 This shows row/column/NA deltas, columns added or removed, and numeric
-distribution shifts.
+distribution shifts across the common columns.
 
 ## Full audit report
 
 [`audit_report()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_report.md)
-prints the complete trail summary plus all consecutive diffs in one
-call:
+prints the complete trail summary plus all consecutive diffs in one call
+— the full story of what your pipeline did:
 
 ``` r
 audit_report(trail3)
 #> ── Audit Report: "filter_pipeline" ─────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:25
+#> Created: 2026-03-24 11:22:54
 #> Total snapshots: 3
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:25
+#> Created: 2026-03-24 11:22:54
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -295,14 +291,16 @@ audit_report(trail3)
 #> ────────────────────────────────────────────────────────────────────────────────
 ```
 
-## Tips
+## Domain-specific diagnostics
 
-### Custom diagnostics
+The built-in metrics cover structure and shape (rows, columns, NAs,
+numeric summaries). But your domain has its own questions: how many
+valid records remain? What’s the total revenue at this stage? Is a
+business rule still satisfied?
 
-Pass a named list of functions via `.fns` to compute domain-specific
-diagnostics at any tap. Each function receives the snapshot data as its
-argument (`.` in formula lambdas) and its return value is stored in the
-snapshot.
+Pass a named list of functions via `.fns` to compute anything
+domain-specific at any tap. Each function receives the data and its
+return value is stored in the snapshot:
 
 ``` r
 trail4 <- audit_trail("custom_example")
@@ -321,14 +319,14 @@ result4 <- orders |>
   ))
 ```
 
-When you print the trail, custom results appear as inline `↳`
-annotations directly below each snapshot row:
+Custom results appear as inline annotations directly below each snapshot
+row:
 
 ``` r
 print(trail4)
 #> 
 #> ── Audit Trail: "custom_example" ───────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:26
+#> Created: 2026-03-24 11:22:55
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -348,11 +346,11 @@ print(trail4)
 
 The rendering rules are:
 
-- **Scalar** return value → `↳ fn_name: value`
-- **Named vector or named list of scalars** →
-  `↳ fn_name: key=val, key=val` (truncated at 60 characters)
-- **Complex object** (data frame, unnamed vector, nested list) →
-  `↳ fn_name: [complex — see audit_report()]`
+- **Scalar** return value: `fn_name: value`
+- **Named vector or named list of scalars**: `fn_name: key=val, key=val`
+  (truncated at 60 characters)
+- **Complex object** (data frame, unnamed vector, nested list):
+  `fn_name: [complex -- see audit_report()]`
 
 To suppress annotations and display only the main table:
 
@@ -360,7 +358,7 @@ To suppress annotations and display only the main table:
 print(trail4, show_custom = FALSE)
 #> 
 #> ── Audit Trail: "custom_example" ───────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:26
+#> Created: 2026-03-24 11:22:55
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -374,40 +372,16 @@ print(trail4, show_custom = FALSE)
 #>   raw   complete_only    -8     =    =
 ```
 
-### NULL-trail mode
-
-All tap functions work without a trail. When `.trail = NULL` (the
-default):
-
-- **No diagnostic args**: behaves like the plain dplyr function
-- **With `.stat` or `.warn_threshold`**: runs diagnostics and prints
-  results without recording to a trail
-
-``` r
-# Plain filter — no diagnostics
-orders |> filter_tap(amount > 100) |> nrow()
-#> [1] 12
-
-# Diagnostics without a trail
-orders |> filter_tap(amount > 100, .stat = amount) |> invisible()
-#> filter_keep(.data, amount > 100)
-#> Dropped 8 of 20 rows (40.00%).
-#> Dropped 555 of 3,465 for amount (16.02%).
-```
-
-This makes it easy to add quick diagnostics to any pipeline without
-setting up a full trail.
-
 ## Snapshot controls
 
 On wide datasets, computing numeric summaries for every column is
-unnecessary and slows down the pipeline. Three parameters on all tap
+unnecessary and slows the pipeline down. Three parameters on all tap
 functions let you control what gets captured:
 
-- `.numeric_summary = FALSE` — skips quantile computation entirely.
+- `.numeric_summary = FALSE` — skip quantile computation entirely
 - `.cols_include` — character vector of column names to include in the
-  snapshot’s schema (mutually exclusive with `.cols_exclude`).
-- `.cols_exclude` — character vector of column names to exclude.
+  snapshot’s schema (mutually exclusive with `.cols_exclude`)
+- `.cols_exclude` — character vector of column names to exclude
 
 Core invariants — `nrow`, `ncol`, and `total_nas` — are always recorded
 regardless of these settings.
@@ -426,7 +400,7 @@ wide_data |>
 print(trail_ctrl)
 #> 
 #> ── Audit Trail: "snapshot_controls" ────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:26
+#> Created: 2026-03-24 11:22:55
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -480,9 +454,9 @@ tab(orders, status, customer)
 embeds a tabulation inside a pipeline as a custom diagnostic annotation.
 It runs
 [`tab()`](https://fpcordeiro.github.io/tidyaudit/reference/tab.md) on
-the data, stores the result in the snapshot, and returns `.data`
-unchanged — a transparent pass-through. This is useful for tracking how
-distributions shift across pipeline steps.
+the data, stores the result in the snapshot, and returns the data
+unchanged — useful for tracking how categorical distributions shift
+across pipeline steps:
 
 ``` r
 trail_tab <- audit_trail("tab_pipeline")
@@ -496,7 +470,7 @@ result_tab <- orders |>
 print(trail_tab)
 #> 
 #> ── Audit Trail: "tab_pipeline" ─────────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:26
+#> Created: 2026-03-24 11:22:55
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -512,14 +486,37 @@ print(trail_tab)
 #>   status_dist  customer_dist    -8     =    =
 ```
 
-## Exporting and serializing trails
+## Standalone mode
+
+All tap functions work without a trail. When `.trail = NULL` (the
+default):
+
+- **No diagnostic args**: behaves like the plain dplyr function
+- **With `.stat` or `.warn_threshold`**: runs diagnostics and prints
+  results without recording to a trail
+
+This makes it easy to add quick diagnostics to any pipeline without
+setting up a full trail:
+
+``` r
+# Plain filter -- no diagnostics
+orders |> filter_tap(amount > 100) |> nrow()
+#> [1] 12
+
+# Diagnostics without a trail
+orders |> filter_tap(amount > 100, .stat = amount) |> invisible()
+#> filter_keep(.data, amount > 100)
+#> Dropped 8 of 20 rows (40.00%).
+#> Dropped 555 of 3,465 for amount (16.02%).
+```
+
+## Exporting and sharing trails
 
 Trails live in-memory as environment-based S3 objects. To share them
-with CI systems, dashboards, or documentation you need to convert them
-to portable formats. tidyaudit provides four serialization functions
-plus an HTML visualization.
+with colleagues, CI systems, or documentation, convert them to portable
+formats.
 
-### Converting trails to R objects
+### Converting to R objects
 
 ``` r
 # As a plain R list (suitable for jsonlite::toJSON())
@@ -527,7 +524,7 @@ trail_list <- trail_to_list(trail3)
 str(trail_list, max.level = 2)
 #> List of 4
 #>  $ name       : chr "filter_pipeline"
-#>  $ created_at : chr "2026-03-23T13:32:25Z"
+#>  $ created_at : chr "2026-03-24T11:22:54Z"
 #>  $ n_snapshots: int 3
 #>  $ snapshots  :List of 3
 #>   ..$ raw          :List of 15
@@ -538,9 +535,9 @@ str(trail_list, max.level = 2)
 trail_df <- trail_to_df(trail3)
 print(trail_df)
 #>   index         label   type           timestamp nrow ncol total_nas
-#> 1     1           raw    tap 2026-03-23 13:32:25   20    4         0
-#> 2     2 complete_only filter 2026-03-23 13:32:25   12    4         0
-#> 3     3    high_value filter 2026-03-23 13:32:26    4    4         0
+#> 1     1           raw    tap 2026-03-24 11:22:54   20    4         0
+#> 2     2 complete_only filter 2026-03-24 11:22:54   12    4         0
+#> 3     3    high_value filter 2026-03-24 11:22:54    4    4         0
 #>    all_columns       schema numeric_summary      changes  diagnostics custom
 #> 1 id, cust.... c("id", ....    c("id", ....                                 
 #> 2 id, cust.... c("id", ....    c("id", .... -8, 0, 0.... keep, st....       
@@ -562,7 +559,7 @@ restored <- read_trail(tmp_rds)
 print(restored)
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-03-23 13:32:25
+#> Created: 2026-03-24 11:22:54
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -578,7 +575,8 @@ print(restored)
 #>   complete_only  high_value       -8     =    =
 ```
 
-JSON format is available for interoperability (requires jsonlite):
+JSON format is available for interoperability with other tools (requires
+jsonlite):
 
 ``` r
 tmp_json <- tempfile(fileext = ".json")
@@ -588,8 +586,8 @@ write_trail(trail3, tmp_json, format = "json")
 ### HTML visualization
 
 [`audit_export()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_export.md)
-produces a self-contained HTML file — one file you can email or embed in
-documentation:
+produces a self-contained HTML file — one file you can email, embed in
+documentation, or drop into a compliance folder:
 
 ``` r
 audit_export(trail3, tempfile(fileext = ".html"))
@@ -597,6 +595,5 @@ audit_export(trail3, tempfile(fileext = ".html"))
 
 The HTML page renders an interactive pipeline flow diagram with
 light/dark theme toggle. Nodes are clickable and expand to show column
-schema and diagnostics. Edges are clickable and show the full diff
-between adjacent snapshots. No server or internet connection is required
-to view the file.
+schema and diagnostics. Edges show the full diff between adjacent
+snapshots. No server or internet connection required.

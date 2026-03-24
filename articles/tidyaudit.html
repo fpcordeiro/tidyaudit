@@ -63,34 +63,30 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fpcordeiro.github.io/tidyaudit/">tidyaudit</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'dplyr'</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:stats':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     filter, lag</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="what-is-an-audit-trail">What is an audit trail?<a class="anchor" aria-label="anchor" href="#what-is-an-audit-trail"></a>
+<h2 id="tracking-what-happens-in-your-pipeline">Tracking what happens in your pipeline<a class="anchor" aria-label="anchor" href="#tracking-what-happens-in-your-pipeline"></a>
 </h2>
-<p>When building data pipelines, it’s easy to lose track of what happens
-at each step. How many rows were dropped by that filter? Did the join
-introduce duplicates? Which columns have missing values now?</p>
-<p>tidyaudit’s audit trail captures <strong>metadata-only
-snapshots</strong> at each step of a pipe — row counts, column counts,
-NA totals, numeric summaries — without storing the data itself. This
-gives you a lightweight, structured record of your pipeline’s behavior.
-The trail object also allows for custom functions to increase
-flexibility and capture domain-specific diagnostics.</p>
+<p>Every filter, join, and transformation in a data pipeline encodes an
+assumption about the data. How many rows did that filter actually drop?
+Did the join introduce NAs or duplicates? Which records did not match?
+How much revenue was lost at each step?</p>
+<p>These questions matter. Even when these answers are clear in the
+moment, they become hard to recall during code review, debugging, or
+when someone inherits your pipeline months later. An audit trail keeps
+that record for you.</p>
+<p>tidyaudit captures <strong>metadata-only snapshots</strong> at each
+step of a pipe — row counts, column counts, NA totals, numeric summaries
+— without storing the data itself. The trail is a lightweight,
+structured record of your pipeline’s behavior that you can print, diff,
+export, and share.</p>
 </div>
 <div class="section level2">
-<h2 id="building-a-basic-trail">Building a basic trail<a class="anchor" aria-label="anchor" href="#building-a-basic-trail"></a>
+<h2 id="your-first-trail">Your first trail<a class="anchor" aria-label="anchor" href="#your-first-trail"></a>
 </h2>
-<p>Start by creating a trail object and inserting
-<code><a href="../reference/audit_tap.html">audit_tap()</a></code> calls into your pipeline. Each tap records a
-snapshot and passes the data through unchanged.</p>
+<p>Create a trail object and insert <code><a href="../reference/audit_tap.html">audit_tap()</a></code> calls into
+your pipeline. Each tap records a snapshot and passes the data through
+unchanged — three taps, three snapshots, one timeline.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Sample data</span></span>
 <span><span class="va">orders</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -109,12 +105,12 @@ snapshot and passes the data through unchanged.</p>
 <span>  <span class="fu"><a href="../reference/audit_tap.html">audit_tap</a></span><span class="op">(</span><span class="va">trail</span>, <span class="st">"complete_only"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>tax <span class="op">=</span> <span class="va">amount</span> <span class="op">*</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/audit_tap.html">audit_tap</a></span><span class="op">(</span><span class="va">trail</span>, <span class="st">"with_tax"</span><span class="op">)</span></span></code></pre></div>
-<p>Now print the trail to see the snapshot timeline:</p>
+<p>Print the trail to see the full timeline:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"order_pipeline"</span> <span style="color: #00BBBB;">───────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:25</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -129,22 +125,25 @@ snapshot and passes the data through unchanged.</p>
 <span><span class="co">#&gt;   raw            complete_only    -8     =    =</span></span>
 <span><span class="co">#&gt;   complete_only  with_tax          =    +1    =</span></span></code></pre></div>
 <p>The timeline shows row counts, column counts, NA totals, and change
-summaries between consecutive steps. You can see exactly how many rows
-each filter removed and when columns were added.</p>
+summaries between consecutive steps. Notice how the filter reduced 20
+rows to 12, and the mutate added a column — all captured
+automatically.</p>
 </div>
 <div class="section level2">
 <h2 id="operation-aware-taps">Operation-aware taps<a class="anchor" aria-label="anchor" href="#operation-aware-taps"></a>
 </h2>
-<p>Plain <code><a href="../reference/audit_tap.html">audit_tap()</a></code> records what the data looks like, but
-it can’t tell you <em>why</em> it changed. Operation-aware taps —
-<code><a href="../reference/join_tap.html">left_join_tap()</a></code>, <code><a href="../reference/filter_tap.html">filter_tap()</a></code>, etc. — perform
-the operation AND record enriched diagnostics.</p>
+<p>Plain <code><a href="../reference/audit_tap.html">audit_tap()</a></code> records what the data looks like at a
+given point, but it can’t tell you <em>why</em> it changed.
+Operation-aware taps solve this — they perform the dplyr operation AND
+record enriched diagnostics in a single step.</p>
 <div class="section level3">
 <h3 id="join-taps">Join taps<a class="anchor" aria-label="anchor" href="#join-taps"></a>
 </h3>
-<p>Replace <code><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">dplyr::left_join()</a></code> + <code><a href="../reference/audit_tap.html">audit_tap()</a></code>
-with <code><a href="../reference/join_tap.html">left_join_tap()</a></code> to capture match rates, relationship
-type, and duplicate key information:</p>
+<p>Joins are where data quality problems hide. A left join can silently
+introduce NAs, inflate row counts, or produce unexpected many-to-many
+relationships. Replace <code><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">dplyr::left_join()</a></code> with
+<code><a href="../reference/join_tap.html">left_join_tap()</a></code> to capture match rates, relationship type,
+and duplicate key information automatically:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">customers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  customer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Alice"</span>, <span class="st">"Bob"</span>, <span class="st">"Carol"</span>, <span class="st">"Dan"</span><span class="op">)</span>,</span>
@@ -161,7 +160,7 @@ type, and duplicate key information:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"join_pipeline"</span> <span style="color: #00BBBB;">────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:25</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label        Rows  Cols  NAs  Type                                </span></span>
@@ -174,8 +173,8 @@ type, and duplicate key information:</p>
 <span><span class="co">#&gt;   ────  ───────────  ────  ────  ───</span></span>
 <span><span class="co">#&gt;   raw   with_region     =    +1   +4</span></span></code></pre></div>
 <p>The <code>Type</code> column now shows the join type, relationship,
-and match rate — all without leaving the pipe.</p>
-<p>All six dplyr join types are supported: <code><a href="../reference/join_tap.html">left_join_tap()</a></code>,
+and match rate — all without leaving the pipe. All six dplyr join types
+are supported: <code><a href="../reference/join_tap.html">left_join_tap()</a></code>,
 <code><a href="../reference/join_tap.html">right_join_tap()</a></code>, <code><a href="../reference/join_tap.html">inner_join_tap()</a></code>,
 <code><a href="../reference/join_tap.html">full_join_tap()</a></code>, <code><a href="../reference/join_tap.html">anti_join_tap()</a></code>,
 <code><a href="../reference/join_tap.html">semi_join_tap()</a></code>.</p>
@@ -183,8 +182,9 @@ and match rate — all without leaving the pipe.</p>
 <div class="section level3">
 <h3 id="filter-taps">Filter taps<a class="anchor" aria-label="anchor" href="#filter-taps"></a>
 </h3>
-<p><code><a href="../reference/filter_tap.html">filter_tap()</a></code> keeps matching rows (like
-<code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">dplyr::filter()</a></code>) while recording how many rows were
+<p>Filters are invisible by default — you remove rows and never know
+what you lost. <code><a href="../reference/filter_tap.html">filter_tap()</a></code> keeps matching rows (like
+<code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">dplyr::filter()</a></code>) while recording exactly how many rows were
 dropped:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">trail3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/audit_trail.html">audit_trail</a></span><span class="op">(</span><span class="st">"filter_pipeline"</span><span class="op">)</span></span>
@@ -205,7 +205,7 @@ dropped:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"filter_pipeline"</span> <span style="color: #00BBBB;">──────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:25</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type                          </span></span>
@@ -219,10 +219,11 @@ dropped:</p>
 <span><span class="co">#&gt;   ─────────────  ─────────────  ────  ────  ───</span></span>
 <span><span class="co">#&gt;   raw            complete_only    -8     =    =</span></span>
 <span><span class="co">#&gt;   complete_only  high_value       -8     =    =</span></span></code></pre></div>
-<p>The <code>.stat</code> argument tracks a numeric column through the
-filter, reporting how much of the total was dropped — useful for
-financial pipelines where you want to know the monetary impact of each
-filter.</p>
+<p>The <code>.stat</code> argument is the feature that makes filter taps
+indispensable for financial and business pipelines: it tracks how much
+of a numeric column was removed at each step. You can see not just that
+you dropped 4 rows, but that those rows represented a specific dollar
+amount.</p>
 <p><code><a href="../reference/filter_tap.html">filter_out_tap()</a></code> works the same way but drops matching
 rows (the inverse).</p>
 </div>
@@ -231,7 +232,8 @@ rows (the inverse).</p>
 <h2 id="comparing-snapshots">Comparing snapshots<a class="anchor" aria-label="anchor" href="#comparing-snapshots"></a>
 </h2>
 <p><code><a href="../reference/audit_diff.html">audit_diff()</a></code> gives you a detailed before/after
-comparison between any two snapshots in the trail:</p>
+comparison between any two snapshots in the trail — not just adjacent
+ones:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/audit_diff.html">audit_diff</a></span><span class="op">(</span><span class="va">trail3</span>, <span class="st">"raw"</span>, <span class="st">"high_value"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -251,21 +253,22 @@ comparison between any two snapshots in the trail:</p>
 <span><span class="co">#&gt;     id            10.50         8.5      -2</span></span>
 <span><span class="co">#&gt;     amount       173.25       145.0  -28.25</span></span></code></pre></div>
 <p>This shows row/column/NA deltas, columns added or removed, and
-numeric distribution shifts.</p>
+numeric distribution shifts across the common columns.</p>
 </div>
 <div class="section level2">
 <h2 id="full-audit-report">Full audit report<a class="anchor" aria-label="anchor" href="#full-audit-report"></a>
 </h2>
 <p><code><a href="../reference/audit_report.html">audit_report()</a></code> prints the complete trail summary plus
-all consecutive diffs in one call:</p>
+all consecutive diffs in one call — the full story of what your pipeline
+did:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/audit_report.html">audit_report</a></span><span class="op">(</span><span class="va">trail3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ── Audit Report: <span style="color: #0000BB;">"filter_pipeline"</span> ─────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:25</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
 <span><span class="co">#&gt; Total snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"filter_pipeline"</span> <span style="color: #00BBBB;">──────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:25</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type                          </span></span>
@@ -329,15 +332,15 @@ all consecutive diffs in one call:</p>
 <span><span class="co">#&gt; ────────────────────────────────────────────────────────────────────────────────</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="tips">Tips<a class="anchor" aria-label="anchor" href="#tips"></a>
+<h2 id="domain-specific-diagnostics">Domain-specific diagnostics<a class="anchor" aria-label="anchor" href="#domain-specific-diagnostics"></a>
 </h2>
-<div class="section level3">
-<h3 id="custom-diagnostics">Custom diagnostics<a class="anchor" aria-label="anchor" href="#custom-diagnostics"></a>
-</h3>
+<p>The built-in metrics cover structure and shape (rows, columns, NAs,
+numeric summaries). But your domain has its own questions: how many
+valid records remain? What’s the total revenue at this stage? Is a
+business rule still satisfied?</p>
 <p>Pass a named list of functions via <code>.fns</code> to compute
-domain-specific diagnostics at any tap. Each function receives the
-snapshot data as its argument (<code>.</code> in formula lambdas) and
-its return value is stored in the snapshot.</p>
+anything domain-specific at any tap. Each function receives the data and
+its return value is stored in the snapshot:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">trail4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/audit_trail.html">audit_trail</a></span><span class="op">(</span><span class="st">"custom_example"</span><span class="op">)</span></span>
 <span></span>
@@ -353,13 +356,13 @@ its return value is stored in the snapshot.</p>
 <span>    amount_stats <span class="op">=</span> <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">.</span><span class="op">$</span><span class="va">amount</span><span class="op">)</span>,</span>
 <span>                      max  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">.</span><span class="op">$</span><span class="va">amount</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>When you print the trail, custom results appear as inline
-<code>↳</code> annotations directly below each snapshot row:</p>
+<p>Custom results appear as inline annotations directly below each
+snapshot row:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail4</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"custom_example"</span> <span style="color: #00BBBB;">───────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:26</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -378,16 +381,15 @@ its return value is stored in the snapshot.</p>
 <p>The rendering rules are:</p>
 <ul>
 <li>
-<strong>Scalar</strong> return value →
-<code>↳ fn_name: value</code>
+<strong>Scalar</strong> return value:
+<code>fn_name: value</code>
 </li>
 <li>
-<strong>Named vector or named list of scalars</strong> →
-<code>↳ fn_name: key=val, key=val</code> (truncated at 60
-characters)</li>
+<strong>Named vector or named list of scalars</strong>:
+<code>fn_name: key=val, key=val</code> (truncated at 60 characters)</li>
 <li>
 <strong>Complex object</strong> (data frame, unnamed vector, nested
-list) → <code>↳ fn_name: [complex — see audit_report()]</code>
+list): <code>fn_name: [complex -- see audit_report()]</code>
 </li>
 </ul>
 <p>To suppress annotations and display only the main table:</p>
@@ -395,7 +397,7 @@ list) → <code>↳ fn_name: [complex — see audit_report()]</code>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail4</span>, show_custom <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"custom_example"</span> <span style="color: #00BBBB;">───────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:26</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -408,56 +410,28 @@ list) → <code>↳ fn_name: [complex — see audit_report()]</code>
 <span><span class="co">#&gt;   ────  ─────────────  ────  ────  ───</span></span>
 <span><span class="co">#&gt;   raw   complete_only    -8     =    =</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="null-trail-mode">NULL-trail mode<a class="anchor" aria-label="anchor" href="#null-trail-mode"></a>
-</h3>
-<p>All tap functions work without a trail. When
-<code>.trail = NULL</code> (the default):</p>
-<ul>
-<li>
-<strong>No diagnostic args</strong>: behaves like the plain dplyr
-function</li>
-<li>
-<strong>With <code>.stat</code> or
-<code>.warn_threshold</code></strong>: runs diagnostics and prints
-results without recording to a trail</li>
-</ul>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Plain filter — no diagnostics</span></span>
-<span><span class="va">orders</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/filter_tap.html">filter_tap</a></span><span class="op">(</span><span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">100</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 12</span></span>
-<span></span>
-<span><span class="co"># Diagnostics without a trail</span></span>
-<span><span class="va">orders</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/filter_tap.html">filter_tap</a></span><span class="op">(</span><span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">100</span>, .stat <span class="op">=</span> <span class="va">amount</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; filter_keep(.data, amount &gt; 100)</span></span>
-<span><span class="co">#&gt; Dropped 8 of 20 rows (40.00%).</span></span>
-<span><span class="co">#&gt; Dropped 555 of 3,465 for amount (16.02%).</span></span></code></pre></div>
-<p>This makes it easy to add quick diagnostics to any pipeline without
-setting up a full trail.</p>
-</div>
-</div>
 <div class="section level2">
 <h2 id="snapshot-controls">Snapshot controls<a class="anchor" aria-label="anchor" href="#snapshot-controls"></a>
 </h2>
 <p>On wide datasets, computing numeric summaries for every column is
-unnecessary and slows down the pipeline. Three parameters on all tap
+unnecessary and slows the pipeline down. Three parameters on all tap
 functions let you control what gets captured:</p>
 <ul>
 <li>
-<code>.numeric_summary = FALSE</code> — skips quantile computation
-entirely.</li>
+<code>.numeric_summary = FALSE</code> — skip quantile computation
+entirely</li>
 <li>
 <code>.cols_include</code> — character vector of column names to
 include in the snapshot’s schema (mutually exclusive with
-<code>.cols_exclude</code>).</li>
+<code>.cols_exclude</code>)</li>
 <li>
 <code>.cols_exclude</code> — character vector of column names to
-exclude.</li>
+exclude</li>
 </ul>
 <p>Core invariants — <code>nrow</code>, <code>ncol</code>, and
 <code>total_nas</code> — are always recorded regardless of these
 settings.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">wide_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">orders</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span> <span class="op">*</span> <span class="fl">50</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">20</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">trail_ctrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/audit_trail.html">audit_trail</a></span><span class="op">(</span><span class="st">"snapshot_controls"</span><span class="op">)</span></span>
@@ -471,7 +445,7 @@ settings.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail_ctrl</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"snapshot_controls"</span> <span style="color: #00BBBB;">────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:26</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -492,7 +466,7 @@ contains no numeric summaries.</p>
 </h2>
 <p><code><a href="../reference/tab.html">tab()</a></code> produces one-way frequency tables or two-way
 crosstabulations:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/tab.html">tab</a></span><span class="op">(</span><span class="va">orders</span>, <span class="va">status</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Tabulation: status</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────────</span></span></span>
@@ -519,10 +493,10 @@ crosstabulations:</p>
 <span><span class="co">#&gt;   Total          4    4      4    4    4     20</span></span></code></pre></div>
 <p><code><a href="../reference/tab_tap.html">tab_tap()</a></code> embeds a tabulation inside a pipeline as a
 custom diagnostic annotation. It runs <code><a href="../reference/tab.html">tab()</a></code> on the data,
-stores the result in the snapshot, and returns <code>.data</code>
-unchanged — a transparent pass-through. This is useful for tracking how
-distributions shift across pipeline steps.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+stores the result in the snapshot, and returns the data unchanged —
+useful for tracking how categorical distributions shift across pipeline
+steps:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">trail_tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/audit_trail.html">audit_trail</a></span><span class="op">(</span><span class="st">"tab_pipeline"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result_tab</span> <span class="op">&lt;-</span> <span class="va">orders</span> <span class="op">|&gt;</span></span>
@@ -534,7 +508,7 @@ distributions shift across pipeline steps.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail_tab</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"tab_pipeline"</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:26</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -550,14 +524,40 @@ distributions shift across pipeline steps.</p>
 <span><span class="co">#&gt;   status_dist  customer_dist    -8     =    =</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="exporting-and-serializing-trails">Exporting and serializing trails<a class="anchor" aria-label="anchor" href="#exporting-and-serializing-trails"></a>
+<h2 id="standalone-mode">Standalone mode<a class="anchor" aria-label="anchor" href="#standalone-mode"></a>
+</h2>
+<p>All tap functions work without a trail. When
+<code>.trail = NULL</code> (the default):</p>
+<ul>
+<li>
+<strong>No diagnostic args</strong>: behaves like the plain dplyr
+function</li>
+<li>
+<strong>With <code>.stat</code> or
+<code>.warn_threshold</code></strong>: runs diagnostics and prints
+results without recording to a trail</li>
+</ul>
+<p>This makes it easy to add quick diagnostics to any pipeline without
+setting up a full trail:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Plain filter -- no diagnostics</span></span>
+<span><span class="va">orders</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/filter_tap.html">filter_tap</a></span><span class="op">(</span><span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">100</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 12</span></span>
+<span></span>
+<span><span class="co"># Diagnostics without a trail</span></span>
+<span><span class="va">orders</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/filter_tap.html">filter_tap</a></span><span class="op">(</span><span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">100</span>, .stat <span class="op">=</span> <span class="va">amount</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; filter_keep(.data, amount &gt; 100)</span></span>
+<span><span class="co">#&gt; Dropped 8 of 20 rows (40.00%).</span></span>
+<span><span class="co">#&gt; Dropped 555 of 3,465 for amount (16.02%).</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="exporting-and-sharing-trails">Exporting and sharing trails<a class="anchor" aria-label="anchor" href="#exporting-and-sharing-trails"></a>
 </h2>
 <p>Trails live in-memory as environment-based S3 objects. To share them
-with CI systems, dashboards, or documentation you need to convert them
-to portable formats. tidyaudit provides four serialization functions
-plus an HTML visualization.</p>
+with colleagues, CI systems, or documentation, convert them to portable
+formats.</p>
 <div class="section level3">
-<h3 id="converting-trails-to-r-objects">Converting trails to R objects<a class="anchor" aria-label="anchor" href="#converting-trails-to-r-objects"></a>
+<h3 id="converting-to-r-objects">Converting to R objects<a class="anchor" aria-label="anchor" href="#converting-to-r-objects"></a>
 </h3>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># As a plain R list (suitable for jsonlite::toJSON())</span></span>
@@ -565,7 +565,7 @@ plus an HTML visualization.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">trail_list</span>, max.level <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 4</span></span>
 <span><span class="co">#&gt;  $ name       : chr "filter_pipeline"</span></span>
-<span><span class="co">#&gt;  $ created_at : chr "2026-03-23T13:32:25Z"</span></span>
+<span><span class="co">#&gt;  $ created_at : chr "2026-03-24T11:22:54Z"</span></span>
 <span><span class="co">#&gt;  $ n_snapshots: int 3</span></span>
 <span><span class="co">#&gt;  $ snapshots  :List of 3</span></span>
 <span><span class="co">#&gt;   ..$ raw          :List of 15</span></span>
@@ -576,9 +576,9 @@ plus an HTML visualization.</p>
 <span><span class="va">trail_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/trail_to_df.html">trail_to_df</a></span><span class="op">(</span><span class="va">trail3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail_df</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   index         label   type           timestamp nrow ncol total_nas</span></span>
-<span><span class="co">#&gt; 1     1           raw    tap 2026-03-23 13:32:25   20    4         0</span></span>
-<span><span class="co">#&gt; 2     2 complete_only filter 2026-03-23 13:32:25   12    4         0</span></span>
-<span><span class="co">#&gt; 3     3    high_value filter 2026-03-23 13:32:26    4    4         0</span></span>
+<span><span class="co">#&gt; 1     1           raw    tap 2026-03-24 11:22:54   20    4         0</span></span>
+<span><span class="co">#&gt; 2     2 complete_only filter 2026-03-24 11:22:54   12    4         0</span></span>
+<span><span class="co">#&gt; 3     3    high_value filter 2026-03-24 11:22:54    4    4         0</span></span>
 <span><span class="co">#&gt;    all_columns       schema numeric_summary      changes  diagnostics custom</span></span>
 <span><span class="co">#&gt; 1 id, cust.... c("id", ....    c("id", ....                                 </span></span>
 <span><span class="co">#&gt; 2 id, cust.... c("id", ....    c("id", .... -8, 0, 0.... keep, st....       </span></span>
@@ -599,7 +599,7 @@ plus an HTML visualization.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">restored</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"filter_pipeline"</span> <span style="color: #00BBBB;">──────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-23 13:32:25</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type                          </span></span>
@@ -613,8 +613,8 @@ plus an HTML visualization.</p>
 <span><span class="co">#&gt;   ─────────────  ─────────────  ────  ────  ───</span></span>
 <span><span class="co">#&gt;   raw            complete_only    -8     =    =</span></span>
 <span><span class="co">#&gt;   complete_only  high_value       -8     =    =</span></span></code></pre></div>
-<p>JSON format is available for interoperability (requires
-jsonlite):</p>
+<p>JSON format is available for interoperability with other tools
+(requires jsonlite):</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tmp_json</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".json"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/write_trail.html">write_trail</a></span><span class="op">(</span><span class="va">trail3</span>, <span class="va">tmp_json</span>, format <span class="op">=</span> <span class="st">"json"</span><span class="op">)</span></span></code></pre></div>
@@ -623,14 +623,14 @@ jsonlite):</p>
 <h3 id="html-visualization">HTML visualization<a class="anchor" aria-label="anchor" href="#html-visualization"></a>
 </h3>
 <p><code><a href="../reference/audit_export.html">audit_export()</a></code> produces a self-contained HTML file — one
-file you can email or embed in documentation:</p>
+file you can email, embed in documentation, or drop into a compliance
+folder:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/audit_export.html">audit_export</a></span><span class="op">(</span><span class="va">trail3</span>, <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".html"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The HTML page renders an interactive pipeline flow diagram with
 light/dark theme toggle. Nodes are clickable and expand to show column
-schema and diagnostics. Edges are clickable and show the full diff
-between adjacent snapshots. No server or internet connection is required
-to view the file.</p>
+schema and diagnostics. Edges show the full diff between adjacent
+snapshots. No server or internet connection required.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

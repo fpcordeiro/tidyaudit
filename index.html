@@ -53,22 +53,16 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>Pipeline audit trails and data diagnostics for <code>tidyverse</code> workflows.</p>
-<p>tidyaudit captures <strong>metadata-only snapshots</strong> at each step of a dplyr pipeline, building a structured audit report without storing the data itself. Operation-aware taps enrich snapshots with join match rates, filter drop statistics, and more. The package combines diagnostic tools for <strong>interactive</strong> development and <strong>production</strong>-oriented tools for data quality.</p>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="pipeline-audit-trails-and-data-diagnostics-for-tidyverse-workflows">Pipeline audit trails and data diagnostics for tidyverse workflows<a class="anchor" aria-label="anchor" href="#pipeline-audit-trails-and-data-diagnostics-for-tidyverse-workflows"></a>
 </h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install from CRAN</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyaudit"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Install development version using pak</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"fpcordeiro/tidyaudit"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Audit trails</strong> track what happens at every step of a dplyr pipeline by recording metadata-only snapshots — row counts, column changes, NA totals, numeric shifts, and custom functions. You build a trail by dropping <strong>taps</strong> into your pipe: transparent pass-throughs that record a snapshot and let the data flow on. Operation-aware taps like <code><a href="reference/join_tap.html">left_join_tap()</a></code> and <code><a href="reference/filter_tap.html">filter_tap()</a></code> go further, capturing match rates, drop counts, and stat impact. The result is a structured trail you can print, diff, export as HTML, or serialize to JSON. You can learn more in <code><a href="articles/tidyaudit.html">vignette("tidyaudit")</a></code>.</p>
+<p>tidyaudit also includes a <strong>diagnostic toolkit</strong> for interactive data exploration — join validation, key checks, table comparison, and more — described in <code><a href="articles/diagnostics.html">vignette("diagnostics")</a></code>.</p>
 </div>
 <div class="section level2">
-<h2 id="quick-example">Quick Example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
+<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fpcordeiro.github.io/tidyaudit/">tidyaudit</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
@@ -82,49 +76,50 @@
 <span>  <span class="fu"><a href="reference/audit_tap.html">audit_tap</a></span><span class="op">(</span><span class="va">trail</span>, <span class="st">"raw"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/join_tap.html">left_join_tap</a></span><span class="op">(</span><span class="va">regions</span>, by <span class="op">=</span> <span class="st">"region_id"</span>, .trail <span class="op">=</span> <span class="va">trail</span>, .label <span class="op">=</span> <span class="st">"with_region"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/filter_tap.html">filter_tap</a></span><span class="op">(</span><span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">100</span>, .trail <span class="op">=</span> <span class="va">trail</span>, .label <span class="op">=</span> <span class="st">"high_value"</span>, .stat <span class="op">=</span> <span class="va">amount</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ℹ filter_tap: amount &gt; 100</span></span>
+<span><span class="co">#&gt; i filter_tap: amount &gt; 100</span></span>
 <span><span class="co">#&gt; Dropped 18 of 100 rows (18.0%)</span></span>
 <span><span class="co">#&gt; Stat amount: dropped 1,062.191 of 25,429.39</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ── Audit Trail: "order_pipeline" ─────────────────────────────────────────────────────────────────────</span></span>
+<span><span class="co">#&gt; -- Audit Trail: "order_pipeline" -----------------------------------------------</span></span>
 <span><span class="co">#&gt; Created: 2026-02-21 14:36:35</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   #  Label        Rows  Cols  NAs  Type                                </span></span>
-<span><span class="co">#&gt;   ─  ───────────  ────  ────  ───  ────────────────────────────────────</span></span>
-<span><span class="co">#&gt;   1  raw           100     3    0  tap                                 </span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt;   #  Label        Rows  Cols  NAs  Type</span></span>
+<span><span class="co">#&gt;   -  -----------  ----  ----  ---  ------------------------------------</span></span>
+<span><span class="co">#&gt;   1  raw           100     3    0  tap</span></span>
 <span><span class="co">#&gt;   2  with_region   100     4   23  left_join (many-to-one, 77% matched)</span></span>
-<span><span class="co">#&gt;   3  high_value     82     4   20  filter (dropped 18 rows, 18%)       </span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   3  high_value     82     4   20  filter (dropped 18 rows, 18%)</span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; Changes:</span></span>
-<span><span class="co">#&gt;   raw → with_region: = rows, +1 cols, +23 NAs</span></span>
-<span><span class="co">#&gt;   with_region → high_value: -18 rows, = cols, -3 NAs</span></span>
+<span><span class="co">#&gt;   raw -&gt; with_region: = rows, +1 cols, +23 NAs</span></span>
+<span><span class="co">#&gt;   with_region -&gt; high_value: -18 rows, = cols, -3 NAs</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/audit_diff.html">audit_diff</a></span><span class="op">(</span><span class="va">trail</span>, <span class="st">"raw"</span>, <span class="st">"high_value"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ── Audit Diff: "raw" → "high_value" ──</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; -- Audit Diff: "raw" -&gt; "high_value" --</span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt;   Metric  Before  After  Delta</span></span>
-<span><span class="co">#&gt;   ──────  ──────  ─────  ─────</span></span>
+<span><span class="co">#&gt;   ------  ------  -----  -----</span></span>
 <span><span class="co">#&gt;   Rows       100     82    -18</span></span>
 <span><span class="co">#&gt;   Cols         3      4     +1</span></span>
 <span><span class="co">#&gt;   NAs          0     20    +20</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ✔ Columns added: name</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; Columns added: name</span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; Numeric shifts (common columns):</span></span>
 <span><span class="co">#&gt;     Column     Mean before  Mean after   Shift</span></span>
-<span><span class="co">#&gt;     ─────────  ───────────  ──────────  ──────</span></span>
+<span><span class="co">#&gt;     ---------  -----------  ----------  ------</span></span>
 <span><span class="co">#&gt;     id               50.50       49.66   -0.84</span></span>
 <span><span class="co">#&gt;     amount          254.29      297.16  +42.87</span></span>
 <span><span class="co">#&gt;     region_id         3.08        3.05   -0.03</span></span></code></pre></div>
+<p>Three taps. Three snapshots. A complete record of what the pipeline did to your data — and what it cost.</p>
 <div class="section level3">
 <h3 id="export-as-html">Export as HTML<a class="anchor" aria-label="anchor" href="#export-as-html"></a>
 </h3>
-<p>Generate a self-contained HTML visualization of any trail — one file you can email, attach to a report, or drop into a compliance folder:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>Share a trail as a self-contained HTML file — one file you can email, attach to a report, or drop into a compliance folder:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/audit_export.html">audit_export</a></span><span class="op">(</span><span class="va">trail</span>, <span class="st">"order_pipeline.html"</span><span class="op">)</span></span></code></pre></div>
-<p>The output is an interactive pipeline flow diagram with clickable nodes and edges, light/dark theme toggle, and embedded JSON export — no server or internet required.</p>
+<p>The output is an interactive flow diagram with clickable nodes and edges, light/dark theme toggle, and embedded JSON export. No server or internet required.</p>
 <div class="float">
 <img src="reference/figures/audit_export_readme.gif" alt="audit_export demo"><div class="figcaption">audit_export demo</div>
 </div>
@@ -133,47 +128,74 @@
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
-<p><strong>Audit trail system</strong> — the core innovation:</p>
+<div class="section level3">
+<h3 id="audit-trail-system">Audit trail system<a class="anchor" aria-label="anchor" href="#audit-trail-system"></a>
+</h3>
+<p>Build a structured timeline of your pipeline’s behavior. Drop taps into any dplyr pipe and get a traceable, diffable, exportable record of every step.</p>
 <ul>
 <li>
-<code><a href="reference/audit_trail.html">audit_trail()</a></code> / <code><a href="reference/audit_tap.html">audit_tap()</a></code> — build snapshot timelines inside pipes</li>
+<code><a href="reference/audit_trail.html">audit_trail()</a></code> / <code><a href="reference/audit_tap.html">audit_tap()</a></code> — create a trail and record snapshots inside pipes</li>
 <li>
-<code><a href="reference/join_tap.html">left_join_tap()</a></code>, <code><a href="reference/filter_tap.html">filter_tap()</a></code>, and friends — operation-aware taps with enriched diagnostics (match rates, drop statistics)</li>
+<code><a href="reference/join_tap.html">left_join_tap()</a></code>, <code><a href="reference/filter_tap.html">filter_tap()</a></code>, and friends — <strong>operation-aware taps</strong> that capture match rates, drop counts, stat impact, and relationship types</li>
 <li>
-<code><a href="reference/audit_diff.html">audit_diff()</a></code> — detailed before/after comparison of any two snapshots</li>
+<code><a href="reference/tab_tap.html">tab_tap()</a></code> — track frequency distributions across pipeline steps</li>
+<li>
+<code><a href="reference/audit_diff.html">audit_diff()</a></code> — before/after comparison of any two snapshots</li>
 <li>
 <code><a href="reference/audit_report.html">audit_report()</a></code> — full pipeline report in one call</li>
 <li>
-<code><a href="reference/audit_export.html">audit_export()</a></code> — self-contained HTML trail visualization (interactive flow diagram, no server required)</li>
+<code><a href="reference/audit_export.html">audit_export()</a></code> — self-contained HTML visualization</li>
 <li>
-<code><a href="reference/write_trail.html">write_trail()</a></code> / <code><a href="reference/read_trail.html">read_trail()</a></code> — serialize trails to RDS or JSON for CI pipelines and dashboards</li>
-<li>
-<code><a href="reference/tab_tap.html">tab_tap()</a></code> — tabulation snapshots within pipelines (one-way and two-way frequency tables)</li>
+<code><a href="reference/write_trail.html">write_trail()</a></code> / <code><a href="reference/read_trail.html">read_trail()</a></code> — serialize to RDS or JSON for CI pipelines and dashboards</li>
 <li>Snapshot controls (<code>.numeric_summary</code>, <code>.cols_include</code>, <code>.cols_exclude</code>) — fine-tune what each tap captures</li>
 </ul>
-<p><strong>Diagnostic functions</strong> — tidyverse ports from <a href="https://github.com/fpcordeiro/dtaudit" class="external-link">dtaudit</a>:</p>
+</div>
+<div class="section level3">
+<h3 id="diagnostic-toolkit">Diagnostic toolkit<a class="anchor" aria-label="anchor" href="#diagnostic-toolkit"></a>
+</h3>
+<p>Standalone functions for interactive data exploration — the questions you ask in the console before, during, and after building a pipeline.</p>
 <ul>
 <li>
-<code><a href="reference/validate_join.html">validate_join()</a></code> — analyze joins without performing them</li>
+<code><a href="reference/validate_join.html">validate_join()</a></code> — analyze a join before performing it (match rates, duplicates, unmatched keys)</li>
 <li>
-<code><a href="reference/validate_primary_keys.html">validate_primary_keys()</a></code> / <code><a href="reference/validate_var_relationship.html">validate_var_relationship()</a></code> — key validation</li>
+<code><a href="reference/validate_primary_keys.html">validate_primary_keys()</a></code> / <code><a href="reference/validate_var_relationship.html">validate_var_relationship()</a></code> — key and relationship validation</li>
 <li>
-<code><a href="reference/compare_tables.html">compare_tables()</a></code> — column, row, and numeric comparison</li>
+<code><a href="reference/compare_tables.html">compare_tables()</a></code> — column, row, numeric, and categorical comparison between two data frames</li>
 <li>
-<code><a href="reference/filter_keep.html">filter_keep()</a></code> / <code><a href="reference/filter_drop.html">filter_drop()</a></code> — filter with diagnostic output</li>
+<code><a href="reference/filter_keep.html">filter_keep()</a></code> / <code><a href="reference/filter_drop.html">filter_drop()</a></code> — filter with diagnostic output and configurable warning thresholds</li>
 <li>
-<code><a href="reference/diagnose_nas.html">diagnose_nas()</a></code> / <code><a href="reference/summarize_column.html">summarize_column()</a></code> / <code><a href="reference/get_summary_table.html">get_summary_table()</a></code> — data quality</li>
+<code><a href="reference/diagnose_nas.html">diagnose_nas()</a></code> / <code><a href="reference/summarize_column.html">summarize_column()</a></code> / <code><a href="reference/get_summary_table.html">get_summary_table()</a></code> — data quality diagnostics</li>
 <li>
-<code><a href="reference/diagnose_strings.html">diagnose_strings()</a></code> / <code><a href="reference/audit_transform.html">audit_transform()</a></code> — string quality auditing and transformation</li>
+<code><a href="reference/diagnose_strings.html">diagnose_strings()</a></code> / <code><a href="reference/audit_transform.html">audit_transform()</a></code> — string quality auditing and type-aware transformation diagnostics</li>
 <li>
 <code><a href="reference/tab.html">tab()</a></code> — frequency tables and crosstabulations with sorting, cutoffs, and weighting</li>
 </ul>
-<p>See the <a href="https://fpcordeiro.github.io/tidyaudit/articles/tidyaudit.html">audit trail walkthrough</a> and <a href="https://fpcordeiro.github.io/tidyaudit/articles/diagnostics.html">diagnostic functions guide</a> for detailed documentation.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install from CRAN</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyaudit"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Install development version</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"fpcordeiro/tidyaudit"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+</h2>
+<ul>
+<li>
+<a href="https://fpcordeiro.github.io/tidyaudit/articles/tidyaudit.html">Audit trail walkthrough</a> — build your first trail, use operation-aware taps, export and share results</li>
+<li>
+<a href="https://fpcordeiro.github.io/tidyaudit/articles/diagnostics.html">Diagnostic functions guide</a> — validate joins, compare tables, diagnose data quality, and more</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="relationship-to-dtaudit">Relationship to dtaudit<a class="anchor" aria-label="anchor" href="#relationship-to-dtaudit"></a>
 </h2>
-<p>tidyaudit is a tidyverse-native sibling to <a href="https://github.com/fpcordeiro/dtaudit" class="external-link">dtaudit</a> (a data.table-based package on CRAN). The two packages share design vocabulary and S3 class naming conventions but no code or dependencies.</p>
+<p>tidyaudit is the tidyverse-native counterpart to <a href="https://github.com/fpcordeiro/dtaudit" class="external-link">dtaudit</a>, a data.table-based package on CRAN. Same design vocabulary, independent implementations — choose the one that matches your stack.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

@@ -110,7 +110,7 @@ unchanged — three taps, three snapshots, one timeline.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"order_pipeline"</span> <span style="color: #00BBBB;">───────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:28</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -160,7 +160,7 @@ and duplicate key information automatically:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"join_pipeline"</span> <span style="color: #00BBBB;">────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:28</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label        Rows  Cols  NAs  Type                                </span></span>
@@ -205,7 +205,7 @@ dropped:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"filter_pipeline"</span> <span style="color: #00BBBB;">──────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:28</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type                          </span></span>
@@ -264,11 +264,11 @@ did:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/audit_report.html">audit_report</a></span><span class="op">(</span><span class="va">trail3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ── Audit Report: <span style="color: #0000BB;">"filter_pipeline"</span> ─────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:28</span></span>
 <span><span class="co">#&gt; Total snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"filter_pipeline"</span> <span style="color: #00BBBB;">──────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:28</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type                          </span></span>
@@ -362,7 +362,7 @@ snapshot row:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail4</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"custom_example"</span> <span style="color: #00BBBB;">───────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:29</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -397,7 +397,7 @@ list): <code>fn_name: [complex -- see audit_report()]</code>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail4</span>, show_custom <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"custom_example"</span> <span style="color: #00BBBB;">───────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:29</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -445,7 +445,7 @@ settings.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail_ctrl</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"snapshot_controls"</span> <span style="color: #00BBBB;">────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:29</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -508,7 +508,7 @@ steps:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail_tab</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"tab_pipeline"</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:55</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:29</span></span>
 <span><span class="co">#&gt; Snapshots: 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type</span></span>
@@ -565,7 +565,7 @@ formats.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">trail_list</span>, max.level <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 4</span></span>
 <span><span class="co">#&gt;  $ name       : chr "filter_pipeline"</span></span>
-<span><span class="co">#&gt;  $ created_at : chr "2026-03-24T11:22:54Z"</span></span>
+<span><span class="co">#&gt;  $ created_at : chr "2026-03-24T11:34:28Z"</span></span>
 <span><span class="co">#&gt;  $ n_snapshots: int 3</span></span>
 <span><span class="co">#&gt;  $ snapshots  :List of 3</span></span>
 <span><span class="co">#&gt;   ..$ raw          :List of 15</span></span>
@@ -576,9 +576,9 @@ formats.</p>
 <span><span class="va">trail_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/trail_to_df.html">trail_to_df</a></span><span class="op">(</span><span class="va">trail3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">trail_df</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   index         label   type           timestamp nrow ncol total_nas</span></span>
-<span><span class="co">#&gt; 1     1           raw    tap 2026-03-24 11:22:54   20    4         0</span></span>
-<span><span class="co">#&gt; 2     2 complete_only filter 2026-03-24 11:22:54   12    4         0</span></span>
-<span><span class="co">#&gt; 3     3    high_value filter 2026-03-24 11:22:54    4    4         0</span></span>
+<span><span class="co">#&gt; 1     1           raw    tap 2026-03-24 11:34:28   20    4         0</span></span>
+<span><span class="co">#&gt; 2     2 complete_only filter 2026-03-24 11:34:28   12    4         0</span></span>
+<span><span class="co">#&gt; 3     3    high_value filter 2026-03-24 11:34:28    4    4         0</span></span>
 <span><span class="co">#&gt;    all_columns       schema numeric_summary      changes  diagnostics custom</span></span>
 <span><span class="co">#&gt; 1 id, cust.... c("id", ....    c("id", ....                                 </span></span>
 <span><span class="co">#&gt; 2 id, cust.... c("id", ....    c("id", .... -8, 0, 0.... keep, st....       </span></span>
@@ -599,7 +599,7 @@ formats.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">restored</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Audit Trail: </span><span style="color: #0000BB; font-weight: bold;">"filter_pipeline"</span> <span style="color: #00BBBB;">──────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Created: 2026-03-24 11:22:54</span></span>
+<span><span class="co">#&gt; Created: 2026-03-24 11:34:28</span></span>
 <span><span class="co">#&gt; Snapshots: 3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   #  Label          Rows  Cols  NAs  Type                          </span></span>

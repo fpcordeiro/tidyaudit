@@ -19,15 +19,23 @@ library(tidyaudit)
 library(dplyr)
 ```
 
-tidyaudit includes tidyverse ports of the diagnostic functions from
-[dtaudit](https://github.com/fpcordeiro/dtaudit). These functions help you
-understand joins, validate keys, compare tables, diagnose missing values and
-string quality, and filter with full visibility.
+Before you build a pipeline, you need to understand your data. Before you trust
+a join, you need to verify the keys. Before you filter, you want to know what
+you'll lose. tidyaudit's diagnostic functions help with the detective work that
+comes before, during, and after every analysis.
 
-## Join diagnostics
+These functions are designed for **interactive use** — the questions you ask in
+the console while exploring a dataset or debugging a transformation. They
+complement the [audit trail system](tidyaudit.html), which instruments
+production pipelines.
+
+## Before you join
+
+You're about to left-join orders to customers. Will every order match? Will the
+join create duplicates? How many rows will end up with NAs?
 
 `validate_join()` analyzes a potential join **without performing it**, reporting
-match rates, relationship type, duplicate keys, and unmatched rows.
+match rates, relationship type, duplicate keys, and unmatched rows:
 
 ```{r validate-join}
 orders <- data.frame(
@@ -53,10 +61,10 @@ sales    <- data.frame(item_id = c(1L, 1L, 2L), qty = c(5, 3, 7))
 validate_join(products, sales, by = c("prod_id" = "item_id"))
 ```
 
-### Stat tracking
+### Tracking the impact on a metric
 
-Track the impact on a numeric column with `stat` (same column name in both
-tables) or `stat_x`/`stat_y` (different column names):
+Want to know the revenue at risk from unmatched keys? Use `stat` (same column
+name in both tables) or `stat_x`/`stat_y` (different column names):
 
 ```{r validate-join-stat}
 x <- data.frame(id = 1:4, revenue = c(100, 200, 300, 400))
@@ -65,12 +73,12 @@ y <- data.frame(id = c(2L, 3L, 5L), cost = c(10, 20, 30))
 validate_join(x, y, by = "id", stat_x = "revenue", stat_y = "cost")
 ```
 
-## Key validation
+## Are your keys unique?
 
-### Primary keys
+You assume `id` uniquely identifies every row. Does it?
 
-`validate_primary_keys()` tests whether a set of columns uniquely identify every
-row:
+`validate_primary_keys()` tests whether a set of columns forms a valid primary
+key:
 
 ```{r validate-pk}
 df <- data.frame(
@@ -79,16 +87,17 @@ df <- data.frame(
   value = c(10, 20, 30, 40, 50)
 )
 
-# Single column — not unique
+# Single column -- not unique
 validate_primary_keys(df, "id")
 
-# Composite key — unique
+# Composite key -- unique
 validate_primary_keys(df, c("id", "group"))
 ```
 
-### Variable relationships
+### Beyond uniqueness: what's the relationship?
 
-`validate_var_relationship()` determines the relationship between two columns:
+`validate_var_relationship()` determines the functional relationship between two
+columns — one-to-one, one-to-many, many-to-one, or many-to-many:
 
 ```{r validate-var-rel}
 df2 <- data.frame(
@@ -98,9 +107,12 @@ df2 <- data.frame(
 validate_var_relationship(df2, "dept", "manager")
 ```
 
-## Table comparison
+## What changed between versions?
 
-`compare_tables()` compares two data.frames by examining columns, row counts,
+You have yesterday's extract and today's extract. Or the data before your
+transformation and after. What's different?
+
+`compare_tables()` compares two data frames by examining columns, row counts,
 key overlap, and numeric discrepancies:
 
 ```{r compare-tables}
@@ -110,14 +122,17 @@ after  <- data.frame(id = 1:5, value = c(10.0, 22.5, 30.0, 40.0, 55.0))
 compare_tables(before, after)
 ```
 
-## Filter diagnostics
+## Filter with visibility
 
-`filter_keep()` and `filter_drop()` filter data while printing diagnostics about
-what was removed.
+`dplyr::filter()` silently removes rows. You apply the condition, the rows
+vanish, and you move on. `filter_keep()` and `filter_drop()` do the same
+filtering but tell you exactly what was removed — and optionally warn you when
+too much is gone.
 
 ### filter_keep
 
-Keeps rows where the condition is `TRUE` (same as `dplyr::filter()`):
+Keeps rows where the condition is `TRUE` (same as `dplyr::filter()`), with
+diagnostic output:
 
 ```{r filter-keep}
 sales <- data.frame(
@@ -139,14 +154,18 @@ result2 <- filter_drop(sales, status == "suspect", .stat = amount)
 
 ### Warning thresholds
 
-Set `.warn_threshold` to get a warning when too many rows are dropped:
+Set `.warn_threshold` to get a warning when too many rows are dropped — a
+safety net for production pipelines:
+
 ```{r filter-warn, warning=TRUE}
 filter_keep(sales, amount > 1000, .stat = amount, .warn_threshold = 0.5)
 ```
 
-## Data quality
+## Diagnose data quality
 
-### Missing value diagnosis
+You just received a dataset. Where are the gaps?
+
+### Missing values
 
 `diagnose_nas()` reports NA counts and percentages for every column:
 
@@ -163,14 +182,15 @@ diagnose_nas(messy)
 
 ### Column summaries
 
-`summarize_column()` gives type-appropriate statistics for a single vector:
+`summarize_column()` gives type-appropriate statistics for a single vector —
+quantiles for numeric, value counts for character, balance for logical:
 
 ```{r summarize-column}
 summarize_column(c(1, 2, 3, NA, 5, 10, 100))
 summarize_column(c("apple", "banana", "apple", "cherry", NA))
 ```
 
-`get_summary_table()` applies this to all columns (or selected ones):
+`get_summary_table()` applies this across all columns (or a selection):
 
 ```{r get-summary-table}
 get_summary_table(messy)
@@ -178,8 +198,8 @@ get_summary_table(messy)
 
 ## Frequency tables
 
-`tab()` produces one-way frequency tables or two-way crosstabulations with
-counts, percentages, and cumulative percentages.
+Base R's `table()` gives you raw counts. `tab()` gives you percentages,
+cumulative totals, sorting, cutoffs, weighting, and two-way crosstabulations.
 
 ### One-way tables
 
@@ -212,24 +232,25 @@ tab(mtcars, cyl, gear, .display = "row_pct")
 tab(mtcars, cyl, .wt = mpg)
 ```
 
-## String cleaning
+## String quality
 
-These functions require the **stringi** package (listed in Suggests).
+Duplicates hiding behind case differences, leading spaces, and encoding issues
+are among the most common causes of failed joins and inflated group counts.
 
-### diagnose_strings
-
-`diagnose_strings()` audits a character vector for common quality issues:
+`diagnose_strings()` audits a character vector for these problems:
 
 ```{r diagnose-strings}
 firms <- c("Apple", "APPLE", "apple", "  Microsoft ", "Google", NA, "")
 diagnose_strings(firms)
 ```
 
-### audit_transform
+## Audit your transformations
 
-`audit_transform()` shows exactly what a transformation function changes.
-It automatically detects the vector type and computes type-appropriate
-diagnostics:
+You're about to apply `trimws()` to a column, or `round()` to a price vector.
+How many values will actually change? What will they look like afterward?
+
+`audit_transform()` shows exactly what a transformation does. It automatically
+detects the vector type and computes type-appropriate diagnostics:
 
 - **Numeric**: mean/min/max shift, proportion changed
 - **Date/POSIXct**: range change, proportion shifted
@@ -237,28 +258,28 @@ diagnostics:
 - **Logical**: TRUE/FALSE/NA balance shift
 - **Character**: string-level before/after comparison
 
-#### Character vectors
+### Character vectors
 
 ```{r audit-transform}
 audit_transform(firms, trimws)
 audit_transform(firms, tolower)
 ```
 
-#### Numeric vectors
+### Numeric vectors
 
 ```{r audit-transform-numeric}
 prices <- c(10.456, 20.789, 30.123, NA, 50.999)
 audit_transform(prices, round)
 ```
 
-#### Date vectors
+### Date vectors
 
 ```{r audit-transform-date}
 dates <- as.Date(c("2024-01-15", "2024-06-30", "2024-12-01", NA))
 audit_transform(dates, function(d) d + 30)
 ```
 
-#### Factor vectors
+### Factor vectors
 
 ```{r audit-transform-factor}
 sizes <- factor(c("S", "M", "L", "XL", "XXL", "S", "M"))
@@ -268,7 +289,7 @@ audit_transform(sizes, function(f) {
 })
 ```
 
-#### Logical vectors
+### Logical vectors
 
 ```{r audit-transform-logical}
 flags <- c(TRUE, FALSE, TRUE, NA, FALSE)

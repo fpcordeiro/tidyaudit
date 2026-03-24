@@ -5,7 +5,7 @@
 * checking CRAN incoming feasibility ... NOTE
   Maintainer: 'Fernando Cordeiro <fernandolpcordeiro@gmail.com>'
 
-  Days since last update: [leave as placeholder]
+  Days since last update: 25
 
 ## Changes in this version
 

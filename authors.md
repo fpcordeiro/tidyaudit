@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/fpcordeiro/tidyaudit/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/fpcordeiro/tidyaudit/blob/v0.2.0/DESCRIPTION)
 
 Cordeiro F (2026). *tidyaudit: Pipeline Audit Trails and Data
 Diagnostics for 'tidyverse' Workflows*. R package version 0.2.0,

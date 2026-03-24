@@ -80,7 +80,7 @@ result <- mtcars |>
 print(trail)
 #> 
 #> ── Audit Trail: "example" ──────────────────────────────────────────────────────
-#> Created: 2026-03-24 12:12:39
+#> Created: 2026-03-24 12:14:30
 #> Snapshots: 2
 #> 
 #>   #  Label     Rows  Cols  NAs  Type

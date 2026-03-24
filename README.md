@@ -11,11 +11,11 @@
 ## Pipeline audit trails and data diagnostics for tidyverse workflows
 
 **Audit trails** track what happens at every step of a dplyr pipeline by
-recording metadata-only snapshots — row counts, column changes, NA totals,
-numeric shifts, and custom functions. You build a trail by dropping **taps**
-into your pipe: transparent pass-throughs that record a snapshot and let the
-data flow on. Operation-aware taps like `left_join_tap()` and `filter_tap()` go
-further, capturing match rates, drop counts, and stat impact. The result is a
+recording metadata-only snapshots: row counts, column changes, NA totals,
+numeric shifts, and custom functions. Build a trail by dropping **taps**
+into your pipe — transparent pass-throughs that record a snapshot and let the
+data flow on unchanged. Operation-aware taps, such as `left_join_tap()` and `filter_tap()` go
+further, capturing match rates and drop counts. The result is a
 structured trail you can print, diff, export as HTML, or serialize to JSON. You
 can learn more in `vignette("tidyaudit")`.
 

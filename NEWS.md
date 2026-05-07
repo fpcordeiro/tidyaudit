@@ -1,3 +1,14 @@
+# tidyaudit 0.2.1
+
+### Bug fixes
+
+* `audit_transform()` for factor inputs no longer errors under R-devel
+  (r89994+). The internal frequency-table builder previously routed counts
+  through `as.data.frame.table()`, which now rejects `NA` in row names and
+  failed for any factor (since the `useNA = "always"` bucket carries an
+  `NA` name). The table is now constructed directly. No user-visible
+  output change.
+
 # tidyaudit 0.2.0
 
 ### New features

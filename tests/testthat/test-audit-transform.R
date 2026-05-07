@@ -222,6 +222,24 @@ test_that("audit_transform [factor] level_counts have correct structure", {
   expect_true("Level" %in% names(d$level_counts_before))
 })
 
+test_that("audit_transform [factor] handles NA values in input", {
+  # Regression: under R-devel (r89994+), as.data.frame.table() rejects NA in
+  # names, so the internal level_counts builder must avoid that path.
+  f <- factor(c("a", "b", NA, "a", NA))
+  result <- audit_transform(f, function(v) factor(toupper(as.character(v))))
+
+  expect_equal(result$type_class, "factor")
+  expect_equal(result$n_na_before, 2L)
+
+  cnt <- result$diagnostics$level_counts_before
+  expect_true(is.data.frame(cnt))
+  expect_true(any(is.na(cnt$Level)))
+  expect_equal(cnt$N[is.na(cnt$Level)], 2L)
+
+  # print() exercises the merge path on level counts with the NA bucket
+  expect_no_error(capture.output(print(result), type = "message"))
+})
+
 test_that("print.audit_transform [factor] mentions type", {
   f <- factor(c("a", "b", "a"))
   result <- audit_transform(f, function(v) factor(toupper(as.character(v))))

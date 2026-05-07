@@ -225,12 +225,20 @@ audit_transform <- function(x, clean_fn, name = NULL,
   if (length(x_valid) == 0L) NA else fn(x_valid)
 }
 
-# Frequency table for a factor/vector as a data.frame with standard columns
+# Frequency table for a factor/vector as a data.frame with standard columns.
+# Built manually rather than via as.data.frame(table(...)) — under R-devel
+# (r89994+), as.data.frame.table() routes the count vector through
+# as.data.frame.integer(), which now rejects NA in names. With useNA = "always"
+# the table's NA bucket carries an NA name and trips that check.
 #' @noRd
 .factor_counts <- function(x) {
-  tbl <- as.data.frame(table(x, useNA = "always"), stringsAsFactors = FALSE)
-  names(tbl) <- c("Level", "N")
-  tbl
+  tbl <- table(x, useNA = "always")
+  data.frame(
+    Level = names(tbl),
+    N     = unname(as.integer(tbl)),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
 }
 
 # Date/POSIXct range in days; NA if fewer than two non-NA values

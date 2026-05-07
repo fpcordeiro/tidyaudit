@@ -19,3 +19,5 @@ playground/
 .DS_Store
 /Meta/
 /doc/
+# knitr::purl byproducts
+vignettes/*.R

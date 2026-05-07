@@ -5,13 +5,20 @@
 * checking CRAN incoming feasibility ... NOTE
   Maintainer: 'Fernando Cordeiro <fernandolpcordeiro@gmail.com>'
 
-  Days since last update: 25
+  Days since last update: <fill in at submission time>
 
-## Changes in this version
+## Reason for resubmission
 
-See NEWS.md for the full changelog. Key additions: `audit_export()` for HTML trail
-visualization, trail serialization functions, `tab()`/`tab_tap()` for frequency
-tables, snapshot controls for wide datasets, and generic `audit_transform()`.
+This patch release fixes ERRORs reported in the CRAN r-devel checks for
+tidyaudit 0.2.0 on r-devel-linux-x86_64-debian-gcc,
+r-devel-linux-x86_64-fedora-clang, and r-devel-windows-x86_64.
+
+R-devel (r89994+) tightened `as.data.frame.table()` so the count column,
+routed through `as.data.frame.integer()`, no longer accepts `NA` in
+names. `audit_transform()` for factor inputs uses `table(., useNA = "always")`
+internally and tripped this check. The internal helper now constructs the
+data frame directly, sidestepping `as.data.frame.table()`. No user-visible
+output change. Release builds remain unaffected.
 
 ## Test environments
 

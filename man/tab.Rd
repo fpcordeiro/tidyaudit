@@ -72,11 +72,11 @@ tab(mtcars, cyl, .cutoff = 2)
 
 }
 \seealso{
-Other data quality: 
-\code{\link{audit_transform}()},
-\code{\link{diagnose_nas}()},
-\code{\link{diagnose_strings}()},
-\code{\link{get_summary_table}()},
-\code{\link{summarize_column}()}
+Other data quality:
+\code{\link[=audit_transform]{audit_transform()}},
+\code{\link[=diagnose_nas]{diagnose_nas()}},
+\code{\link[=diagnose_strings]{diagnose_strings()}},
+\code{\link[=get_summary_table]{get_summary_table()}},
+\code{\link[=summarize_column]{summarize_column()}}
 }
 \concept{data quality}

@@ -71,11 +71,11 @@ audit_transform(prices, round(prices))
 \seealso{
 \code{\link[=diagnose_strings]{diagnose_strings()}}
 
-Other data quality: 
-\code{\link{diagnose_nas}()},
-\code{\link{diagnose_strings}()},
-\code{\link{get_summary_table}()},
-\code{\link{summarize_column}()},
-\code{\link{tab}()}
+Other data quality:
+\code{\link[=diagnose_nas]{diagnose_nas()}},
+\code{\link[=diagnose_strings]{diagnose_strings()}},
+\code{\link[=get_summary_table]{get_summary_table()}},
+\code{\link[=summarize_column]{summarize_column()}},
+\code{\link[=tab]{tab()}}
 }
 \concept{data quality}

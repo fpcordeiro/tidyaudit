@@ -39,10 +39,10 @@ print(trail)
 
 }
 \seealso{
-Other audit trail: 
-\code{\link{audit_diff}()},
-\code{\link{audit_report}()},
-\code{\link{audit_tap}()},
-\code{\link{tab_tap}()}
+Other audit trail:
+\code{\link[=audit_diff]{audit_diff()}},
+\code{\link[=audit_report]{audit_report()}},
+\code{\link[=audit_tap]{audit_tap()}},
+\code{\link[=tab_tap]{tab_tap()}}
 }
 \concept{audit trail}

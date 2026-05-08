@@ -32,10 +32,10 @@ attr(df, "trail_name")
 
 }
 \seealso{
-Other audit export: 
-\code{\link{audit_export}()},
-\code{\link{read_trail}()},
-\code{\link{trail_to_list}()},
-\code{\link{write_trail}()}
+Other audit export:
+\code{\link[=audit_export]{audit_export()}},
+\code{\link[=read_trail]{read_trail()}},
+\code{\link[=trail_to_list]{trail_to_list()}},
+\code{\link[=write_trail]{write_trail()}}
 }
 \concept{audit export}

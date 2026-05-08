@@ -118,9 +118,9 @@ compare_tables(a, b)
 
 }
 \seealso{
-Other join validation: 
-\code{\link{validate_join}()},
-\code{\link{validate_primary_keys}()},
-\code{\link{validate_var_relationship}()}
+Other join validation:
+\code{\link[=validate_join]{validate_join()}},
+\code{\link[=validate_primary_keys]{validate_primary_keys()}},
+\code{\link[=validate_var_relationship]{validate_var_relationship()}}
 }
 \concept{join validation}

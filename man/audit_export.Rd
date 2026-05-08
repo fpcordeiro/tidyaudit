@@ -50,10 +50,10 @@ audit_export(trail, tempfile(fileext = ".html"))
 \seealso{
 \code{\link[=trail_to_list]{trail_to_list()}}, \code{\link[=write_trail]{write_trail()}}
 
-Other audit export: 
-\code{\link{read_trail}()},
-\code{\link{trail_to_df}()},
-\code{\link{trail_to_list}()},
-\code{\link{write_trail}()}
+Other audit export:
+\code{\link[=read_trail]{read_trail()}},
+\code{\link[=trail_to_df]{trail_to_df()}},
+\code{\link[=trail_to_list]{trail_to_list()}},
+\code{\link[=write_trail]{write_trail()}}
 }
 \concept{audit export}

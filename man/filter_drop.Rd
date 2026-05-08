@@ -47,7 +47,7 @@ filter_drop(df, bad == TRUE, .stat = sales)
 
 }
 \seealso{
-Other filter diagnostics: 
-\code{\link{filter_keep}()}
+Other filter diagnostics:
+\code{\link[=filter_keep]{filter_keep()}}
 }
 \concept{filter diagnostics}

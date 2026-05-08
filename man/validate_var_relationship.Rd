@@ -52,9 +52,9 @@ validate_var_relationship(df, "person_id", "department")
 
 }
 \seealso{
-Other join validation: 
-\code{\link{compare_tables}()},
-\code{\link{validate_join}()},
-\code{\link{validate_primary_keys}()}
+Other join validation:
+\code{\link[=compare_tables]{compare_tables()}},
+\code{\link[=validate_join]{validate_join()}},
+\code{\link[=validate_primary_keys]{validate_primary_keys()}}
 }
 \concept{join validation}

@@ -20,5 +20,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Fernando Cordeiro \email{fernandolpcordeiro@gmail.com} [copyright holder]
 
+Authors:
+\itemize{
+  \item Fernando Cordeiro \email{fernandolpcordeiro@gmail.com} [copyright holder]
+}
+
 }
 \keyword{internal}

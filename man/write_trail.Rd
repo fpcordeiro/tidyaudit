@@ -41,10 +41,10 @@ restored <- read_trail(tmp)
 \seealso{
 \code{\link[=read_trail]{read_trail()}}, \code{\link[=trail_to_list]{trail_to_list()}}
 
-Other audit export: 
-\code{\link{audit_export}()},
-\code{\link{read_trail}()},
-\code{\link{trail_to_df}()},
-\code{\link{trail_to_list}()}
+Other audit export:
+\code{\link[=audit_export]{audit_export()}},
+\code{\link[=read_trail]{read_trail()}},
+\code{\link[=trail_to_df]{trail_to_df()}},
+\code{\link[=trail_to_list]{trail_to_list()}}
 }
 \concept{audit export}

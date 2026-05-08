@@ -15,7 +15,7 @@ A named list with elements \code{name}, \code{created_at} (ISO 8601 string),
 }
 \description{
 Converts an \code{\link[=audit_trail]{audit_trail()}} object to a plain R list suitable for
-serialisation with \code{\link[jsonlite:fromJSON]{jsonlite::toJSON()}}. All POSIXct timestamps are
+serialisation with \code{\link[jsonlite:toJSON]{jsonlite::toJSON()}}. All POSIXct timestamps are
 converted to ISO 8601 character strings and data.frames are converted
 to lists of named rows for JSON compatibility.
 }
@@ -27,10 +27,10 @@ str(lst, max.level = 2)
 
 }
 \seealso{
-Other audit export: 
-\code{\link{audit_export}()},
-\code{\link{read_trail}()},
-\code{\link{trail_to_df}()},
-\code{\link{write_trail}()}
+Other audit export:
+\code{\link[=audit_export]{audit_export()}},
+\code{\link[=read_trail]{read_trail()}},
+\code{\link[=trail_to_df]{trail_to_df()}},
+\code{\link[=write_trail]{write_trail()}}
 }
 \concept{audit export}

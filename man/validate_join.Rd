@@ -67,9 +67,9 @@ validate_join(x2, y2, by = "id", stat_x = "sales", stat_y = "cost")
 
 }
 \seealso{
-Other join validation: 
-\code{\link{compare_tables}()},
-\code{\link{validate_primary_keys}()},
-\code{\link{validate_var_relationship}()}
+Other join validation:
+\code{\link[=compare_tables]{compare_tables()}},
+\code{\link[=validate_primary_keys]{validate_primary_keys()}},
+\code{\link[=validate_var_relationship]{validate_var_relationship()}}
 }
 \concept{join validation}

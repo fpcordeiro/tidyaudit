@@ -1,6 +1,20 @@
 # Changelog
 
+## tidyaudit 0.2.1
+
+#### Bug fixes
+
+- [`audit_transform()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_transform.md)
+  for factor inputs no longer errors under R-devel (r89994+). The
+  internal frequency-table builder previously routed counts through
+  [`as.data.frame.table()`](https://rdrr.io/r/base/table.html), which
+  now rejects `NA` in row names and failed for any factor (since the
+  `useNA = "always"` bucket carries an `NA` name). The table is now
+  constructed directly. No user-visible output change.
+
 ## tidyaudit 0.2.0
+
+CRAN release: 2026-03-24
 
 #### New features
 

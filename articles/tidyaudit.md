@@ -1,6 +1,7 @@
 # Audit Trail Walkthrough
 
 ``` r
+
 library(tidyaudit)
 library(dplyr)
 ```
@@ -30,6 +31,7 @@ calls into your pipeline. Each tap records a snapshot and passes the
 data through unchanged — three taps, three snapshots, one timeline.
 
 ``` r
+
 # Sample data
 orders <- data.frame(
   id       = 1:20,
@@ -52,10 +54,11 @@ result <- orders |>
 Print the trail to see the full timeline:
 
 ``` r
+
 print(trail)
 #> 
 #> ── Audit Trail: "order_pipeline" ───────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:40
+#> Created: 2026-05-08 11:26:47
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -95,6 +98,7 @@ to capture match rates, relationship type, and duplicate key information
 automatically:
 
 ``` r
+
 customers <- data.frame(
   customer = c("Alice", "Bob", "Carol", "Dan"),
   region   = c("East", "West", "East", "North")
@@ -110,7 +114,7 @@ result2 <- orders |>
 print(trail2)
 #> 
 #> ── Audit Trail: "join_pipeline" ────────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:47
 #> Snapshots: 2
 #> 
 #>   #  Label        Rows  Cols  NAs  Type                                
@@ -143,6 +147,7 @@ keeps matching rows (like
 while recording exactly how many rows were dropped:
 
 ``` r
+
 trail3 <- audit_trail("filter_pipeline")
 
 result3 <- orders |>
@@ -161,7 +166,7 @@ result3 <- orders |>
 print(trail3)
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:47
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -192,6 +197,7 @@ gives you a detailed before/after comparison between any two snapshots
 in the trail — not just adjacent ones:
 
 ``` r
+
 audit_diff(trail3, "raw", "high_value")
 #> 
 #> ── Audit Diff: "raw" → "high_value" ──
@@ -221,13 +227,14 @@ prints the complete trail summary plus all consecutive diffs in one call
 — the full story of what your pipeline did:
 
 ``` r
+
 audit_report(trail3)
 #> ── Audit Report: "filter_pipeline" ─────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:47
 #> Total snapshots: 3
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:47
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -303,6 +310,7 @@ domain-specific at any tap. Each function receives the data and its
 return value is stored in the snapshot:
 
 ``` r
+
 trail4 <- audit_trail("custom_example")
 
 result4 <- orders |>
@@ -323,10 +331,11 @@ Custom results appear as inline annotations directly below each snapshot
 row:
 
 ``` r
+
 print(trail4)
 #> 
 #> ── Audit Trail: "custom_example" ───────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:48
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -355,10 +364,11 @@ The rendering rules are:
 To suppress annotations and display only the main table:
 
 ``` r
+
 print(trail4, show_custom = FALSE)
 #> 
 #> ── Audit Trail: "custom_example" ───────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:48
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -387,6 +397,7 @@ Core invariants — `nrow`, `ncol`, and `total_nas` — are always recorded
 regardless of these settings.
 
 ``` r
+
 wide_data <- cbind(orders, matrix(rnorm(20 * 50), nrow = 20))
 
 trail_ctrl <- audit_trail("snapshot_controls")
@@ -400,7 +411,7 @@ wide_data |>
 print(trail_ctrl)
 #> 
 #> ── Audit Trail: "snapshot_controls" ────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:48
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -424,6 +435,7 @@ contains no numeric summaries.
 produces one-way frequency tables or two-way crosstabulations:
 
 ``` r
+
 tab(orders, status)
 #> 
 #> ── Tabulation: status ──────────────────────────────────────────────────────────
@@ -459,6 +471,7 @@ unchanged — useful for tracking how categorical distributions shift
 across pipeline steps:
 
 ``` r
+
 trail_tab <- audit_trail("tab_pipeline")
 
 result_tab <- orders |>
@@ -470,7 +483,7 @@ result_tab <- orders |>
 print(trail_tab)
 #> 
 #> ── Audit Trail: "tab_pipeline" ─────────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:42
+#> Created: 2026-05-08 11:26:48
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -499,6 +512,7 @@ This makes it easy to add quick diagnostics to any pipeline without
 setting up a full trail:
 
 ``` r
+
 # Plain filter -- no diagnostics
 orders |> filter_tap(amount > 100) |> nrow()
 #> [1] 12
@@ -519,12 +533,13 @@ formats.
 ### Converting to R objects
 
 ``` r
+
 # As a plain R list (suitable for jsonlite::toJSON())
 trail_list <- trail_to_list(trail3)
 str(trail_list, max.level = 2)
 #> List of 4
 #>  $ name       : chr "filter_pipeline"
-#>  $ created_at : chr "2026-03-24T12:14:41Z"
+#>  $ created_at : chr "2026-05-08T11:26:47Z"
 #>  $ n_snapshots: int 3
 #>  $ snapshots  :List of 3
 #>   ..$ raw          :List of 15
@@ -535,9 +550,9 @@ str(trail_list, max.level = 2)
 trail_df <- trail_to_df(trail3)
 print(trail_df)
 #>   index         label   type           timestamp nrow ncol total_nas
-#> 1     1           raw    tap 2026-03-24 12:14:41   20    4         0
-#> 2     2 complete_only filter 2026-03-24 12:14:41   12    4         0
-#> 3     3    high_value filter 2026-03-24 12:14:41    4    4         0
+#> 1     1           raw    tap 2026-05-08 11:26:47   20    4         0
+#> 2     2 complete_only filter 2026-05-08 11:26:47   12    4         0
+#> 3     3    high_value filter 2026-05-08 11:26:47    4    4         0
 #>    all_columns       schema numeric_summary      changes  diagnostics custom
 #> 1 id, cust.... c("id", ....    c("id", ....                                 
 #> 2 id, cust.... c("id", ....    c("id", .... -8, 0, 0.... keep, st....       
@@ -553,13 +568,14 @@ print(trail_df)
 RDS format preserves all R types and round-trips perfectly:
 
 ``` r
+
 tmp_rds <- tempfile(fileext = ".rds")
 write_trail(trail3, tmp_rds)
 restored <- read_trail(tmp_rds)
 print(restored)
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-03-24 12:14:41
+#> Created: 2026-05-08 11:26:47
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -579,6 +595,7 @@ JSON format is available for interoperability with other tools (requires
 jsonlite):
 
 ``` r
+
 tmp_json <- tempfile(fileext = ".json")
 write_trail(trail3, tmp_json, format = "json")
 ```
@@ -590,6 +607,7 @@ produces a self-contained HTML file — one file you can email, embed in
 documentation, or drop into a compliance folder:
 
 ``` r
+
 audit_export(trail3, tempfile(fileext = ".html"))
 ```
 

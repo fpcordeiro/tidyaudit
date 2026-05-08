@@ -24,6 +24,7 @@ described in
 ## Quick start
 
 ``` r
+
 library(tidyaudit)
 library(dplyr)
 set.seed(123)
@@ -84,6 +85,7 @@ Share a trail as a self-contained HTML file — one file you can email,
 attach to a report, or drop into a compliance folder:
 
 ``` r
+
 audit_export(trail, "order_pipeline.html")
 ```
 
@@ -162,6 +164,7 @@ you ask in the console before, during, and after building a pipeline.
 ## Installation
 
 ``` r
+
 # Install from CRAN
 install.packages("tidyaudit")
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyaudit</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,15 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.0" id="tidyaudit-020">tidyaudit 0.2.0<a class="anchor" aria-label="anchor" href="#tidyaudit-020"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.1" id="tidyaudit-021">tidyaudit 0.2.1<a class="anchor" aria-label="anchor" href="#tidyaudit-021"></a></h2>
+<div class="section level4">
+<h4 id="bug-fixes-0-2-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-1"></a></h4>
+<ul><li>
+<code><a href="../reference/audit_transform.html">audit_transform()</a></code> for factor inputs no longer errors under R-devel (r89994+). The internal frequency-table builder previously routed counts through <code><a href="https://rdrr.io/r/base/table.html" class="external-link">as.data.frame.table()</a></code>, which now rejects <code>NA</code> in row names and failed for any factor (since the <code>useNA = "always"</code> bucket carries an <code>NA</code> name). The table is now constructed directly. No user-visible output change.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="tidyaudit-020">tidyaudit 0.2.0<a class="anchor" aria-label="anchor" href="#tidyaudit-020"></a></h2><p class="text-muted">CRAN release: 2026-03-24</p>
 <div class="section level4">
 <h4 id="new-features-0-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h4>
 <ul><li>

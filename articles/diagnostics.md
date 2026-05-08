@@ -1,6 +1,7 @@
 # Diagnostic Functions Guide
 
 ``` r
+
 library(tidyaudit)
 library(dplyr)
 ```
@@ -27,6 +28,7 @@ analyzes a potential join **without performing it**, reporting match
 rates, relationship type, duplicate keys, and unmatched rows:
 
 ``` r
+
 orders <- data.frame(
   id     = c(1L, 2L, 3L, 3L, 4L, 5L),
   amount = c(100, 200, 150, 175, 300, 50)
@@ -66,6 +68,7 @@ validate_join(orders, customers, by = "id")
 When the key columns have different names, use a named vector:
 
 ``` r
+
 products <- data.frame(prod_id = 1:3, price = c(10, 20, 30))
 sales    <- data.frame(item_id = c(1L, 1L, 2L), qty = c(5, 3, 7))
 
@@ -101,6 +104,7 @@ column name in both tables) or `stat_x`/`stat_y` (different column
 names):
 
 ``` r
+
 x <- data.frame(id = 1:4, revenue = c(100, 200, 300, 400))
 y <- data.frame(id = c(2L, 3L, 5L), cost = c(10, 20, 30))
 
@@ -149,6 +153,7 @@ You assume `id` uniquely identifies every row. Does it?
 tests whether a set of columns forms a valid primary key:
 
 ``` r
+
 df <- data.frame(
   id    = c(1L, 2L, 3L, 3L, 4L),
   group = c("A", "A", "B", "C", "A"),
@@ -197,6 +202,7 @@ determines the functional relationship between two columns — one-to-one,
 one-to-many, many-to-one, or many-to-many:
 
 ``` r
+
 df2 <- data.frame(
   dept    = c("Sales", "Sales", "Engineering", "Engineering"),
   manager = c("Ann", "Ann", "Bob", "Bob")
@@ -229,6 +235,7 @@ compares two data frames by examining columns, row counts, key overlap,
 and numeric discrepancies:
 
 ``` r
+
 before <- data.frame(id = 1:5, value = c(10.0, 20.0, 30.0, 40.0, 50.0))
 after  <- data.frame(id = 1:5, value = c(10.0, 22.5, 30.0, 40.0, 55.0))
 
@@ -294,6 +301,7 @@ Keeps rows where the condition is `TRUE` (same as
 with diagnostic output:
 
 ``` r
+
 sales <- data.frame(
   id     = 1:10,
   amount = c(500, 25, 1200, 80, 3000, 15, 750, 40, 2000, 60),
@@ -311,6 +319,7 @@ result <- filter_keep(sales, amount > 100, .stat = amount)
 Drops rows where the condition is `TRUE` (the inverse):
 
 ``` r
+
 result2 <- filter_drop(sales, status == "suspect", .stat = amount)
 #> filter_drop(sales, status == "suspect")
 #> Dropped 5 of 10 rows (50.00%).
@@ -323,6 +332,7 @@ Set `.warn_threshold` to get a warning when too many rows are dropped —
 a safety net for production pipelines:
 
 ``` r
+
 filter_keep(sales, amount > 1000, .stat = amount, .warn_threshold = 0.5)
 #> filter_keep(sales, amount > 1000)
 #> Dropped 7 of 10 rows (70.00%).
@@ -344,6 +354,7 @@ You just received a dataset. Where are the gaps?
 reports NA counts and percentages for every column:
 
 ``` r
+
 messy <- data.frame(
   id    = 1:6,
   name  = c("A", NA, "C", "D", NA, "F"),
@@ -370,6 +381,7 @@ gives type-appropriate statistics for a single vector — quantiles for
 numeric, value counts for character, balance for logical:
 
 ``` r
+
 summarize_column(c(1, 2, 3, NA, 5, 10, 100))
 #>                type            n_unique             missing       missing_share 
 #>           "numeric"                 "6"                 "1" "0.142857142857143" 
@@ -392,6 +404,7 @@ summarize_column(c("apple", "banana", "apple", "cherry", NA))
 applies this across all columns (or a selection):
 
 ``` r
+
 get_summary_table(messy)
 #>   variable      type n_unique missing     missing_share most_frequent
 #> 1       id   numeric        6       0                 0          <NA>
@@ -421,6 +434,7 @@ two-way crosstabulations.
 ### One-way tables
 
 ``` r
+
 tab(mtcars, cyl)
 #> 
 #> ── Tabulation: cyl ─────────────────────────────────────────────────────────────
@@ -438,6 +452,7 @@ tab(mtcars, cyl)
 ### Sorting and cutoffs
 
 ``` r
+
 # Sort by frequency
 tab(mtcars, carb, .sort = "freq_desc")
 #> 
@@ -475,6 +490,7 @@ tab(mtcars, carb, .cutoff = 2)
 ### Two-way crosstabulations
 
 ``` r
+
 tab(mtcars, cyl, gear)
 #> 
 #> ── Crosstabulation: cyl × gear ─────────────────────────────────────────────────
@@ -506,6 +522,7 @@ tab(mtcars, cyl, gear, .display = "row_pct")
 ### Weighted tabulation
 
 ``` r
+
 tab(mtcars, cyl, .wt = mpg)
 #> 
 #> ── Tabulation: cyl (weighted by mpg) ───────────────────────────────────────────
@@ -530,6 +547,7 @@ group counts.
 audits a character vector for these problems:
 
 ``` r
+
 firms <- c("Apple", "APPLE", "apple", "  Microsoft ", "Google", NA, "")
 diagnose_strings(firms)
 #> 
@@ -577,6 +595,7 @@ vector type and computes type-appropriate diagnostics:
 ### Character vectors
 
 ``` r
+
 audit_transform(firms, trimws)
 #> 
 #> ── Transformation Audit [character]: firms ─────────────────────────────────────
@@ -621,6 +640,7 @@ audit_transform(firms, tolower)
 ### Numeric vectors
 
 ``` r
+
 prices <- c(10.456, 20.789, 30.123, NA, 50.999)
 audit_transform(prices, round)
 #> 
@@ -662,6 +682,7 @@ audit_transform(prices, round)
 ### Date vectors
 
 ``` r
+
 dates <- as.Date(c("2024-01-15", "2024-06-30", "2024-12-01", NA))
 audit_transform(dates, function(d) d + 30)
 #> 
@@ -695,6 +716,7 @@ audit_transform(dates, function(d) d + 30)
 ### Factor vectors
 
 ``` r
+
 sizes <- factor(c("S", "M", "L", "XL", "XXL", "S", "M"))
 audit_transform(sizes, function(f) {
   levels(f)[levels(f) %in% c("XL", "XXL")] <- "XL+"
@@ -739,6 +761,7 @@ audit_transform(sizes, function(f) {
 ### Logical vectors
 
 ``` r
+
 flags <- c(TRUE, FALSE, TRUE, NA, FALSE)
 audit_transform(flags, function(x) !x)
 #> 

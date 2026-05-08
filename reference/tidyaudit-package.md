@@ -24,3 +24,7 @@ Useful links:
 
 **Maintainer**: Fernando Cordeiro <fernandolpcordeiro@gmail.com>
 \[copyright holder\]
+
+Authors:
+
+- Fernando Cordeiro <fernandolpcordeiro@gmail.com> \[copyright holder\]

@@ -115,7 +115,7 @@ result <- mtcars |>
 print(trail)
 #> 
 #> ── Audit Trail: "example" ──────────────────────────────────────────────────────
-#> Created: 2026-05-08 11:26:39
+#> Created: 2026-05-08 11:48:58
 #> Snapshots: 2
 #> 
 #>   #  Label            Rows  Cols  NAs  Type

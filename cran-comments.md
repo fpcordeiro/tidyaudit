@@ -5,7 +5,7 @@
 * checking CRAN incoming feasibility ... NOTE
   Maintainer: 'Fernando Cordeiro <fernandolpcordeiro@gmail.com>'
 
-  Days since last update: <fill in at submission time>
+  Days since last update: 44 days
 
 ## Reason for resubmission
 

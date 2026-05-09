@@ -2,6 +2,8 @@
 
 ## tidyaudit 0.2.1
 
+CRAN release: 2026-05-08
+
 #### Bug fixes
 
 - [`audit_transform()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_transform.md)

@@ -14,7 +14,8 @@ compare_tables(
   tol = .Machine$double.eps,
   top_n = Inf,
   compare_cols = NULL,
-  exclude_cols = NULL
+  exclude_cols = NULL,
+  on_non_unique = c("warn", "stop")
 )
 
 # S3 method for class 'compare_tbl'
@@ -64,6 +65,14 @@ as.data.frame(x, row.names = NULL, optional = FALSE, ...)
   Character vector of column names to exclude from comparison. If `NULL`
   (default), no columns are excluded. Mutually exclusive with
   `compare_cols`.
+
+- on_non_unique:
+
+  What to do when the chosen `key_cols` do not form a primary key (rows
+  are duplicated on the key, or a key column contains `NA`) in `x` or
+  `y`. `"warn"` (default) issues a warning and proceeds — note that
+  comparisons will be inflated by cartesian row expansion at the merge.
+  `"stop"` aborts with the same message.
 
 - show_n:
 
@@ -120,7 +129,13 @@ An S3 object of class `compare_tbl` containing:
 
 - key_summary:
 
-  Summary of key overlap, or NULL
+  List summarising the chosen keys and their overlap, or `NULL` if no
+  keys could be determined. Fields: `keys`, `auto` (logical),
+  `x_unique`, `y_unique`, `matches`, `only_x`, `only_y`, `is_pk_x`,
+  `is_pk_y` (logical: do `keys` uniquely identify rows in each table),
+  `n_dup_combos_x`, `n_dup_combos_y` (number of key combinations
+  appearing more than once), `has_na_keys_x`, `has_na_keys_y` (NA values
+  present in any key column).
 
 - numeric_summary:
 
@@ -212,6 +227,8 @@ compare_tables(x, y)
 #> Key columns: id (auto-detected)
 #> Distinct combos in x: 3
 #> Distinct combos in y: 3
+#> Primary key in x: yes
+#> Primary key in y: yes
 #> 
 #> 4. Row matching
 #> Only in x: 0
@@ -256,6 +273,8 @@ compare_tables(x, y, tol = 0.15)
 #> Key columns: id (auto-detected)
 #> Distinct combos in x: 3
 #> Distinct combos in y: 3
+#> Primary key in x: yes
+#> Primary key in y: yes
 #> 
 #> 4. Row matching (tol = 0.15)
 #> Only in x: 0
@@ -303,6 +322,8 @@ compare_tables(a, b)
 #> Key columns: id and status (auto-detected)
 #> Distinct combos in a: 3
 #> Distinct combos in b: 3
+#> Primary key in a: yes
+#> Primary key in b: yes
 #> 
 #> 4. Row matching
 #> Only in a: 1

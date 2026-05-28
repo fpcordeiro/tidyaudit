@@ -137,7 +137,7 @@ result <- df |>
 print(trail)
 #> 
 #> ── Audit Trail: "filter_example" ───────────────────────────────────────────────
-#> Created: 2026-05-09 16:12:30
+#> Created: 2026-05-28 01:03:03
 #> Snapshots: 2
 #> 
 #>   #  Label     Rows  Cols  NAs  Type                        
@@ -160,7 +160,7 @@ result2 <- df |>
 print(trail2)
 #> 
 #> ── Audit Trail: "filter_out_example" ───────────────────────────────────────────
-#> Created: 2026-05-09 16:12:30
+#> Created: 2026-05-28 01:03:03
 #> Snapshots: 2
 #> 
 #>   #  Label         Rows  Cols  NAs  Type                        

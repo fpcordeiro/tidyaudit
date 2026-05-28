@@ -257,6 +257,8 @@ compare_tables(before, after)
 #> Key columns: id (auto-detected)
 #> Distinct combos in before: 5
 #> Distinct combos in after: 5
+#> Primary key in before: yes
+#> Primary key in after: yes
 #> 
 #> 4. Row matching
 #> Only in before: 0

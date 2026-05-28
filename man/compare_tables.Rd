@@ -13,7 +13,8 @@ compare_tables(
   tol = .Machine$double.eps,
   top_n = Inf,
   compare_cols = NULL,
-  exclude_cols = NULL
+  exclude_cols = NULL,
+  on_non_unique = c("warn", "stop")
 )
 
 \method{print}{compare_tbl}(x, show_n = 5L, ...)
@@ -45,6 +46,12 @@ with \code{exclude_cols}.}
 comparison. If \code{NULL} (default), no columns are excluded. Mutually
 exclusive with \code{compare_cols}.}
 
+\item{on_non_unique}{What to do when the chosen \code{key_cols} do not form a
+primary key (rows are duplicated on the key, or a key column contains
+\code{NA}) in \code{x} or \code{y}. \code{"warn"} (default) issues a warning and proceeds —
+note that comparisons will be inflated by cartesian row expansion at the
+merge. \code{"stop"} aborts with the same message.}
+
 \item{show_n}{Maximum number of rows to display for discrepancies and
 unmatched keys in the printed output. Defaults to \code{5L}.}
 
@@ -64,7 +71,13 @@ An S3 object of class \code{compare_tbl} containing:
 \item{type_mismatches}{Data.frame of columns with different types, or NULL}
 \item{nrow_x}{Number of rows in x}
 \item{nrow_y}{Number of rows in y}
-\item{key_summary}{Summary of key overlap, or NULL}
+\item{key_summary}{List summarising the chosen keys and their overlap, or
+\code{NULL} if no keys could be determined. Fields: \code{keys}, \code{auto} (logical),
+\code{x_unique}, \code{y_unique}, \code{matches}, \code{only_x}, \code{only_y}, \code{is_pk_x},
+\code{is_pk_y} (logical: do \code{keys} uniquely identify rows in each table),
+\code{n_dup_combos_x}, \code{n_dup_combos_y} (number of key combinations appearing
+more than once), \code{has_na_keys_x}, \code{has_na_keys_y} (NA values present in
+any key column).}
 \item{numeric_summary}{Data.frame of numeric discrepancy quantiles (with
 \code{n_over_tol} count), or NULL}
 \item{comparison_method}{How columns were compared (\code{"keys"},

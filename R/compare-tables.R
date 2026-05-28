@@ -113,6 +113,41 @@
   )
 }
 
+# Per-column numeric diff structures (v1, v2, abs diff, NA mismatch flags).
+# get_v1/get_v2 return the column values for x/y given a column name.
+.compute_num_diffs <- function(num_cols, get_v1, get_v2) {
+  setNames(lapply(num_cols, function(nm) {
+    v1 <- get_v1(nm)
+    v2 <- get_v2(nm)
+    list(v1 = v1, v2 = v2, d = abs(v1 - v2),
+         na_mismatch = is.na(v1) != is.na(v2))
+  }), num_cols)
+}
+
+# Per-column categorical diff structures (v1, v2 coerced to character, mismatch flags).
+.compute_cat_diffs <- function(cat_cols, get_v1, get_v2) {
+  setNames(lapply(cat_cols, function(nm) {
+    v1 <- as.character(get_v1(nm))
+    v2 <- as.character(get_v2(nm))
+    na_mismatch <- is.na(v1) != is.na(v2)
+    list(v1 = v1, v2 = v2, na_mismatch = na_mismatch,
+         mismatch = na_mismatch | (!is.na(v1) & !is.na(v2) & v1 != v2))
+  }), cat_cols)
+}
+
+# Logical vector of length n: TRUE where any column has a discrepancy.
+.row_disc_flags <- function(n, col_diffs, num_cols, col_diffs_cat, cat_cols, tol) {
+  flags <- rep(FALSE, n)
+  for (nm in num_cols) {
+    cd <- col_diffs[[nm]]
+    flags <- flags | (!is.na(cd$d) & cd$d > tol) | cd$na_mismatch
+  }
+  for (nm in cat_cols) {
+    flags <- flags | col_diffs_cat[[nm]]$mismatch
+  }
+  flags
+}
+
 #' Compare Two Tables
 #'
 #' Compares two data.frames or tibbles by examining column names, row counts,
@@ -136,6 +171,11 @@
 #' @param exclude_cols Character vector of column names to exclude from
 #'   comparison. If `NULL` (default), no columns are excluded. Mutually
 #'   exclusive with `compare_cols`.
+#' @param on_non_unique What to do when the chosen `key_cols` do not form a
+#'   primary key (rows are duplicated on the key, or a key column contains
+#'   `NA`) in `x` or `y`. `"warn"` (default) issues a warning and proceeds —
+#'   note that comparisons will be inflated by cartesian row expansion at the
+#'   merge. `"stop"` aborts with the same message.
 #'
 #' @returns An S3 object of class `compare_tbl` containing:
 #' \describe{
@@ -146,7 +186,13 @@
 #'   \item{type_mismatches}{Data.frame of columns with different types, or NULL}
 #'   \item{nrow_x}{Number of rows in x}
 #'   \item{nrow_y}{Number of rows in y}
-#'   \item{key_summary}{Summary of key overlap, or NULL}
+#'   \item{key_summary}{List summarising the chosen keys and their overlap, or
+#'     `NULL` if no keys could be determined. Fields: `keys`, `auto` (logical),
+#'     `x_unique`, `y_unique`, `matches`, `only_x`, `only_y`, `is_pk_x`,
+#'     `is_pk_y` (logical: do `keys` uniquely identify rows in each table),
+#'     `n_dup_combos_x`, `n_dup_combos_y` (number of key combinations appearing
+#'     more than once), `has_na_keys_x`, `has_na_keys_y` (NA values present in
+#'     any key column).}
 #'   \item{numeric_summary}{Data.frame of numeric discrepancy quantiles (with
 #'     `n_over_tol` count), or NULL}
 #'   \item{comparison_method}{How columns were compared (`"keys"`,
@@ -197,9 +243,11 @@
 #' @export
 compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps,
                            top_n = Inf, compare_cols = NULL,
-                           exclude_cols = NULL) {
+                           exclude_cols = NULL,
+                           on_non_unique = c("warn", "stop")) {
   name_x <- deparse(substitute(x))
   name_y <- deparse(substitute(y))
+  on_non_unique <- match.arg(on_non_unique)
 
   if (!is.data.frame(x)) {
     cli::cli_abort("{.arg x} must be a data.frame or tibble.")
@@ -274,6 +322,20 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps,
         if (length(miss2)) paste0("Missing from y: ", paste(miss2, collapse = ", "))
       ))
     }
+    # Type-equality check: user-supplied keys must have the same class in x and y
+    key_type_diffs <- vapply(key_cols, function(nm) {
+      class(x[[nm]])[1L] != class(y[[nm]])[1L]
+    }, logical(1L))
+    if (any(key_type_diffs)) {
+      bad <- key_cols[key_type_diffs]
+      details <- vapply(bad, function(nm) {
+        paste0(nm, ": ", class(x[[nm]])[1L], " (x) vs ", class(y[[nm]])[1L], " (y)")
+      }, character(1L))
+      cli::cli_abort(c(
+        "Key column{?s} {.field {bad}} have different classes in {.arg x} and {.arg y}.",
+        setNames(details, rep("x", length(details)))
+      ))
+    }
   }
 
   # Key overlap
@@ -287,6 +349,23 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps,
     only_x_keys_full <- dplyr::setdiff(u1, u2)
     only_y_keys_full <- dplyr::setdiff(u2, u1)
 
+    # Primary-key status of the chosen keys in each table.
+    # A column set is a PK iff distinct combos == nrow AND no NA in any key col.
+    has_na_keys_x <- any(vapply(key_cols, function(nm) anyNA(x[[nm]]), logical(1L)))
+    has_na_keys_y <- any(vapply(key_cols, function(nm) anyNA(y[[nm]]), logical(1L)))
+    is_pk_x <- (nrow(x) == nrow(u1)) && !has_na_keys_x
+    is_pk_y <- (nrow(y) == nrow(u2)) && !has_na_keys_y
+
+    # Number of duplicate combinations (combos appearing more than once).
+    n_dup_combos_x <- if (nrow(x) != nrow(u1)) {
+      counts_x <- dplyr::count(x, dplyr::across(dplyr::all_of(key_cols)))
+      sum(counts_x$n > 1L)
+    } else 0L
+    n_dup_combos_y <- if (nrow(y) != nrow(u2)) {
+      counts_y <- dplyr::count(y, dplyr::across(dplyr::all_of(key_cols)))
+      sum(counts_y$n > 1L)
+    } else 0L
+
     key_summary <- list(
       keys = key_cols,
       auto = auto_keys,
@@ -294,7 +373,13 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps,
       y_unique = nrow(u2),
       matches = nrow(match_keys),
       only_x = nrow(only_x_keys_full),
-      only_y = nrow(only_y_keys_full)
+      only_y = nrow(only_y_keys_full),
+      is_pk_x = is_pk_x,
+      is_pk_y = is_pk_y,
+      n_dup_combos_x = n_dup_combos_x,
+      n_dup_combos_y = n_dup_combos_y,
+      has_na_keys_x = has_na_keys_x,
+      has_na_keys_y = has_na_keys_y
     )
 
     if (nrow(only_x_keys_full) > 0L) {
@@ -304,6 +389,29 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps,
     if (nrow(only_y_keys_full) > 0L) {
       only_y_keys_df <- as.data.frame(head(only_y_keys_full, top_n),
                                        stringsAsFactors = FALSE)
+    }
+
+    # Surface non-PK status: warn (default) or stop. Reasons: row duplication
+    # causes cartesian expansion at merge; NA keys yield ambiguous matches.
+    if (!is_pk_x || !is_pk_y) {
+      bad_tbls <- c(if (!is_pk_x) name_x, if (!is_pk_y) name_y)
+      reason_bits <- c(
+        if (!is_pk_x && n_dup_combos_x > 0L)
+          paste0(name_x, ": ", n_dup_combos_x, " duplicate key combination(s)"),
+        if (!is_pk_y && n_dup_combos_y > 0L)
+          paste0(name_y, ": ", n_dup_combos_y, " duplicate key combination(s)"),
+        if (!is_pk_x && has_na_keys_x) paste0(name_x, ": NA in key column(s)"),
+        if (!is_pk_y && has_na_keys_y) paste0(name_y, ": NA in key column(s)")
+      )
+      msg <- c(
+        "Key columns are not a primary key in {bad_tbls}; comparison rows may be inflated by cartesian expansion.",
+        setNames(reason_bits, rep("x", length(reason_bits)))
+      )
+      if (on_non_unique == "stop") {
+        cli::cli_abort(msg)
+      } else {
+        cli::cli_warn(msg)
+      }
     }
   }
 
@@ -334,12 +442,7 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps,
     if (nm %in% mismatched_cols) return(FALSE)
     is.numeric(x[[nm]]) && is.numeric(y[[nm]])
   }, logical(1L))]
-
-  cat_cols <- value_cols[vapply(value_cols, function(nm) {
-    if (nm %in% mismatched_cols) return(FALSE)
-    if (nm %in% num_cols) return(FALSE)
-    TRUE
-  }, logical(1L))]
+  cat_cols <- setdiff(value_cols, c(mismatched_cols, num_cols))
 
   num_summary <- NULL
   cat_summary <- NULL
@@ -358,145 +461,65 @@ compare_tables <- function(x, y, key_cols = NULL, tol = .Machine$double.eps,
       maxn <- min(n1, n2)
       idx <- seq_len(maxn)
 
+      get_v1 <- function(nm) x[[nm]][idx]
+      get_v2 <- function(nm) y[[nm]][idx]
       key_fn <- function(keep) {
         data.frame(row_index = idx[keep], stringsAsFactors = FALSE)
       }
 
-      # Numeric analysis
-      if (has_num) {
-        col_diffs <- lapply(num_cols, function(nm) {
-          v1 <- x[[nm]][idx]
-          v2 <- y[[nm]][idx]
-          d <- abs(v1 - v2)
-          na_mismatch <- is.na(v1) != is.na(v2)
-          list(v1 = v1, v2 = v2, d = d, na_mismatch = na_mismatch)
-        })
-        names(col_diffs) <- num_cols
-        analysis <- .analyze_numeric_diffs(col_diffs, num_cols, tol, top_n, key_fn)
-        num_summary <- analysis$num_summary
-        discrepancies <- analysis$discrepancies
-      }
-
-      # Categorical analysis
-      if (has_cat) {
-        col_diffs_cat <- lapply(cat_cols, function(nm) {
-          v1 <- as.character(x[[nm]][idx])
-          v2 <- as.character(y[[nm]][idx])
-          na_mismatch <- is.na(v1) != is.na(v2)
-          mismatch <- na_mismatch | (!is.na(v1) & !is.na(v2) & v1 != v2)
-          list(v1 = v1, v2 = v2, mismatch = mismatch, na_mismatch = na_mismatch)
-        })
-        names(col_diffs_cat) <- cat_cols
-        cat_analysis <- .analyze_categorical_diffs(col_diffs_cat, cat_cols, top_n, key_fn)
-        cat_summary <- cat_analysis$cat_summary
-        cat_discrepancies <- cat_analysis$cat_discrepancies
-      }
-
-      # Combined row-level disc count (reuse col_diffs / col_diffs_cat)
-      row_has_any <- rep(FALSE, maxn)
-      if (has_num) {
-        for (nm in num_cols) {
-          cd <- col_diffs[[nm]]
-          row_has_any <- row_has_any |
-            (!is.na(cd$d) & cd$d > tol) | cd$na_mismatch
-        }
-      }
-      if (has_cat) {
-        for (nm in cat_cols) {
-          row_has_any <- row_has_any | col_diffs_cat[[nm]]$mismatch
-        }
-      }
-
+      n_rows <- maxn
       n_only_x <- n1 - maxn
       n_only_y <- n2 - maxn
-      match_summary <- .build_match_summary(
-        sum(row_has_any), maxn, n_only_x, n_only_y
-      )
 
       # Unmatched row indices for row-index mode
       if (n_only_x > 0L) {
-        extra_idx <- seq.int(maxn + 1L, n1)
         only_x_keys_df <- data.frame(
-          row_index = head(extra_idx, top_n),
+          row_index = head(seq.int(maxn + 1L, n1), top_n),
           stringsAsFactors = FALSE
         )
       }
       if (n_only_y > 0L) {
-        extra_idx <- seq.int(maxn + 1L, n2)
         only_y_keys_df <- data.frame(
-          row_index = head(extra_idx, top_n),
+          row_index = head(seq.int(maxn + 1L, n2), top_n),
           stringsAsFactors = FALSE
         )
       }
     } else {
       comparison_method <- "keys"
-      # Warn if keys are non-unique — inner_join can cause cartesian expansion
-      x_dup <- nrow(x) != nrow(u1)
-      y_dup <- nrow(y) != nrow(u2)
-      if (x_dup || y_dup) {
-        dup_tbls <- c(if (x_dup) name_x, if (y_dup) name_y)
-        cli::cli_warn(
-          "Key columns are not unique in {dup_tbls}; comparison may be inflated by cartesian row expansion."
-        )
-      }
+      # Non-PK warning already surfaced above when key_summary was built.
       all_value_cols <- union(num_cols, cat_cols)
-      x_sub <- x[c(key_cols, all_value_cols)]
-      y_sub <- y[c(key_cols, all_value_cols)]
-      merged <- dplyr::inner_join(x_sub, y_sub, by = key_cols, suffix = c(".x", ".y"))
+      merged <- dplyr::inner_join(
+        x[c(key_cols, all_value_cols)],
+        y[c(key_cols, all_value_cols)],
+        by = key_cols, suffix = c(".x", ".y")
+      )
       rows_matched <- nrow(merged)
 
+      get_v1 <- function(nm) merged[[paste0(nm, ".x")]]
+      get_v2 <- function(nm) merged[[paste0(nm, ".y")]]
       key_fn <- function(keep) merged[keep, key_cols, drop = FALSE]
 
-      # Numeric analysis
-      if (has_num) {
-        col_diffs <- lapply(num_cols, function(nm) {
-          v1 <- merged[[paste0(nm, ".x")]]
-          v2 <- merged[[paste0(nm, ".y")]]
-          d <- abs(v1 - v2)
-          na_mismatch <- is.na(v1) != is.na(v2)
-          list(v1 = v1, v2 = v2, d = d, na_mismatch = na_mismatch)
-        })
-        names(col_diffs) <- num_cols
-        analysis <- .analyze_numeric_diffs(col_diffs, num_cols, tol, top_n, key_fn)
-        num_summary <- analysis$num_summary
-        discrepancies <- analysis$discrepancies
-      }
-
-      # Categorical analysis
-      if (has_cat) {
-        col_diffs_cat <- lapply(cat_cols, function(nm) {
-          v1 <- as.character(merged[[paste0(nm, ".x")]])
-          v2 <- as.character(merged[[paste0(nm, ".y")]])
-          na_mismatch <- is.na(v1) != is.na(v2)
-          mismatch <- na_mismatch | (!is.na(v1) & !is.na(v2) & v1 != v2)
-          list(v1 = v1, v2 = v2, mismatch = mismatch, na_mismatch = na_mismatch)
-        })
-        names(col_diffs_cat) <- cat_cols
-        cat_analysis <- .analyze_categorical_diffs(col_diffs_cat, cat_cols, top_n, key_fn)
-        cat_summary <- cat_analysis$cat_summary
-        cat_discrepancies <- cat_analysis$cat_discrepancies
-      }
-
-      # Combined row-level disc count
-      row_has_any <- rep(FALSE, rows_matched)
-      if (has_num) {
-        for (nm in num_cols) {
-          cd <- col_diffs[[nm]]
-          row_has_any <- row_has_any |
-            (!is.na(cd$d) & cd$d > tol) | cd$na_mismatch
-        }
-      }
-      if (has_cat) {
-        for (nm in cat_cols) {
-          row_has_any <- row_has_any | col_diffs_cat[[nm]]$mismatch
-        }
-      }
-
-      match_summary <- .build_match_summary(
-        sum(row_has_any), rows_matched,
-        key_summary$only_x, key_summary$only_y
-      )
+      n_rows <- rows_matched
+      n_only_x <- key_summary$only_x
+      n_only_y <- key_summary$only_y
     }
+
+    col_diffs <- if (has_num) .compute_num_diffs(num_cols, get_v1, get_v2) else NULL
+    col_diffs_cat <- if (has_cat) .compute_cat_diffs(cat_cols, get_v1, get_v2) else NULL
+
+    if (has_num) {
+      analysis <- .analyze_numeric_diffs(col_diffs, num_cols, tol, top_n, key_fn)
+      num_summary <- analysis$num_summary
+      discrepancies <- analysis$discrepancies
+    }
+    if (has_cat) {
+      cat_analysis <- .analyze_categorical_diffs(col_diffs_cat, cat_cols, top_n, key_fn)
+      cat_summary <- cat_analysis$cat_summary
+      cat_discrepancies <- cat_analysis$cat_discrepancies
+    }
+
+    row_flags <- .row_disc_flags(n_rows, col_diffs, num_cols, col_diffs_cat, cat_cols, tol)
+    match_summary <- .build_match_summary(sum(row_flags), n_rows, n_only_x, n_only_y)
   } else if (length(key_cols) > 0L) {
     # Keys exist but no value columns to compare
     match_summary <- list(
@@ -613,6 +636,16 @@ print.compare_tbl <- function(x, show_n = 5L, ...) {
     cli::cli_text("  Key columns: {.field {ks$keys}}{auto_lbl}")
     cli::cli_text("  Distinct combos in {x$name_x}: {format(ks$x_unique, big.mark = ',')}")
     cli::cli_text("  Distinct combos in {x$name_y}: {format(ks$y_unique, big.mark = ',')}")
+    pk_lbl <- function(is_pk, n_dup, has_na) {
+      if (isTRUE(is_pk)) return("yes")
+      bits <- c(
+        if (isTRUE(n_dup > 0L)) paste0(format(n_dup, big.mark = ","), " duplicate combo(s)"),
+        if (isTRUE(has_na)) "NA in key column(s)"
+      )
+      paste0("no (", paste(bits, collapse = "; "), ")")
+    }
+    cli::cli_text("  Primary key in {x$name_x}: {pk_lbl(ks$is_pk_x, ks$n_dup_combos_x, ks$has_na_keys_x)}")
+    cli::cli_text("  Primary key in {x$name_y}: {pk_lbl(ks$is_pk_y, ks$n_dup_combos_y, ks$has_na_keys_y)}")
   }
 
   # Row matching (only shown when match_summary exists)

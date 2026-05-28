@@ -139,7 +139,7 @@ test_that("compare_tables warns when key columns are non-unique", {
 
   expect_warning(
     compare_tables(x, y, key_cols = "id"),
-    "not unique"
+    "primary key"
   )
 })
 
@@ -884,4 +884,87 @@ test_that("print handles show_n for categorical discrepancies", {
   output <- capture.output(print(r, show_n = 2L), type = "message")
   combined <- paste(output, collapse = "\n")
   expect_true(grepl("and 3 more", combined))
+})
+
+# --- key validation: type-equality and primary-key checks ---
+
+test_that("compare_tables aborts when user key_cols have mismatched classes", {
+  x <- data.frame(id = 1:3, v = 1:3)
+  y <- data.frame(id = c("1", "2", "3"), v = 1:3, stringsAsFactors = FALSE)
+
+  expect_error(
+    compare_tables(x, y, key_cols = "id"),
+    "different classes"
+  )
+})
+
+test_that("compare_tables key_summary reports PK status (positive case)", {
+  x <- data.frame(id = 1:3, v = c(1.0, 2.0, 3.0))
+  y <- data.frame(id = 1:3, v = c(1.0, 2.0, 3.5))
+  r <- compare_tables(x, y, key_cols = "id")
+
+  expect_true(r$key_summary$is_pk_x)
+  expect_true(r$key_summary$is_pk_y)
+  expect_equal(r$key_summary$n_dup_combos_x, 0L)
+  expect_equal(r$key_summary$n_dup_combos_y, 0L)
+  expect_false(r$key_summary$has_na_keys_x)
+  expect_false(r$key_summary$has_na_keys_y)
+})
+
+test_that("compare_tables key_summary reports PK status (duplicates and NAs)", {
+  x <- data.frame(id = c(1L, 1L, 2L), v = c(10.0, 20.0, 30.0))
+  y <- data.frame(id = c(1L, NA, 3L), v = c(10.0, 20.0, 30.0))
+
+  suppressWarnings(r <- compare_tables(x, y, key_cols = "id"))
+
+  expect_false(r$key_summary$is_pk_x)
+  expect_false(r$key_summary$is_pk_y)
+  expect_equal(r$key_summary$n_dup_combos_x, 1L)
+  expect_true(r$key_summary$has_na_keys_y)
+})
+
+test_that("compare_tables on_non_unique='stop' aborts on duplicate keys", {
+  x <- data.frame(id = c(1L, 1L, 2L), v = c(10.0, 20.0, 30.0))
+  y <- data.frame(id = c(1L, 2L), v = c(10.0, 30.0))
+
+  expect_error(
+    compare_tables(x, y, key_cols = "id", on_non_unique = "stop"),
+    "primary key"
+  )
+})
+
+test_that("compare_tables on_non_unique='stop' aborts on NA in key column", {
+  x <- data.frame(id = c(1L, 2L, NA), v = c(10.0, 20.0, 30.0))
+  y <- data.frame(id = c(1L, 2L, 3L), v = c(10.0, 20.0, 30.0))
+
+  expect_error(
+    compare_tables(x, y, key_cols = "id", on_non_unique = "stop"),
+    "primary key"
+  )
+})
+
+test_that("compare_tables on_non_unique invalid value errors", {
+  x <- data.frame(id = 1:3, v = 1:3)
+  y <- data.frame(id = 1:3, v = 1:3)
+
+  expect_error(compare_tables(x, y, key_cols = "id", on_non_unique = "bogus"))
+})
+
+test_that("print.compare_tbl shows PK status lines", {
+  x <- data.frame(id = c(1L, 1L, 2L), v = c(10.0, 20.0, 30.0))
+  y <- data.frame(id = c(1L, 2L), v = c(10.0, 30.0))
+
+  suppressWarnings(r <- compare_tables(x, y, key_cols = "id"))
+  output <- capture.output(print(r), type = "message")
+  combined <- paste(output, collapse = "\n")
+  expect_true(grepl("Primary key in", combined))
+  expect_true(grepl("duplicate combo", combined))
+})
+
+test_that("print.compare_tbl handles all-NA categorical column without warning", {
+  x <- data.frame(id = 1:3, note = NA_character_, stringsAsFactors = FALSE)
+  y <- data.frame(id = 1:3, note = NA_character_, stringsAsFactors = FALSE)
+  r <- compare_tables(x, y, key_cols = "id")
+
+  expect_no_warning(capture.output(print(r), type = "message"))
 })

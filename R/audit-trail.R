@@ -124,9 +124,11 @@ print.audit_trail <- function(x, show_custom = TRUE, ...) {
 .cli_table <- function(tbl, right_align = character(), indent = 2L, row_annotations = NULL) {
   nms <- names(tbl)
 
-  # Compute column widths (max of header and data)
+  # Compute column widths (max of header and data).
+  # Seed with 0L so an all-NA column (where nchar() returns NA for every entry)
+  # doesn't trip `max(numeric(0), na.rm = TRUE)` returning -Inf with a warning.
   col_widths <- vapply(nms, function(nm) {
-    data_width <- if (nrow(tbl) > 0L) max(nchar(tbl[[nm]]), na.rm = TRUE) else 0L
+    data_width <- if (nrow(tbl) > 0L) max(c(0L, nchar(tbl[[nm]])), na.rm = TRUE) else 0L
     max(nchar(nm), data_width)
   }, integer(1))
 

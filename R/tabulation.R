@@ -707,9 +707,10 @@ print.tidyaudit_tab <- function(x, ...) {
     tbl[[j]] <- as.character(tbl[[j]])
   }
 
-  # Column widths
+  # Column widths. Seed with 0L so an all-NA column doesn't trip
+  # `max(numeric(0), na.rm = TRUE)` returning -Inf with a warning.
   col_widths <- vapply(nms, function(nm) {
-    data_width <- if (nrow(tbl) > 0L) max(nchar(tbl[[nm]]), na.rm = TRUE) else 0L
+    data_width <- if (nrow(tbl) > 0L) max(c(0L, nchar(tbl[[nm]])), na.rm = TRUE) else 0L
     max(nchar(nm), data_width)
   }, integer(1))
 

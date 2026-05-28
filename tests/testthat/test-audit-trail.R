@@ -154,3 +154,17 @@ test_that("print.audit_trail respects show_custom = FALSE", {
   expect_false(grepl("\u21b3", combined))
   expect_true(grepl("raw", combined))  # row still present
 })
+
+test_that(".cli_table does not warn on all-NA columns", {
+  tbl <- data.frame(
+    a = c("x", "y", "z"),
+    b = NA_character_,
+    stringsAsFactors = FALSE
+  )
+
+  # Was: `max(nchar(tbl[[nm]]), na.rm = TRUE)` warned
+  # "no non-missing arguments to max; returning -Inf" for all-NA columns.
+  expect_no_warning(
+    capture.output(tidyaudit:::.cli_table(tbl), type = "message")
+  )
+})

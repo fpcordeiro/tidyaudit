@@ -492,6 +492,110 @@ test_that("extraction-based derivation links to the root object", {
                snap_by(trail, "raw")$snapshot_id)
 })
 
+# ── Function-aware parent extraction ─────────────────────────────────────────
+
+test_that("constructor named args descend into extraction (data.frame)", {
+  e <- new.env()
+  trail <- audit_record({
+    raw <- data.frame(x = 1:3, y = 4:6)
+    out <- data.frame(x = raw$x)
+  }, env = e)
+  expect_equal(snap_by(trail, "out")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
+test_that("constructor named args descend into extraction (tibble)", {
+  e <- new.env()
+  trail <- audit_record({
+    raw <- data.frame(x = 1:3, y = 4:6)
+    out <- dplyr::tibble(x = raw$x)
+  }, env = e)
+  expect_equal(snap_by(trail, "out")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
+test_that("bind_rows links all named data arguments as parents", {
+  e <- new.env()
+  trail <- audit_record({
+    a   <- data.frame(x = 1:2)
+    b   <- data.frame(x = 3:4)
+    out <- dplyr::bind_rows(first = a, second = b)
+  }, env = e)
+  expect_setequal(snap_by(trail, "out")$parent_snapshot_ids,
+                  c(snap_by(trail, "a")$snapshot_id,
+                    snap_by(trail, "b")$snapshot_id))
+})
+
+test_that("named join arguments (x =, y =) resolve both parents", {
+  e <- new.env()
+  trail <- audit_record({
+    clean  <- data.frame(id = 1:3, n = 1:3)
+    lookup <- data.frame(id = 1:3, lab = c("a", "b", "c"),
+                         stringsAsFactors = FALSE)
+    out    <- dplyr::left_join(x = clean, y = lookup, by = "id")
+  }, env = e)
+  expect_setequal(snap_by(trail, "out")$parent_snapshot_ids,
+                  c(snap_by(trail, "clean")$snapshot_id,
+                    snap_by(trail, "lookup")$snapshot_id))
+})
+
+test_that("tidyselect arg in a one-data verb is not a false parent", {
+  e <- new.env()
+  trail <- audit_record({
+    mpg   <- data.frame(z = 1:3)            # tracked df sharing a column name
+    raw   <- data.frame(mpg = 1:3, cyl = 4:6)
+    clean <- dplyr::select(raw, mpg)        # mpg here is a tidyselect column
+  }, env = e)
+  parents <- snap_by(trail, "clean")$parent_snapshot_ids
+  expect_equal(parents, snap_by(trail, "raw")$snapshot_id)
+  expect_false(snap_by(trail, "mpg")$snapshot_id %in% parents)
+})
+
+test_that("in-place column assignment links prior self and extracted source", {
+  e <- new.env()
+  trail <- audit_record({
+    df       <- data.frame(id = 1:3)
+    lookup   <- data.frame(v = 4:6)
+    df$new   <- lookup$v
+  }, env = e)
+  v2 <- snap_by(trail, "df", 2L)
+  expect_setequal(v2$parent_snapshot_ids,
+                  c(snap_by(trail, "df", 1L)$snapshot_id,
+                    snap_by(trail, "lookup")$snapshot_id))
+})
+
+test_that("unknown helper call walks a named data argument", {
+  e <- new.env()
+  e$helper <- function(...) data.frame(...)
+  trail <- audit_record({
+    raw <- data.frame(x = 1:3)
+    out <- helper(x = raw)            # custom helper, named data arg
+  }, env = e)
+  expect_equal(snap_by(trail, "out")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
+test_that("unknown helper call walks a named extraction argument", {
+  e <- new.env()
+  e$helper <- function(...) data.frame(...)
+  trail <- audit_record({
+    raw <- data.frame(x = 1:3, y = 4:6)
+    out <- helper(z = raw$x)          # custom helper, named extraction arg
+  }, env = e)
+  expect_equal(snap_by(trail, "out")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
+test_that("one-data verb resolves a named primary argument", {
+  e <- new.env()
+  trail <- audit_record({
+    raw   <- data.frame(x = 1:3, y = 4:6)
+    clean <- subset(x = raw, x > 1)   # primary arg named `x`, not positional
+  }, env = e)
+  expect_equal(snap_by(trail, "clean")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
 
 # ── Review fixes: terminal snapshots in report paths ─────────────────────────
 

@@ -278,3 +278,146 @@ test_that("consecutive versions of an object carry a changes diff", {
   expect_false(is.null(v2$changes))
   expect_equal(v2$changes$row_delta, -2L)
 })
+
+
+# ── Stage 3: audit_source ────────────────────────────────────────────────────
+
+write_script <- function(lines) {
+  f <- tempfile(fileext = ".R")
+  writeLines(lines, f)
+  f
+}
+
+test_that("audit_source captures one snapshot per top-level statement", {
+  f <- write_script(c(
+    "raw   <- dplyr::as_tibble(mtcars)",
+    "clean <- dplyr::filter(raw, mpg > 20)"
+  ))
+  on.exit(unlink(f))
+  trail <- audit_source(f)
+  expect_equal(length(trail$snapshots), 2L)
+  expect_equal(snap_by(trail, "clean")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
+test_that("audit_source records srcref line numbers", {
+  f <- write_script(c(
+    "a <- data.frame(x = 1)",
+    "b <- data.frame(y = 2)"
+  ))
+  on.exit(unlink(f))
+  trail <- audit_source(f)
+  expect_equal(snap_by(trail, "b")$srcref$line1, 2L)
+})
+
+test_that("audit_source evaluates each statement exactly once", {
+  e <- new.env(parent = globalenv())
+  e$hits <- 0L
+  f <- write_script(c(
+    "hits <- hits + 1L",
+    "df <- data.frame(a = hits)"
+  ))
+  on.exit(unlink(f))
+  audit_source(f, env = e)
+  expect_equal(e$hits, 1L)            # evaluated once, not re-run by capture
+})
+
+test_that("audit_source defaults to a sandbox env, not the caller workspace", {
+  f <- write_script("sentinel_obj <- data.frame(a = 1)")
+  on.exit(unlink(f))
+  audit_source(f)
+  expect_false(exists("sentinel_obj", envir = globalenv(), inherits = FALSE))
+})
+
+test_that("audit_source rethrows errors by default", {
+  f <- write_script(c("df <- data.frame(a = 1)", "stop('boom')"))
+  on.exit(unlink(f))
+  expect_error(audit_source(f), "boom")
+})
+
+test_that("audit_source rejects a missing file", {
+  expect_error(audit_source(tempfile(fileext = ".R")), "not found")
+})
+
+test_that("audit_record and audit_source produce the same trail shape", {
+  lines <- c(
+    "raw   <- dplyr::as_tibble(mtcars)",
+    "clean <- dplyr::filter(raw, mpg > 20)"
+  )
+  f <- write_script(lines)
+  on.exit(unlink(f))
+  ts <- audit_source(f)
+  e  <- new.env(parent = globalenv())
+  tr <- audit_record({
+    raw   <- dplyr::as_tibble(mtcars)
+    clean <- dplyr::filter(raw, mpg > 20)
+  }, env = e)
+
+  shape <- function(t) {
+    data.frame(
+      name   = vapply(t$snapshots, `[[`, character(1), "object_name"),
+      event  = vapply(t$snapshots, `[[`, character(1), "event"),
+      nrow   = vapply(t$snapshots, `[[`, integer(1), "nrow"),
+      stringsAsFactors = FALSE
+    )
+  }
+  expect_equal(shape(ts), shape(tr))
+})
+
+
+# ── Stage 3: .audit_observe_step never re-evaluates ──────────────────────────
+
+test_that("observe step captures state without re-running the statement", {
+  e <- new.env(parent = globalenv())
+  # Simulate the REPL having already evaluated the statement exactly once.
+  e$hits <- 1L
+  e$df   <- data.frame(a = e$hits)
+  trail  <- audit_trail("observe")
+  tidyaudit:::.audit_init(trail, tidyaudit:::.audit_opts())
+
+  expr <- quote(df <- {
+    hits <- hits + 1L
+    data.frame(a = hits)
+  })
+  tidyaudit:::.audit_observe_step(expr, e, trail, trail$opts)
+
+  expect_equal(e$hits, 1L)                       # NOT incremented a second time
+  expect_equal(length(trail$snapshots), 1L)      # but df was captured
+  expect_equal(snap_by(trail, "df")$object_name, "df")
+})
+
+
+# ── Stage 3: audit_start / audit_stop state management ───────────────────────
+
+test_that("audit_stop without a session errors", {
+  expect_null(tidyaudit:::the$active)
+  expect_error(audit_stop(), "No active")
+})
+
+test_that("audit_start then audit_stop manages session state and returns trail", {
+  on.exit({
+    if (!is.null(tidyaudit:::the$active)) suppressMessages(audit_stop())
+  }, add = TRUE)
+  e <- new.env(parent = globalenv())
+  suppressMessages(audit_start("sess", env = e))
+  expect_false(is.null(tidyaudit:::the$active))
+  expect_error(suppressMessages(audit_start("again")), "already active")
+  trail <- suppressMessages(audit_stop())
+  expect_s3_class(trail, "audit_trail")
+  expect_null(tidyaudit:::the$active)
+})
+
+test_that("audit_source granularity vs source() is documented (per-statement)", {
+  # source() is one top-level task, so audit_start() under source() would record
+  # a single combined step. audit_source() instead loops per statement. We
+  # assert the per-statement contract here; the source() limitation is covered
+  # by documentation in ?audit_start.
+  f <- write_script(c(
+    "a <- data.frame(x = 1)",
+    "b <- data.frame(y = 2)",
+    "d <- data.frame(z = 3)"
+  ))
+  on.exit(unlink(f))
+  trail <- audit_source(f)
+  expect_equal(length(unique(vapply(trail$snapshots, `[[`, character(1), "step_id"))), 3L)
+})

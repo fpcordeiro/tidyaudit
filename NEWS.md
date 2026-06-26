@@ -1,3 +1,28 @@
+# tidyaudit 0.3.0
+
+### New features
+
+* **Audited execution** — capture data-frame lineage across a whole script or
+  session without per-step taps:
+  * `audit_source()` runs an `.R` file like `source()` but returns an audit
+    trail; it owns the evaluation loop, so capture works interactively, under
+    `source()`, and under `Rscript`.
+  * `audit_record({ ... })` audits an inline block.
+  * `audit_start()` / `audit_stop()` provide interactive-session convenience via
+    a top-level task callback. (Use `audit_source()` for scripts: `source()` is
+    a single top-level task.)
+* Capture granularity is top-level statement lineage. Snapshots carry
+  versioned-lineage fields (binding-stream `object_id`, `version`, `event`,
+  `source`, `srcref`, `parent_snapshot_ids`, `level`); parents resolve from the
+  pre-evaluation state and only to data.frames. Lifecycle events
+  (`create`/`update`/`delete`/`retire`/`unchanged_assignment`) are tracked.
+* Capture is metadata-only by default; `level` (`metadata`, `sample_hash`,
+  `column_hash`, `full_hash`) opts into per-run-salted content hashing to detect
+  value-only changes.
+* `audit_export()` renders audited trails as a tabular report (run summary, step
+  timeline, objects & versions, warnings & errors) plus a per-object lineage
+  graph. Classic tap trails still render the linear flow.
+
 # tidyaudit 0.2.1
 
 ### Bug fixes

@@ -12,6 +12,13 @@ reference:
       - audit_diff
       - audit_report
 
+  - title: "Audited Execution"
+    desc: "Capture data-frame lineage without per-step taps"
+    contents:
+      - audit_source
+      - audit_record
+      - audit_start
+
   - title: "Operation-Aware Taps"
     desc: "Pipeline taps with enriched diagnostics"
     contents:
@@ -58,4 +65,5 @@ articles:
   - title: "Getting Started"
     contents:
       - tidyaudit
+      - audited-execution
       - diagnostics

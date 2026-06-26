@@ -31,10 +31,12 @@ the$active <- NULL
     keys = keys, numeric_summary = numeric_summary,
     continue_on_error = continue_on_error,
     max_rows = max_rows, max_cols = max_cols,
-    # Per-run random salt: hashes are comparable within a run but not across
-    # runs, and unsalted hashes of small categorical columns are dictionary-
-    # attackable — so never present these as privacy-preserving.
-    salt = as.character(sample.int(.Machine$integer.max, 1L))
+    # Per-run salt: hashes are comparable within a run but not across runs.
+    # Derived from the clock + PID rather than the RNG, so enabling auditing
+    # never perturbs the user's `.Random.seed` (reproducibility is preserved).
+    # Unsalted hashes of small categorical columns are dictionary-attackable,
+    # so these are never presented as privacy-preserving.
+    salt = paste0(format(Sys.time(), "%Y%m%d%H%M%OS6"), "-", Sys.getpid())
   )
 }
 

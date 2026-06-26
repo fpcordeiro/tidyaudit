@@ -254,18 +254,22 @@ trail_to_list <- function(.trail) {
 
 #' Convert an Audit Trail to a Data Frame
 #'
-#' Returns a plain `data.frame` with one row per snapshot. Nested fields
-#' (`all_columns`, `schema`, `numeric_summary`, `changes`, `diagnostics`,
-#' `custom`, `pipeline`, `controls`) become list-columns. Trail metadata is
-#' stored as attributes on the result.
+#' Returns a plain `data.frame` with one row per snapshot. Nested and
+#' optional fields (`all_columns`, `schema`, `numeric_summary`, `changes`,
+#' `diagnostics`, `custom`, `pipeline`, `controls`, and the audited-execution
+#' lineage fields) become list-columns. Trail metadata is stored as attributes
+#' on the result.
 #'
 #' @param .trail An [audit_trail()] object.
 #'
 #' @returns A `data.frame` with columns `index`, `label`, `type`, `timestamp`,
 #'   `nrow`, `ncol`, `total_nas`, `all_columns`, `schema`, `numeric_summary`,
-#'   `changes`, `diagnostics`, `custom`, `pipeline`, and `controls`. Trail
-#'   `name` and `created_at` are stored as attributes `"trail_name"` and
-#'   `"created_at"`.
+#'   `changes`, `diagnostics`, `custom`, `pipeline`, `controls`, and the
+#'   audited-execution lineage columns `snapshot_id`, `object_id`,
+#'   `object_name`, `version`, `step_id`, `event`, `source`, `srcref`,
+#'   `parent_snapshot_ids`, `level`, and `evidence` (all `NULL` for snapshots
+#'   recorded by the explicit taps). Trail `name` and `created_at` are stored as
+#'   attributes `"trail_name"` and `"created_at"`.
 #'
 #' @examples
 #' trail <- audit_trail("example")

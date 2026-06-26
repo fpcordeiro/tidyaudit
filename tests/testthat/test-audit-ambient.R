@@ -471,6 +471,27 @@ test_that("operands of mask operators are not treated as parents", {
                  snap_by(trail, "clean")$parent_snapshot_ids)
 })
 
+test_that("a data-masked column in a named arg is not a false parent", {
+  e <- new.env()
+  trail <- audit_record({
+    mpg   <- data.frame(z = 1:3)
+    raw   <- dplyr::as_tibble(mtcars)
+    clean <- dplyr::mutate(raw, z = mpg)         # mpg is a column reference
+  }, env = e)
+  expect_equal(snap_by(trail, "clean")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
+test_that("extraction-based derivation links to the root object", {
+  e <- new.env()
+  trail <- audit_record({
+    raw   <- data.frame(x = 1:3, y = 4:6)
+    clean <- raw[raw$x > 1, ]
+  }, env = e)
+  expect_equal(snap_by(trail, "clean")$parent_snapshot_ids,
+               snap_by(trail, "raw")$snapshot_id)
+})
+
 
 # ── Review fixes: terminal snapshots in report paths ─────────────────────────
 
@@ -555,6 +576,12 @@ test_that("under audit_start, source() is observed as a single combined step", {
   # R evaluates `source(f)` as ONE top-level task, so the callback fires once
   # with that single expression — collapsing all of the script's objects into
   # one step. (audit_source() instead loops per statement; see its test above.)
+  #
+  # NOTE: this exercises the observe path deterministically; it does not drive
+  # addTaskCallback() itself, which only fires from the live top-level REPL.
+  # The end-to-end callback behaviour is confirmed by manual verification:
+  #   audit_start(); source("multi_stmt.R"); audit_stop()  # -> one combined step
+  # (and is documented in ?audit_start).
   f <- write_script(c(
     "a <- data.frame(x = 1)",
     "b <- data.frame(y = 2)",

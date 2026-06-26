@@ -151,7 +151,17 @@
       pipeline        = unlist(s$pipeline),
       changes         = .list_to_changes(s$changes),
       custom          = s$custom,
-      controls        = s$controls
+      controls        = s$controls,
+      snapshot_id         = s$snapshot_id,
+      object_id           = s$object_id,
+      object_name         = s$object_name,
+      version             = if (!is.null(s$version)) as.integer(s$version) else NULL,
+      step_id             = s$step_id,
+      event               = s$event,
+      source              = s$source,
+      srcref              = s$srcref,
+      parent_snapshot_ids = unlist(s$parent_snapshot_ids),
+      level               = s$level
     )
     structure(snap, class = c("audit_snap", "list"))
   })
@@ -203,7 +213,17 @@ trail_to_list <- function(.trail) {
       pipeline        = snap$pipeline,
       changes         = .changes_to_list(snap$changes),
       custom          = snap$custom,
-      controls        = snap$controls
+      controls        = snap$controls,
+      snapshot_id         = snap$snapshot_id,
+      object_id           = snap$object_id,
+      object_name         = snap$object_name,
+      version             = snap$version,
+      step_id             = snap$step_id,
+      event               = snap$event,
+      source              = snap$source,
+      srcref              = snap$srcref,
+      parent_snapshot_ids = snap$parent_snapshot_ids,
+      level               = snap$level
     )
   })
 
@@ -271,6 +291,16 @@ trail_to_df <- function(.trail) {
       custom          = I(list()),
       pipeline        = I(list()),
       controls        = I(list()),
+      snapshot_id         = I(list()),
+      object_id           = I(list()),
+      object_name         = I(list()),
+      version             = I(list()),
+      step_id             = I(list()),
+      event               = I(list()),
+      source              = I(list()),
+      srcref              = I(list()),
+      parent_snapshot_ids = I(list()),
+      level               = I(list()),
       stringsAsFactors = FALSE
     )
   } else {
@@ -292,6 +322,16 @@ trail_to_df <- function(.trail) {
       custom          = I(lapply(.trail$snapshots, `[[`, "custom")),
       pipeline        = I(lapply(.trail$snapshots, `[[`, "pipeline")),
       controls        = I(lapply(.trail$snapshots, `[[`, "controls")),
+      snapshot_id         = I(lapply(.trail$snapshots, `[[`, "snapshot_id")),
+      object_id           = I(lapply(.trail$snapshots, `[[`, "object_id")),
+      object_name         = I(lapply(.trail$snapshots, `[[`, "object_name")),
+      version             = I(lapply(.trail$snapshots, `[[`, "version")),
+      step_id             = I(lapply(.trail$snapshots, `[[`, "step_id")),
+      event               = I(lapply(.trail$snapshots, `[[`, "event")),
+      source              = I(lapply(.trail$snapshots, `[[`, "source")),
+      srcref              = I(lapply(.trail$snapshots, `[[`, "srcref")),
+      parent_snapshot_ids = I(lapply(.trail$snapshots, `[[`, "parent_snapshot_ids")),
+      level               = I(lapply(.trail$snapshots, `[[`, "level")),
       stringsAsFactors = FALSE
     )
   }

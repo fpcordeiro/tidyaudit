@@ -16,7 +16,7 @@
 #'   the audited-execution engine (`audit_record()` / `audit_source()` /
 #'   `audit_start()`). Recognised names: `snapshot_id`, `object_id`,
 #'   `object_name`, `version`, `step_id`, `event`, `source`, `srcref`,
-#'   `parent_snapshot_ids`, `level`. `NULL` (the default) leaves every field
+#'   `parent_snapshot_ids`, `level`, `evidence`. `NULL` (the default) leaves every field
 #'   `NULL`, which is how the explicit taps call this — preserving the original
 #'   flat-trail behaviour.
 #'

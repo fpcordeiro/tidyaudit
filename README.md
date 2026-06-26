@@ -119,6 +119,12 @@ snapshot tagged with the line of code that produced it and the parent data.frame
 it derived from (a join links two parents). It is metadata-only by default —
 shape, types, and NA counts, never the rows themselves.
 
+Parents are inferred statically from the call. For data-mask verbs (`filter()`,
+`mutate()`, `select()`, …) only the primary data argument counts as a parent, so
+a cross-data-frame reference inside a masked argument — `mutate(df, new =
+other_df$x)` — won't link `other_df`. Lift it into its own statement (`v <-
+other_df$x`) if you need that edge in the lineage.
+
 | Function | Use it for |
 |----------|-----------|
 | `audit_source("script.R")` | The canonical runner — works everywhere (interactive, `source()`d, `Rscript`) |

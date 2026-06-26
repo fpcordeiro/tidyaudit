@@ -12,6 +12,13 @@
 #'   schema, or `NULL` (the default) to include all columns.
 #' @param .cols_exclude Character vector of column names to exclude from the
 #'   schema, or `NULL` (the default) to exclude none.
+#' @param lineage Optional named list of versioned-lineage fields populated by
+#'   the audited-execution engine (`audit_record()` / `audit_source()` /
+#'   `audit_start()`). Recognised names: `snapshot_id`, `object_id`,
+#'   `object_name`, `version`, `step_id`, `event`, `source`, `srcref`,
+#'   `parent_snapshot_ids`, `level`. `NULL` (the default) leaves every field
+#'   `NULL`, which is how the explicit taps call this — preserving the original
+#'   flat-trail behaviour.
 #'
 #' @returns An `audit_snap` object (S3 list).
 #'
@@ -19,7 +26,8 @@
 .build_snapshot <- function(.data, label, index,
                             .numeric_summary = TRUE,
                             .cols_include = NULL,
-                            .cols_exclude = NULL) {
+                            .cols_exclude = NULL,
+                            lineage = NULL) {
   # --- Validate snapshot controls ---
   if (!is.logical(.numeric_summary) || length(.numeric_summary) != 1L ||
       is.na(.numeric_summary)) {
@@ -111,6 +119,8 @@
     )
   }
 
+  lineage <- lineage %||% list()
+
   snap <- list(
     label           = label,
     index           = index,
@@ -126,7 +136,18 @@
     pipeline        = NULL,
     changes         = NULL,
     custom          = NULL,
-    controls        = controls
+    controls        = controls,
+    # Versioned-lineage fields (audited execution); NULL for explicit taps.
+    snapshot_id         = lineage$snapshot_id,
+    object_id           = lineage$object_id,
+    object_name         = lineage$object_name,
+    version             = lineage$version,
+    step_id             = lineage$step_id,
+    event               = lineage$event,
+    source              = lineage$source,
+    srcref              = lineage$srcref,
+    parent_snapshot_ids = lineage$parent_snapshot_ids,
+    level               = lineage$level
   )
   structure(snap, class = c("audit_snap", "list"))
 }

@@ -107,7 +107,10 @@ test_that("trail_to_df has the expected column names", {
   df <- trail_to_df(make_export_trail())
   expected <- c("index", "label", "type", "timestamp", "nrow", "ncol",
                 "total_nas", "all_columns", "schema", "numeric_summary",
-                "changes", "diagnostics", "custom", "pipeline", "controls")
+                "changes", "diagnostics", "custom", "pipeline", "controls",
+                "snapshot_id", "object_id", "object_name", "version",
+                "step_id", "event", "source", "srcref",
+                "parent_snapshot_ids", "level")
   expect_named(df, expected)
 })
 
@@ -143,7 +146,7 @@ test_that("trail_to_df on empty trail returns zero-row data.frame with correct c
   df <- trail_to_df(audit_trail("empty"))
   expect_s3_class(df, "data.frame")
   expect_equal(nrow(df), 0L)
-  expect_equal(ncol(df), 15L)
+  expect_equal(ncol(df), 25L)
 })
 
 test_that("trail_to_df diagnostics is NULL for plain taps", {
@@ -653,4 +656,108 @@ test_that("trail_to_df includes all_columns list-column", {
   df <- trail_to_df(trail)
   expect_true("all_columns" %in% names(df))
   expect_equal(df$all_columns[[1]], names(mtcars))
+})
+
+
+# ── Versioned-lineage fields (audited execution) ─────────────────────────────
+
+# Helper: a trail whose single snapshot carries the lineage fields directly.
+make_lineage_trail <- function() {
+  trail <- audit_trail("lineage_test")
+  snap <- tidyaudit:::.build_snapshot(
+    mtcars, label = "clean", index = 1L,
+    lineage = list(
+      snapshot_id = "s1", object_id = "o1", object_name = "clean",
+      version = 1L, step_id = "step_1", event = "create",
+      source = "clean <- dplyr::filter(raw, mpg > 20)",
+      srcref = list(file = "x.R", line1 = 2L, col1 = 1L,
+                    line2 = 2L, col2 = 38L),
+      parent_snapshot_ids = c("s0"), level = "metadata"
+    )
+  )
+  trail$snapshots[[1]] <- snap
+  trail$labels <- "clean"
+  trail
+}
+
+test_that(".build_snapshot leaves lineage fields NULL for explicit taps", {
+  snap <- tidyaudit:::.build_snapshot(mtcars, label = "raw", index = 1L)
+  for (f in c("snapshot_id", "object_id", "object_name", "version",
+              "step_id", "event", "source", "srcref",
+              "parent_snapshot_ids", "level")) {
+    expect_true(f %in% names(snap))
+    expect_null(snap[[f]])
+  }
+})
+
+test_that("RDS round-trip preserves versioned-lineage fields", {
+  trail <- make_lineage_trail()
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "rds")
+  s <- read_trail(tmp, format = "rds")$snapshots[[1]]
+  expect_equal(s$snapshot_id, "s1")
+  expect_equal(s$object_id, "o1")
+  expect_equal(s$object_name, "clean")
+  expect_identical(s$version, 1L)
+  expect_equal(s$event, "create")
+  expect_equal(s$parent_snapshot_ids, "s0")
+  expect_equal(s$level, "metadata")
+  expect_equal(s$srcref$line1, 2L)
+})
+
+test_that("JSON round-trip preserves versioned-lineage fields", {
+  skip_if_not_installed("jsonlite")
+  trail <- make_lineage_trail()
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "json")
+  s <- read_trail(tmp, format = "json")$snapshots[[1]]
+  expect_equal(s$snapshot_id, "s1")
+  expect_equal(s$object_id, "o1")
+  expect_identical(s$version, 1L)
+  expect_equal(s$event, "create")
+  expect_equal(s$parent_snapshot_ids, "s0")
+  expect_equal(s$level, "metadata")
+  expect_equal(s$srcref$line1, 2L)
+})
+
+test_that("old JSON trail without lineage fields still loads", {
+  skip_if_not_installed("jsonlite")
+  # Simulate a pre-feature file: serialise, then strip the new keys.
+  trail <- audit_trail("old_json")
+  mtcars |> audit_tap(trail, "raw")
+  lst <- trail_to_list(trail)
+  lineage_keys <- c("snapshot_id", "object_id", "object_name", "version",
+                    "step_id", "event", "source", "srcref",
+                    "parent_snapshot_ids", "level")
+  lst$snapshots <- lapply(lst$snapshots, function(s) s[setdiff(names(s), lineage_keys)])
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  writeLines(jsonlite::toJSON(lst, auto_unbox = TRUE, null = "null"), tmp)
+  restored <- read_trail(tmp, format = "json")
+  s <- restored$snapshots[[1]]
+  expect_s3_class(restored, "audit_trail")
+  expect_null(s$object_id)
+  expect_null(s$version)
+  expect_equal(s$nrow, nrow(mtcars))
+})
+
+test_that("old RDS trail without lineage fields still loads", {
+  # Simulate a pre-feature RDS: build the rds form, drop new keys from snapshot.
+  trail <- audit_trail("old_rds")
+  mtcars |> audit_tap(trail, "raw")
+  form <- tidyaudit:::.trail_to_rds_form(trail)
+  lineage_keys <- c("snapshot_id", "object_id", "object_name", "version",
+                    "step_id", "event", "source", "srcref",
+                    "parent_snapshot_ids", "level")
+  form$snapshots <- lapply(form$snapshots, function(s) s[setdiff(names(s), lineage_keys)])
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp))
+  saveRDS(form, tmp)
+  restored <- read_trail(tmp, format = "rds")
+  s <- restored$snapshots[[1]]
+  expect_s3_class(restored, "audit_trail")
+  expect_null(s$object_id)
+  expect_equal(s$nrow, nrow(mtcars))
 })

@@ -519,3 +519,164 @@ audit_record <- function(expr, name = NULL, env = parent.frame(),
 
   trail
 }
+
+
+# ── Exported: audit_source ───────────────────────────────────────────────────
+
+#' Audit a Script File End to End
+#'
+#' The canonical script runner: parses an `.R` file, evaluates it one top-level
+#' statement at a time, and records a versioned audit trail of every data.frame
+#' created or changed — like [base::source()] but returning an [audit_trail()].
+#' Because the evaluation loop is owned by tidyaudit, capture works in every
+#' context (interactive, `source()`d, or `Rscript`), unlike [audit_start()].
+#'
+#' Capture granularity is **top-level statement lineage** (see [audit_record()]).
+#'
+#' @inheritParams audit_record
+#' @param file Path to an `.R` script.
+#' @param env Environment in which to evaluate the script. Defaults to a fresh
+#'   child of the global environment so the script's objects do not clobber your
+#'   workspace; pass `globalenv()` for `source()`-style behaviour.
+#' @param echo Logical. If `TRUE`, echo each statement before evaluating it.
+#'
+#' @returns An [audit_trail()] populated with versioned, lineage-aware snapshots.
+#'
+#' @examples
+#' tmp <- tempfile(fileext = ".R")
+#' writeLines(c(
+#'   "raw   <- dplyr::as_tibble(mtcars)",
+#'   "clean <- dplyr::filter(raw, mpg > 20)"
+#' ), tmp)
+#' trail <- audit_source(tmp)
+#' print(trail)
+#'
+#' @family audited execution
+#' @seealso [audit_record()], [audit_start()]
+#' @export
+audit_source <- function(file, name = NULL,
+                         env = new.env(parent = globalenv()),
+                         watch = "data.frames", ignore = NULL,
+                         level = c("metadata", "sample_hash", "column_hash", "full_hash"),
+                         profile = c("standard", "cheap", "deep"),
+                         keys = NULL, numeric_summary = TRUE,
+                         continue_on_error = FALSE, echo = FALSE) {
+  level   <- match.arg(level)
+  profile <- match.arg(profile)
+
+  if (!is.character(file) || length(file) != 1L || is.na(file)) {
+    cli::cli_abort("{.arg file} must be a single non-missing character string.")
+  }
+  if (!file.exists(file)) {
+    cli::cli_abort("File not found: {.path {file}}")
+  }
+
+  exprs   <- parse(file, keep.source = TRUE)
+  srcrefs <- attr(exprs, "srcref")
+
+  opts  <- .audit_opts(watch = watch, ignore = ignore, level = level,
+                       profile = profile, keys = keys,
+                       numeric_summary = numeric_summary,
+                       continue_on_error = continue_on_error)
+  trail <- audit_trail(name %||% basename(file))
+  .audit_init(trail, opts)
+  .audit_baseline(env, trail, opts)
+
+  for (i in seq_along(exprs)) {
+    st <- exprs[[i]]
+    if (!is.null(srcrefs) && length(srcrefs) >= i) {
+      attr(st, "srcref") <- srcrefs[[i]]
+    }
+    if (isTRUE(echo)) cat(deparse(st), sep = "\n")
+    .audit_eval_step(st, env, trail, opts)
+  }
+
+  trail
+}
+
+
+# ── Exported: audit_start / audit_stop ───────────────────────────────────────
+
+#' Audit an Interactive Session
+#'
+#' Begins ambient capture in an **interactive session** (or a script run
+#' directly with `Rscript file.R`): registers a top-level task callback that
+#' records a snapshot after each statement you run, until [audit_stop()].
+#'
+#' This is a convenience wrapper, not the canonical script runner. Task
+#' callbacks fire per top-level statement at the REPL, but R treats
+#' `source("file.R")` as a **single** task — so running a script via `source()`
+#' under `audit_start()` records only one combined step. **For scripts, use
+#' [audit_source()].**
+#'
+#' The capture handler only *observes* completed statements; it never
+#' re-evaluates them, so side effects are not duplicated. Capture errors are
+#' swallowed so they can never break your REPL.
+#'
+#' @inheritParams audit_record
+#' @param env Environment to watch. Defaults to the global environment.
+#'
+#' @returns [audit_start()] returns the new [audit_trail()] invisibly;
+#'   [audit_stop()] returns the completed trail.
+#'
+#' @examples
+#' \dontrun{
+#' audit_start("session")
+#' raw   <- dplyr::as_tibble(mtcars)
+#' clean <- dplyr::filter(raw, mpg > 20)
+#' trail <- audit_stop()
+#' print(trail)
+#' }
+#'
+#' @family audited execution
+#' @seealso [audit_source()], [audit_record()]
+#' @export
+audit_start <- function(name = NULL, env = globalenv(),
+                        watch = "data.frames", ignore = NULL,
+                        level = c("metadata", "sample_hash", "column_hash", "full_hash"),
+                        profile = c("standard", "cheap", "deep"),
+                        keys = NULL, numeric_summary = TRUE) {
+  level   <- match.arg(level)
+  profile <- match.arg(profile)
+
+  if (!is.null(the$active)) {
+    cli::cli_abort(c(
+      "An audit session is already active.",
+      "i" = "Call {.fn audit_stop} before starting a new one."
+    ))
+  }
+
+  opts  <- .audit_opts(watch = watch, ignore = ignore, level = level,
+                       profile = profile, keys = keys,
+                       numeric_summary = numeric_summary)
+  trail <- audit_trail(name)
+  .audit_init(trail, opts)
+  .audit_baseline(env, trail, opts)
+
+  handler <- function(expr, value, ok, visible) {
+    .audit_observe_step(expr, env, trail, opts)
+    TRUE  # keep the callback registered
+  }
+  addTaskCallback(handler, name = "tidyaudit")
+  the$active <- list(trail = trail, env = env, opts = opts)
+
+  cli::cli_alert_success("Audit session started. Call {.fn audit_stop} to finish.")
+  invisible(trail)
+}
+
+#' @rdname audit_start
+#' @export
+audit_stop <- function() {
+  if (is.null(the$active)) {
+    cli::cli_abort(c(
+      "No active audit session.",
+      "i" = "Call {.fn audit_start} first."
+    ))
+  }
+  removeTaskCallback("tidyaudit")
+  trail <- the$active$trail
+  the$active <- NULL
+  n <- length(trail$snapshots)
+  cli::cli_alert_success("Audit session stopped ({n} snapshot{?s} recorded).")
+  trail
+}

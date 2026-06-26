@@ -12,15 +12,19 @@ trail_to_df(.trail)
 \value{
 A \code{data.frame} with columns \code{index}, \code{label}, \code{type}, \code{timestamp},
 \code{nrow}, \code{ncol}, \code{total_nas}, \code{all_columns}, \code{schema}, \code{numeric_summary},
-\code{changes}, \code{diagnostics}, \code{custom}, \code{pipeline}, and \code{controls}. Trail
-\code{name} and \code{created_at} are stored as attributes \code{"trail_name"} and
-\code{"created_at"}.
+\code{changes}, \code{diagnostics}, \code{custom}, \code{pipeline}, \code{controls}, and the
+audited-execution lineage columns \code{snapshot_id}, \code{object_id},
+\code{object_name}, \code{version}, \code{step_id}, \code{event}, \code{source}, \code{srcref},
+\code{parent_snapshot_ids}, \code{level}, and \code{evidence} (all \code{NULL} for snapshots
+recorded by the explicit taps). Trail \code{name} and \code{created_at} are stored as
+attributes \code{"trail_name"} and \code{"created_at"}.
 }
 \description{
-Returns a plain \code{data.frame} with one row per snapshot. Nested fields
-(\code{all_columns}, \code{schema}, \code{numeric_summary}, \code{changes}, \code{diagnostics},
-\code{custom}, \code{pipeline}, \code{controls}) become list-columns. Trail metadata is
-stored as attributes on the result.
+Returns a plain \code{data.frame} with one row per snapshot. Nested and
+optional fields (\code{all_columns}, \code{schema}, \code{numeric_summary}, \code{changes},
+\code{diagnostics}, \code{custom}, \code{pipeline}, \code{controls}, and the audited-execution
+lineage fields) become list-columns. Trail metadata is stored as attributes
+on the result.
 }
 \examples{
 trail <- audit_trail("example")

@@ -151,30 +151,49 @@ the$active <- NULL
        value = value, inplace = inplace)
 }
 
-# Infix operators and extractors whose operands are column references inside a
-# data mask (or element access), not data-frame inputs. We do not descend into
-# these when collecting candidate parent symbols.
-.audit_mask_ops <- c(">", "<", ">=", "<=", "==", "!=", "+", "-", "*", "/", "^",
-                     "%%", "%/%", "&", "|", "&&", "||", "!", ":", "$", "[",
-                     "[[", "@", "~", "%in%")
+# Arithmetic / comparison / logical operators and the formula operator. Their
+# operands are values inside a data mask, never data-frame inputs, so we do not
+# descend into them when collecting candidate parents.
+.audit_operator_ops <- c(">", "<", ">=", "<=", "==", "!=", "+", "-", "*", "/",
+                         "^", "%%", "%/%", "&", "|", "&&", "||", "!", ":", "~",
+                         "%in%")
 
-#' Collect bare-symbol candidate parents from a right-hand-side value
-#' expression. Symbols appear as parents only when they sit in an ordinary
-#' function-argument position; operands of comparison/arithmetic/extraction
-#' operators (e.g. `mpg` in `filter(raw, mpg > 20)`) are treated as columns.
+# Extraction / element-access operators. The object being extracted from is a
+# candidate parent (its root), but the column name or index is not.
+.audit_extract_ops <- c("$", "[", "[[", "@")
+
+#' Collect candidate parent symbols from a right-hand-side value expression,
+#' context-aware about tidy-eval data masks and element extraction:
+#'
+#' * Operators (`mpg > 20`, `x + 1`): skipped — operands are masked values.
+#' * Extraction (`raw[i, ]`, `lookup$v`): only the root object is collected,
+#'   not the column/index.
+#' * Ordinary calls: positional (unnamed) arguments are data candidates; named
+#'   arguments are treated as data-masked expressions (e.g. `z = mpg` in
+#'   `mutate(raw, z = mpg)`) and skipped.
 #' @noRd
 .audit_value_symbols <- function(value_expr) {
   if (is.null(value_expr)) return(character(0))
   syms <- character(0)
+  add  <- function(s) syms[[length(syms) + 1L]] <<- s
   walk <- function(e) {
-    if (is.symbol(e)) { syms[[length(syms) + 1L]] <<- as.character(e); return(invisible()) }
+    if (is.symbol(e)) { add(as.character(e)); return(invisible()) }
     if (!is.call(e)) return(invisible())
     fn_name <- if (is.symbol(e[[1L]])) as.character(e[[1L]]) else ""
-    if (fn_name %in% .audit_mask_ops) return(invisible())
-    for (a in as.list(e)[-1L]) {
-      if (is.symbol(a)) syms[[length(syms) + 1L]] <<- as.character(a)
+    if (fn_name %in% .audit_operator_ops) return(invisible())
+    if (fn_name %in% .audit_extract_ops) {
+      if (length(e) >= 2L) walk(e[[2L]])   # root object only
+      return(invisible())
+    }
+    args <- as.list(e)[-1L]
+    nms  <- names(args)
+    for (i in seq_along(args)) {
+      if (!is.null(nms) && nzchar(nms[[i]])) next   # named arg: data-masked
+      a <- args[[i]]
+      if (is.symbol(a)) add(as.character(a))
       else if (is.call(a)) walk(a)
     }
+    invisible()
   }
   walk(value_expr)
   unique(syms)

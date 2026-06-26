@@ -1,6 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^CLAUDE\.md$
+^AGENTS\.md$
 ^DESIGN_PLAN\.md$
 ^LICENSE\.md$
 ^\.claude$

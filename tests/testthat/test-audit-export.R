@@ -111,7 +111,7 @@ test_that("trail_to_df has the expected column names", {
                 "changes", "diagnostics", "custom", "pipeline", "controls",
                 "snapshot_id", "object_id", "object_name", "version",
                 "step_id", "event", "source", "srcref",
-                "parent_snapshot_ids", "level")
+                "parent_snapshot_ids", "level", "evidence")
   expect_named(df, expected)
 })
 
@@ -147,7 +147,7 @@ test_that("trail_to_df on empty trail returns zero-row data.frame with correct c
   df <- trail_to_df(audit_trail("empty"))
   expect_s3_class(df, "data.frame")
   expect_equal(nrow(df), 0L)
-  expect_equal(ncol(df), 25L)
+  expect_equal(ncol(df), 26L)
 })
 
 test_that("trail_to_df diagnostics is NULL for plain taps", {
@@ -685,7 +685,7 @@ test_that(".build_snapshot leaves lineage fields NULL for explicit taps", {
   snap <- tidyaudit:::.build_snapshot(mtcars, label = "raw", index = 1L)
   for (f in c("snapshot_id", "object_id", "object_name", "version",
               "step_id", "event", "source", "srcref",
-              "parent_snapshot_ids", "level")) {
+              "parent_snapshot_ids", "level", "evidence")) {
     expect_true(f %in% names(snap))
     expect_null(snap[[f]])
   }

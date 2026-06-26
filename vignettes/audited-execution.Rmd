@@ -113,6 +113,17 @@ audit_record({
 }, level = "column_hash")$snapshots[[2]]$event
 ```
 
+When a hash level is used, each snapshot records an `evidence` entry describing
+the algorithm, sampling, and salt policy alongside the hash itself, so the trail
+documents exactly how it was produced:
+
+```{r}
+s <- audit_record({
+  x <- data.frame(a = c(1, 2, 3))
+}, level = "column_hash")$snapshots[[1]]
+str(s$evidence)
+```
+
 Hashes use a per-run salt and are **not** a privacy guarantee — unsalted hashes
 of small categorical columns can be reversed by dictionary attack. Keep the
 default `"metadata"` level when the trail may be shared.

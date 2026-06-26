@@ -165,7 +165,8 @@
       source              = s$source,
       srcref              = s$srcref,
       parent_snapshot_ids = unlist(s$parent_snapshot_ids),
-      level               = s$level
+      level               = s$level,
+      evidence            = s$evidence
     )
     structure(snap, class = c("audit_snap", "list"))
   })
@@ -229,7 +230,8 @@ trail_to_list <- function(.trail) {
       source              = snap$source,
       srcref              = snap$srcref,
       parent_snapshot_ids = snap$parent_snapshot_ids,
-      level               = snap$level
+      level               = snap$level,
+      evidence            = snap$evidence
     )
   })
 
@@ -309,6 +311,7 @@ trail_to_df <- function(.trail) {
       srcref              = I(list()),
       parent_snapshot_ids = I(list()),
       level               = I(list()),
+      evidence            = I(list()),
       stringsAsFactors = FALSE
     )
   } else {
@@ -340,6 +343,7 @@ trail_to_df <- function(.trail) {
       srcref              = I(lapply(.trail$snapshots, `[[`, "srcref")),
       parent_snapshot_ids = I(lapply(.trail$snapshots, `[[`, "parent_snapshot_ids")),
       level               = I(lapply(.trail$snapshots, `[[`, "level")),
+      evidence            = I(lapply(.trail$snapshots, `[[`, "evidence")),
       stringsAsFactors = FALSE
     )
   }

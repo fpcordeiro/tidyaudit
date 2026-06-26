@@ -124,9 +124,10 @@ audit_report <- function(.trail, format = "console") {
   )
   cli::cli_text("Column types: {type_str}")
 
-  # NA summary
-  if (last_snap$total_nas > 0L) {
-    na_cols <- schema[schema$n_na > 0L, , drop = FALSE]
+  # NA summary. Terminal delete/retire snapshots carry a total NA count but no
+  # per-column schema, so fall back to a single line in that case.
+  na_cols <- schema[!is.na(schema$n_na) & schema$n_na > 0L, , drop = FALSE]
+  if (isTRUE(last_snap$total_nas > 0L) && nrow(na_cols) > 0L) {
     pct <- round(100 * na_cols$n_na / last_snap$nrow, 1)
     na_tbl <- data.frame(
       Column = na_cols$column,
@@ -137,6 +138,8 @@ audit_report <- function(.trail, format = "console") {
     )
     cli::cli_text("{.strong Columns with NAs ({nrow(na_cols)}):}")
     .cli_table(na_tbl, right_align = c("NAs", "%"), indent = 4L)
+  } else if (isTRUE(last_snap$total_nas > 0L)) {
+    cli::cli_alert_warning("Total NAs: {format(last_snap$total_nas, big.mark = ',')}")
   } else {
     cli::cli_alert_success("No missing values")
   }

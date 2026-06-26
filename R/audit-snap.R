@@ -147,7 +147,8 @@
     source              = lineage$source,
     srcref              = lineage$srcref,
     parent_snapshot_ids = lineage$parent_snapshot_ids,
-    level               = lineage$level
+    level               = lineage$level,
+    evidence            = lineage$evidence
   )
   structure(snap, class = c("audit_snap", "list"))
 }
@@ -206,8 +207,8 @@ print.audit_snap <- function(x, ...) {
     cli::cli_text("  {.emph {tp}} ({n_type}): {col_str}")
   }
 
-  # Total NAs
-  if (x$total_nas > 0L) {
+  # Total NAs (terminal delete/retire snapshots may carry NA)
+  if (isTRUE(x$total_nas > 0L)) {
     cli::cli_text("")
     cli::cli_alert_warning("Total NAs: {format(x$total_nas, big.mark = ',')}")
   }

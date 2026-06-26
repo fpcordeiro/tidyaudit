@@ -84,7 +84,9 @@
     name      = .trail$name,
     created_at = .trail$created_at,
     labels    = .trail$labels,
-    snapshots = lapply(.trail$snapshots, unclass)
+    snapshots = lapply(.trail$snapshots, unclass),
+    events    = .trail$events,
+    keys      = .trail$keys
   )
 }
 
@@ -96,6 +98,8 @@
   trail$snapshots  <- lapply(lst$snapshots, function(snap) {
     structure(snap, class = c("audit_snap", "list"))
   })
+  trail$events <- lst$events
+  trail$keys   <- lst$keys
   trail
 }
 
@@ -166,6 +170,8 @@
     structure(snap, class = c("audit_snap", "list"))
   })
 
+  trail$events <- lst$events
+  trail$keys   <- lst$keys
   trail
 }
 
@@ -235,7 +241,9 @@ trail_to_list <- function(.trail) {
     name        = .trail$name,
     created_at  = .fmt_posixct(.trail$created_at),
     n_snapshots = length(.trail$snapshots),
-    snapshots   = snap_list
+    snapshots   = snap_list,
+    events      = .trail$events,
+    keys        = .trail$keys
   )
 }
 

@@ -371,6 +371,30 @@
   .node-card { cursor: pointer; transition: filter 0.15s; }
   .node-card:hover { filter: brightness(1.05); }
   .edge-hit { cursor: pointer; stroke: transparent; stroke-width: 20; fill: none; }
+
+  /* Tabular report */
+  #report-container { margin-bottom: 8px; }
+  .report-section { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .report-section h2 { font-size: 15px; margin: 0 0 12px; color: var(--text); }
+  .summary-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .summary-cell { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; min-width: 90px; }
+  .summary-cell .k { display: block; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em; }
+  .summary-cell .v { display: block; font-size: 18px; font-weight: 600; color: var(--text); }
+  table.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.report-table th, table.report-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.report-table th { color: var(--text-secondary); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+  table.report-table tr:last-child td { border-bottom: none; }
+  table.report-table td.num { text-align: right; font-family: var(--mono); }
+  table.report-table code, .report-section code { font-family: var(--mono); font-size: 12px; background: var(--bg-tertiary); padding: 1px 5px; border-radius: 4px; }
+  .ev { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px; }
+  .ev-create { background: rgba(59,130,246,.15); color: var(--snap); }
+  .ev-update { background: rgba(168,85,247,.15); color: var(--mutate); }
+  .ev-delete, .ev-retire { background: var(--violation-bg); color: var(--violation); }
+  .ev-unchanged_assignment { background: var(--bg-tertiary); color: var(--text-muted); }
+  .delta-pos { color: var(--join); } .delta-neg { color: var(--filter); }
+  .row-err td { background: var(--violation-bg); }
+  .pill-warn { color: var(--warning-text); font-size: 11px; }
+  .pill-err { color: var(--violation); font-size: 11px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -413,6 +437,7 @@
   </div>
 
   <div class="main-area">
+    <div id="report-container"></div>
     <div class="pipeline-container" id="pipeline-container"></div>
 
     <div class="detail-panel hidden" id="detail-panel">
@@ -493,13 +518,26 @@ function loadTrail() {
 
   if (snapshots.length === 0) return null;
 
+  // Audited-execution trails carry per-object lineage; classic tap trails do not.
+  const audited = snapshots.some(function(s) { return s && s.object_name != null; });
+
+  let events = TRAIL_DATA.events;
+  if (events && !Array.isArray(events)) events = Object.values(events);
+
   return {
     name: TRAIL_DATA.name,
     created_at: TRAIL_DATA.created_at,
     n_snapshots: TRAIL_DATA.n_snapshots,
-    snapshots: snapshots
+    snapshots: snapshots,
+    events: events || [],
+    keys: TRAIL_DATA.keys || null,
+    audited: audited
   };
 }
+
+// First-element accessor: jsonlite may wrap scalars as length-1 arrays.
+function scalar(v) { return Array.isArray(v) ? v[0] : v; }
+function asArray(v) { return v == null ? [] : (Array.isArray(v) ? v : [v]); }
 
 // ── Type display helpers ───────────────────────────────────────
 function typeLabel(snap) {
@@ -625,7 +663,7 @@ function renderPipeline() {
 function selectNode(i) {
   state.selected = { type: 'node', index: i };
   renderDetail();
-  renderPipeline();
+  if (state.trail.audited) renderLineageGraph(); else renderPipeline();
 }
 
 function selectEdge(i) {
@@ -707,6 +745,24 @@ function renderNodeDetail(title, body) {
   }
 
   html += '</div></div>';
+
+  // Lineage (audited execution)
+  if (snap.object_name != null) {
+    const parents = asArray(snap.parent_snapshot_ids).map(function(pid) {
+      const p = state.byId[pid];
+      return p ? (scalar(p.object_name) + ' v' + scalar(p.version)) : pid;
+    });
+    html += '<div class="detail-section" style="min-width:100%"><h4>Lineage</h4><div style="display:flex;flex-wrap:wrap">';
+    html += statCard('Object', scalar(snap.object_name));
+    html += statCard('Version', scalar(snap.version));
+    html += statCard('Event', scalar(snap.event));
+    html += statCard('Derived from', parents.length ? parents.join(', ') : '—');
+    html += '</div>';
+    if (snap.source && snap.source !== '<pre-existing>') {
+      html += '<pre style="margin-top:10px;padding:10px;background:var(--bg-tertiary);border-radius:6px;overflow:auto;font-family:var(--mono);font-size:12px">' + escHtml(scalar(snap.source)) + '</pre>';
+    }
+    html += '</div>';
+  }
 
   // Policy violations (future-proof)
   const violations = snap.policy_violations || [];
@@ -899,11 +955,179 @@ function toggleOption(el, key) {
 
 function toggleTheme() {
   document.body.classList.toggle('dark');
-  renderPipeline();
+  if (state.trail && state.trail.audited) renderLineageGraph(); else renderPipeline();
   if (state.selected) renderDetail();
 }
 
 // ── Init ────────────────────────────────────────────────────────
+function eventBadge(ev) {
+  ev = scalar(ev) || 'create';
+  return '<span class="ev ev-' + escHtml(ev) + '">' + escHtml(ev) + '</span>';
+}
+function deltaCell(d) {
+  if (d == null || d === 0) return '<td class="num">=</td>';
+  const cls = d > 0 ? 'delta-pos' : 'delta-neg';
+  return '<td class="num ' + cls + '">' + (d > 0 ? '+' : '') + d + '</td>';
+}
+
+function renderReport() {
+  const trail = state.trail;
+  const c = document.getElementById('report-container');
+  if (!trail.audited) { c.innerHTML = ''; return; }
+  const snaps = trail.snapshots;
+
+  const order = [], byObj = {};
+  snaps.forEach(function(s) {
+    const oid = scalar(s.object_id);
+    if (!byObj[oid]) { byObj[oid] = []; order.push(oid); }
+    byObj[oid].push(s);
+  });
+  const nSteps = trail.events.length ||
+    new Set(snaps.map(function(s){return scalar(s.step_id);})).size;
+  const nErr = trail.events.filter(function(e){ return scalar(e.error) != null; }).length;
+  const level = snaps.length ? (scalar(snaps[0].level) || 'metadata') : 'metadata';
+
+  let html = '';
+
+  html += '<div class="report-section"><h2>Run summary</h2><div class="summary-grid">';
+  html += '<div class="summary-cell"><span class="k">Trail</span><span class="v">' + escHtml(trail.name || '') + '</span></div>';
+  html += '<div class="summary-cell"><span class="k">Objects</span><span class="v">' + order.length + '</span></div>';
+  html += '<div class="summary-cell"><span class="k">Steps</span><span class="v">' + nSteps + '</span></div>';
+  html += '<div class="summary-cell"><span class="k">Snapshots</span><span class="v">' + snaps.length + '</span></div>';
+  html += '<div class="summary-cell"><span class="k">Level</span><span class="v">' + escHtml(level) + '</span></div>';
+  html += '<div class="summary-cell"><span class="k">Errors</span><span class="v"' + (nErr ? ' style="color:var(--violation)"' : '') + '>' + nErr + '</span></div>';
+  html += '</div></div>';
+
+  if (trail.events.length) {
+    html += '<div class="report-section"><h2>Step timeline</h2><table class="report-table"><thead><tr><th>Step</th><th>Code</th><th>Objects changed</th><th></th></tr></thead><tbody>';
+    trail.events.forEach(function(e) {
+      const err = scalar(e.error);
+      const warns = asArray(e.warnings);
+      const objs = asArray(e.snapshots).map(escHtml).join(', ');
+      const src = scalar(e.source) || '';
+      let flag = '';
+      if (err != null) flag = '<span class="pill-err">error</span>';
+      else if (warns.length) flag = '<span class="pill-warn">' + warns.length + ' warning' + (warns.length>1?'s':'') + '</span>';
+      html += '<tr' + (err != null ? ' class="row-err"' : '') + '><td>' + escHtml(scalar(e.step_id) || '') + '</td><td><code>' + escHtml(src) + '</code></td><td>' + objs + '</td><td>' + flag + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  html += '<div class="report-section"><h2>Objects &amp; versions</h2><table class="report-table"><thead><tr><th>Object</th><th>Ver</th><th>Event</th><th class="num">Rows</th><th class="num">Cols</th><th class="num">NAs</th><th class="num">&Delta;Rows</th><th>Key</th></tr></thead><tbody>';
+  order.forEach(function(oid) {
+    byObj[oid].forEach(function(s) {
+      const idx = snaps.indexOf(s);
+      const nm = scalar(s.object_name);
+      const keyCols = trail.keys && trail.keys[nm] ? asArray(trail.keys[nm]).join(', ') : '';
+      const ch = s.changes;
+      html += '<tr style="cursor:pointer" onclick="selectNode(' + idx + ')">';
+      html += '<td>' + escHtml(nm) + '</td><td class="num">' + scalar(s.version) + '</td><td>' + eventBadge(s.event) + '</td>';
+      html += '<td class="num">' + fmtN(scalar(s.nrow)) + '</td><td class="num">' + scalar(s.ncol) + '</td><td class="num">' + fmtN(scalar(s.total_nas)) + '</td>';
+      html += deltaCell(ch ? scalar(ch.row_delta) : null);
+      html += '<td>' + escHtml(keyCols) + '</td></tr>';
+    });
+  });
+  html += '</tbody></table></div>';
+
+  const probs = trail.events.filter(function(e){ return scalar(e.error) != null || asArray(e.warnings).length; });
+  if (probs.length) {
+    html += '<div class="report-section"><h2>Warnings &amp; errors</h2><table class="report-table"><thead><tr><th>Step</th><th>Type</th><th>Message</th></tr></thead><tbody>';
+    probs.forEach(function(e) {
+      const step = escHtml(scalar(e.step_id) || '');
+      const err = scalar(e.error);
+      if (err != null) html += '<tr class="row-err"><td>' + step + '</td><td class="pill-err">error</td><td><code>' + escHtml(err) + '</code></td></tr>';
+      asArray(e.warnings).forEach(function(w) {
+        html += '<tr><td>' + step + '</td><td class="pill-warn">warning</td><td><code>' + escHtml(w) + '</code></td></tr>';
+      });
+    });
+    html += '</tbody></table></div>';
+  }
+
+  html += '<div class="report-section" style="margin-bottom:0;padding-bottom:8px"><h2>Lineage graph</h2><p class="hint" style="margin:0">Each row is one object\u2019s version chain; edges show derivations. Click a node for detail.</p></div>';
+
+  c.innerHTML = html;
+}
+
+function eventColorHex(ev, dark) {
+  ev = scalar(ev);
+  if (ev === 'update') return dark ? '#c084fc' : '#a855f7';
+  if (ev === 'delete' || ev === 'retire') return dark ? '#f87171' : '#ef4444';
+  if (ev === 'unchanged_assignment') return dark ? '#64748b' : '#94a3b8';
+  return dark ? '#60a5fa' : '#3b82f6';
+}
+
+function renderLineageGraph() {
+  const trail = state.trail;
+  const snaps = trail.snapshots;
+  const n = snaps.length;
+  const dark = document.body.classList.contains('dark');
+
+  const lanes = [], laneOf = {};
+  snaps.forEach(function(s) {
+    const oid = scalar(s.object_id);
+    if (laneOf[oid] == null) { laneOf[oid] = lanes.length; lanes.push(oid); }
+  });
+
+  const nodeW = 150, nodeH = 60, colGap = 46, rowGap = 30;
+  const padX = 110, padY = 30;
+  const colW = nodeW + colGap, rowH = nodeH + rowGap;
+  const pos = {};
+  snaps.forEach(function(s, i) {
+    const lane = laneOf[scalar(s.object_id)];
+    const x = padX + i * colW, y = padY + lane * rowH;
+    pos[scalar(s.snapshot_id)] = { x: x, y: y, cx: x + nodeW/2, cy: y + nodeH/2, i: i };
+  });
+  const totalW = padX + n * colW + 40;
+  const totalH = padY * 2 + lanes.length * rowH;
+
+  const monoFamily = getComputedStyle(document.body).getPropertyValue('--mono').trim();
+  const fontFamily = getComputedStyle(document.body).getPropertyValue('--font').split(',')[0].trim();
+  const labelColor = dark ? '#94a3b8' : '#64748b';
+
+  let svg = '<svg class="pipeline-svg" width="' + totalW + '" height="' + totalH + '" viewBox="0 0 ' + totalW + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg">';
+  svg += '<defs><marker id="lin-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="' + (dark ? '#475569' : '#94a3b8') + '" /></marker><filter id="lshadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter></defs>';
+
+  lanes.forEach(function(oid, li) {
+    const first = snaps.find(function(s){ return scalar(s.object_id) === oid; });
+    const y = padY + li * rowH + nodeH/2;
+    svg += '<text x="8" y="' + (y + 4) + '" font-size="12" font-weight="600" fill="' + labelColor + '" font-family="' + monoFamily + '">' + escHtml(scalar(first.object_name)) + '</text>';
+  });
+
+  snaps.forEach(function(s) {
+    const to = pos[scalar(s.snapshot_id)];
+    asArray(s.parent_snapshot_ids).forEach(function(pid) {
+      const from = pos[pid];
+      if (!from) return;
+      const x1 = from.x + nodeW, y1 = from.cy, x2 = to.x, y2 = to.cy;
+      const mx = (x1 + x2) / 2;
+      svg += '<path d="M ' + x1 + ' ' + y1 + ' C ' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2 + '" fill="none" stroke="' + (dark ? '#475569' : '#cbd5e1') + '" stroke-width="1.8" marker-end="url(#lin-arrow)" />';
+    });
+  });
+
+  snaps.forEach(function(s, i) {
+    const p = pos[scalar(s.snapshot_id)];
+    const color = eventColorHex(s.event, dark);
+    const bg = dark ? '#1e293b' : '#ffffff';
+    const sel = state.selected && state.selected.type === 'node' && state.selected.index === i;
+    const term = scalar(s.event) === 'delete' || scalar(s.event) === 'retire';
+    svg += '<g class="node-card" onclick="selectNode(' + i + ')" transform="translate(' + p.x + ',' + p.y + ')">';
+    svg += '<rect width="' + nodeW + '" height="' + nodeH + '" rx="8" fill="' + bg + '" stroke="' + color + '" stroke-width="' + (sel ? 3 : 1.5) + '"' + (term ? ' stroke-dasharray="4 3"' : '') + ' filter="url(#lshadow)" />';
+    svg += '<rect width="' + nodeW + '" height="4" rx="8" fill="' + color + '" />';
+    svg += '<text x="10" y="22" font-size="12.5" font-weight="600" fill="' + (dark ? '#f1f5f9' : '#334155') + '" font-family="' + fontFamily + '">' + escHtml(scalar(s.object_name)) + ' <tspan fill="' + color + '">v' + scalar(s.version) + '</tspan></text>';
+    svg += '<text x="10" y="38" font-size="10" fill="' + color + '" font-family="' + monoFamily + '">' + escHtml(scalar(s.event)) + '</text>';
+    svg += '<text x="10" y="52" font-size="10.5" fill="' + labelColor + '" font-family="' + monoFamily + '">' + fmtN(scalar(s.nrow)) + ' \u00d7 ' + scalar(s.ncol) + (scalar(s.total_nas) > 0 ? '  \u00b7 ' + fmtN(scalar(s.total_nas)) + ' NA' : '') + '</text>';
+    svg += '</g>';
+  });
+
+  svg += '</svg>';
+  document.getElementById('pipeline-container').innerHTML = svg;
+}
+
+function renderMain() {
+  if (state.trail.audited) { renderReport(); renderLineageGraph(); }
+  else renderPipeline();
+}
+
 (function init() {
   state.trail = loadTrail();
   if (!state.trail) {
@@ -912,9 +1136,13 @@ function toggleTheme() {
     document.getElementById('trail-info').textContent = 'Empty trail';
     return;
   }
+  state.byId = {};
+  state.trail.snapshots.forEach(function(s) {
+    if (s.snapshot_id != null) state.byId[scalar(s.snapshot_id)] = s;
+  });
   document.getElementById('trail-info').textContent =
     state.trail.name + ' \u2014 ' + state.trail.n_snapshots + ' snapshots \u2014 Created: ' + (state.trail.created_at || 'N/A');
-  renderPipeline();
+  renderMain();
   updateJson();
 })();
 </script>

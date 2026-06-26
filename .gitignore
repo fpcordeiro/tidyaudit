@@ -13,6 +13,7 @@ src/*.dll
 # Claude files
 .claude/
 CLAUDE.md
+AGENTS.md
 ROADMAP.md
 playground/
 # MacOS specific files

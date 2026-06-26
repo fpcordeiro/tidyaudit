@@ -1,6 +1,6 @@
 Package: tidyaudit
 Title: Pipeline Audit Trails and Data Diagnostics for 'tidyverse' Workflows
-Version: 0.2.1
+Version: 0.3.0
 Authors@R:
     person("Fernando", "Cordeiro", , "fernandolpcordeiro@gmail.com", role = c("aut", "cre", "cph"))
 Description: Provides pipeline audit trails and data diagnostics for

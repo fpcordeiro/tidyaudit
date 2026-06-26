@@ -421,3 +421,14 @@ test_that("audit_source granularity vs source() is documented (per-statement)", 
   trail <- audit_source(f)
   expect_equal(length(unique(vapply(trail$snapshots, `[[`, character(1), "step_id"))), 3L)
 })
+
+
+# ── Reproducibility: auditing must not touch the global RNG ───────────────────
+
+test_that("audited execution does not perturb the global RNG state", {
+  set.seed(123)
+  before <- .Random.seed
+  e <- new.env(parent = globalenv())
+  audit_record({ df <- data.frame(x = 1:3) }, env = e, level = "column_hash")
+  expect_identical(.Random.seed, before)
+})

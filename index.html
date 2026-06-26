@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyaudit</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -124,6 +124,51 @@
 <img src="reference/figures/audit_export_readme.gif" alt="audit_export demo"><div class="figcaption">audit_export demo</div>
 </div>
 </div>
+<div class="section level3">
+<h3 id="audited-execution--no-taps-required">Audited execution — no taps required<a class="anchor" aria-label="anchor" href="#audited-execution--no-taps-required"></a>
+</h3>
+<p>Sometimes you don’t want to thread taps through every pipe. Wrap a whole script or block and tidyaudit records the lineage of <strong>every</strong> data.frame it creates or changes — automatically:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">trail</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/audit_source.html">audit_source</a></span><span class="op">(</span><span class="st">"clean_orders.R"</span><span class="op">)</span>     <span class="co"># like source(), but audited</span></span>
+<span></span>
+<span><span class="co"># or inline:</span></span>
+<span><span class="va">trail</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/audit_record.html">audit_record</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">raw</span>    <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu">read_csv</span><span class="op">(</span><span class="st">"orders.csv"</span><span class="op">)</span></span>
+<span>  <span class="va">clean</span>  <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">raw</span>, <span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="va">joined</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">clean</span>, <span class="va">regions</span>, by <span class="op">=</span> <span class="st">"region_id"</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/audit_export.html">audit_export</a></span><span class="op">(</span><span class="va">trail</span><span class="op">)</span>   <span class="co"># tabular report + per-object lineage graph</span></span></code></pre></div>
+<p>Capture is <strong>top-level statement lineage</strong>: each statement becomes a versioned snapshot tagged with the line of code that produced it and the parent data.frames it derived from (a join links two parents). It is metadata-only by default — shape, types, and NA counts, never the rows themselves.</p>
+<p>Parents are inferred statically from the call. For data-mask verbs (<code><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter()</a></code>, <code><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate()</a></code>, <code><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select()</a></code>, …) only the primary data argument counts as a parent, so a cross-data-frame reference inside a masked argument — <code>mutate(df, new = other_df$x)</code> — won’t link <code>other_df</code>. Lift it into its own statement (<code>v &lt;- other_df$x</code>) if you need that edge in the lineage.</p>
+<table class="table">
+<colgroup>
+<col width="47%">
+<col width="52%">
+</colgroup>
+<thead><tr>
+<th>Function</th>
+<th>Use it for</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>audit_source("script.R")</code></td>
+<td>The canonical runner — works everywhere (interactive, <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>d, <code>Rscript</code>)</td>
+</tr>
+<tr>
+<td><code>audit_record({ ... })</code></td>
+<td>Auditing an inline block</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/audit_start.html">audit_start()</a></code> / <code><a href="reference/audit_start.html">audit_stop()</a></code>
+</td>
+<td>Interactive-session convenience (top/bottom of a console session)</td>
+</tr>
+</tbody>
+</table>
+<p>For per-step detail <em>inside</em> a single pipe, reach for the explicit taps below; they compose inside an audited run.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
@@ -135,6 +180,8 @@
 <ul>
 <li>
 <code><a href="reference/audit_trail.html">audit_trail()</a></code> / <code><a href="reference/audit_tap.html">audit_tap()</a></code> — create a trail and record snapshots inside pipes</li>
+<li>
+<code><a href="reference/audit_source.html">audit_source()</a></code> / <code><a href="reference/audit_record.html">audit_record()</a></code> / <code><a href="reference/audit_start.html">audit_start()</a></code> — <strong>audited execution</strong>: capture data-frame lineage across a whole script or session without per-step taps</li>
 <li>
 <code><a href="reference/join_tap.html">left_join_tap()</a></code>, <code><a href="reference/filter_tap.html">filter_tap()</a></code>, and friends — <strong>operation-aware taps</strong> that capture match rates, drop counts, stat impact, and relationship types</li>
 <li>
@@ -175,7 +222,7 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from CRAN</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyaudit"</span><span class="op">)</span></span>
 <span></span>

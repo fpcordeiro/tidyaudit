@@ -16,6 +16,18 @@ Create and inspect pipeline audit trails
 - [`audit_report()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_report.md)
   : Generate an Audit Report
 
+## Audited Execution
+
+Capture data-frame lineage without per-step taps
+
+- [`audit_source()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_source.md)
+  : Audit a Script File End to End
+- [`audit_record()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_record.md)
+  : Record Data-Frame Lineage for a Block of Code
+- [`audit_start()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_start.md)
+  [`audit_stop()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_start.md)
+  : Audit an Interactive Session
+
 ## Operation-Aware Taps
 
 Pipeline taps with enriched diagnostics

@@ -41,10 +41,12 @@ trail <- audit_trail("example")
 mtcars |> audit_tap(trail, "raw")
 lst <- trail_to_list(trail)
 str(lst, max.level = 2)
-#> List of 4
+#> List of 6
 #>  $ name       : chr "example"
-#>  $ created_at : chr "2026-05-28T01:03:05Z"
+#>  $ created_at : chr "2026-06-26T22:14:07Z"
 #>  $ n_snapshots: int 1
 #>  $ snapshots  :List of 1
-#>   ..$ raw:List of 15
+#>   ..$ raw:List of 26
+#>  $ events     : NULL
+#>  $ keys       : NULL
 ```

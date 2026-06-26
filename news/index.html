@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyaudit</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +34,25 @@
       <small>Source: <a href="https://github.com/fpcordeiro/tidyaudit/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="tidyaudit-030">tidyaudit 0.3.0<a class="anchor" aria-label="anchor" href="#tidyaudit-030"></a></h2>
+<div class="section level4">
+<h4 id="new-features-0-3-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-3-0"></a></h4>
+<ul><li>
+<strong>Audited execution</strong> — capture data-frame lineage across a whole script or session without per-step taps:
+<ul><li>
+<code><a href="../reference/audit_source.html">audit_source()</a></code> runs an <code>.R</code> file like <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code> but returns an audit trail; it owns the evaluation loop, so capture works interactively, under <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>, and under <code>Rscript</code>.</li>
+<li>
+<code>audit_record({ ... })</code> audits an inline block.</li>
+<li>
+<code><a href="../reference/audit_start.html">audit_start()</a></code> / <code><a href="../reference/audit_start.html">audit_stop()</a></code> provide interactive-session convenience via a top-level task callback. (Use <code><a href="../reference/audit_source.html">audit_source()</a></code> for scripts: <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code> is a single top-level task.)</li>
+</ul></li>
+<li>Capture granularity is top-level statement lineage. Snapshots carry versioned-lineage fields (binding-stream <code>object_id</code>, <code>version</code>, <code>event</code>, <code>source</code>, <code>srcref</code>, <code>parent_snapshot_ids</code>, <code>level</code>); parents resolve from the pre-evaluation state and only to data.frames. Lifecycle events (<code>create</code>/<code>update</code>/<code>delete</code>/<code>retire</code>/<code>unchanged_assignment</code>) are tracked.</li>
+<li>Capture is metadata-only by default; <code>level</code> (<code>metadata</code>, <code>sample_hash</code>, <code>column_hash</code>, <code>full_hash</code>) opts into per-run-salted content hashing to detect value-only changes.</li>
+<li>
+<code><a href="../reference/audit_export.html">audit_export()</a></code> renders audited trails as a tabular report (run summary, step timeline, objects &amp; versions, warnings &amp; errors) plus a per-object lineage graph. Classic tap trails still render the linear flow.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="tidyaudit-021">tidyaudit 0.2.1<a class="anchor" aria-label="anchor" href="#tidyaudit-021"></a></h2><p class="text-muted">CRAN release: 2026-05-08</p>
 <div class="section level4">

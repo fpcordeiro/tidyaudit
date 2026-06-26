@@ -97,6 +97,50 @@ internet required.
 
 audit_export demo
 
+### Audited execution — no taps required
+
+Sometimes you don’t want to thread taps through every pipe. Wrap a whole
+script or block and tidyaudit records the lineage of **every**
+data.frame it creates or changes — automatically:
+
+``` r
+
+trail <- audit_source("clean_orders.R")     # like source(), but audited
+
+# or inline:
+trail <- audit_record({
+  raw    <- readr::read_csv("orders.csv")
+  clean  <- dplyr::filter(raw, amount > 0)
+  joined <- dplyr::left_join(clean, regions, by = "region_id")
+})
+
+audit_export(trail)   # tabular report + per-object lineage graph
+```
+
+Capture is **top-level statement lineage**: each statement becomes a
+versioned snapshot tagged with the line of code that produced it and the
+parent data.frames it derived from (a join links two parents). It is
+metadata-only by default — shape, types, and NA counts, never the rows
+themselves.
+
+Parents are inferred statically from the call. For data-mask verbs
+([`filter()`](https://dplyr.tidyverse.org/reference/filter.html),
+[`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html),
+[`select()`](https://dplyr.tidyverse.org/reference/select.html), …) only
+the primary data argument counts as a parent, so a cross-data-frame
+reference inside a masked argument — `mutate(df, new = other_df$x)` —
+won’t link `other_df`. Lift it into its own statement
+(`v <- other_df$x`) if you need that edge in the lineage.
+
+| Function | Use it for |
+|----|----|
+| `audit_source("script.R")` | The canonical runner — works everywhere (interactive, [`source()`](https://rdrr.io/r/base/source.html)d, `Rscript`) |
+| `audit_record({ ... })` | Auditing an inline block |
+| [`audit_start()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_start.md) / [`audit_stop()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_start.md) | Interactive-session convenience (top/bottom of a console session) |
+
+For per-step detail *inside* a single pipe, reach for the explicit taps
+below; they compose inside an audited run.
+
 ## Features
 
 ### Audit trail system
@@ -109,6 +153,13 @@ step.
   /
   [`audit_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_tap.md)
   — create a trail and record snapshots inside pipes
+- [`audit_source()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_source.md)
+  /
+  [`audit_record()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_record.md)
+  /
+  [`audit_start()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_start.md)
+  — **audited execution**: capture data-frame lineage across a whole
+  script or session without per-step taps
 - [`left_join_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/join_tap.md),
   [`filter_tap()`](https://fpcordeiro.github.io/tidyaudit/reference/filter_tap.md),
   and friends — **operation-aware taps** that capture match rates, drop

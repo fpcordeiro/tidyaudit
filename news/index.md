@@ -1,5 +1,42 @@
 # Changelog
 
+## tidyaudit 0.3.0
+
+#### New features
+
+- **Audited execution** — capture data-frame lineage across a whole
+  script or session without per-step taps:
+  - [`audit_source()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_source.md)
+    runs an `.R` file like
+    [`source()`](https://rdrr.io/r/base/source.html) but returns an
+    audit trail; it owns the evaluation loop, so capture works
+    interactively, under
+    [`source()`](https://rdrr.io/r/base/source.html), and under
+    `Rscript`.
+  - `audit_record({ ... })` audits an inline block.
+  - [`audit_start()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_start.md)
+    /
+    [`audit_stop()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_start.md)
+    provide interactive-session convenience via a top-level task
+    callback. (Use
+    [`audit_source()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_source.md)
+    for scripts: [`source()`](https://rdrr.io/r/base/source.html) is a
+    single top-level task.)
+- Capture granularity is top-level statement lineage. Snapshots carry
+  versioned-lineage fields (binding-stream `object_id`, `version`,
+  `event`, `source`, `srcref`, `parent_snapshot_ids`, `level`); parents
+  resolve from the pre-evaluation state and only to data.frames.
+  Lifecycle events
+  (`create`/`update`/`delete`/`retire`/`unchanged_assignment`) are
+  tracked.
+- Capture is metadata-only by default; `level` (`metadata`,
+  `sample_hash`, `column_hash`, `full_hash`) opts into per-run-salted
+  content hashing to detect value-only changes.
+- [`audit_export()`](https://fpcordeiro.github.io/tidyaudit/reference/audit_export.md)
+  renders audited trails as a tabular report (run summary, step
+  timeline, objects & versions, warnings & errors) plus a per-object
+  lineage graph. Classic tap trails still render the linear flow.
+
 ## tidyaudit 0.2.1
 
 CRAN release: 2026-05-08

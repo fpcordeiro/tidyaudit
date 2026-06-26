@@ -58,7 +58,7 @@ trail <- audit_trail("my_analysis")
 print(trail)
 #> 
 #> ── Audit Trail: "my_analysis" ──────────────────────────────────────────────────
-#> Created: 2026-05-28 01:03:01
+#> Created: 2026-06-26 22:14:03
 #> Snapshots: 0
 #> 
 #> ℹ No snapshots recorded yet. Use `audit_tap()` in a pipe to add snapshots.

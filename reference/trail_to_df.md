@@ -1,8 +1,9 @@
 # Convert an Audit Trail to a Data Frame
 
-Returns a plain `data.frame` with one row per snapshot. Nested fields
-(`all_columns`, `schema`, `numeric_summary`, `changes`, `diagnostics`,
-`custom`, `pipeline`, `controls`) become list-columns. Trail metadata is
+Returns a plain `data.frame` with one row per snapshot. Nested and
+optional fields (`all_columns`, `schema`, `numeric_summary`, `changes`,
+`diagnostics`, `custom`, `pipeline`, `controls`, and the
+audited-execution lineage fields) become list-columns. Trail metadata is
 stored as attributes on the result.
 
 ## Usage
@@ -23,9 +24,12 @@ trail_to_df(.trail)
 
 A `data.frame` with columns `index`, `label`, `type`, `timestamp`,
 `nrow`, `ncol`, `total_nas`, `all_columns`, `schema`, `numeric_summary`,
-`changes`, `diagnostics`, `custom`, `pipeline`, and `controls`. Trail
-`name` and `created_at` are stored as attributes `"trail_name"` and
-`"created_at"`.
+`changes`, `diagnostics`, `custom`, `pipeline`, `controls`, and the
+audited-execution lineage columns `snapshot_id`, `object_id`,
+`object_name`, `version`, `step_id`, `event`, `source`, `srcref`,
+`parent_snapshot_ids`, `level`, and `evidence` (all `NULL` for snapshots
+recorded by the explicit taps). Trail `name` and `created_at` are stored
+as attributes `"trail_name"` and `"created_at"`.
 
 ## See also
 
@@ -44,14 +48,17 @@ dplyr::filter(mtcars, mpg > 20) |> audit_tap(trail, "filtered")
 df <- trail_to_df(trail)
 print(df)
 #>   index    label type           timestamp nrow ncol total_nas  all_columns
-#> 1     1      raw  tap 2026-05-28 01:03:04   32   11         0 mpg, cyl....
-#> 2     2 filtered  tap 2026-05-28 01:03:05   14   11         0 mpg, cyl....
+#> 1     1      raw  tap 2026-06-26 22:14:06   32   11         0 mpg, cyl....
+#> 2     2 filtered  tap 2026-06-26 22:14:06   14   11         0 mpg, cyl....
 #>         schema numeric_summary      changes diagnostics custom     pipeline
 #> 1 c("mpg",....    c("mpg",....                                       mtcars
 #> 2 c("mpg",....    c("mpg",.... -18, 0, ....                    mtcars, ....
-#>   controls
-#> 1         
-#> 2         
+#>   controls snapshot_id object_id object_name version step_id event source
+#> 1                                                                        
+#> 2                                                                        
+#>   srcref parent_snapshot_ids level evidence
+#> 1                                          
+#> 2                                          
 attr(df, "trail_name")
 #> [1] "example"
 ```

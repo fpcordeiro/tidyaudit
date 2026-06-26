@@ -1,6 +1,7 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/404.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/LICENSE.html</loc></url>
+<url><loc>https://fpcordeiro.github.io/tidyaudit/articles/audited-execution.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/articles/diagnostics.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/articles/index.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/articles/tidyaudit.html</loc></url>
@@ -9,7 +10,10 @@
 <url><loc>https://fpcordeiro.github.io/tidyaudit/news/index.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_diff.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_export.html</loc></url>
+<url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_record.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_report.html</loc></url>
+<url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_source.html</loc></url>
+<url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_start.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_tap.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_trail.html</loc></url>
 <url><loc>https://fpcordeiro.github.io/tidyaudit/reference/audit_transform.html</loc></url>

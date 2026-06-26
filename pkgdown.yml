@@ -2,9 +2,10 @@ pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
+  audited-execution: audited-execution.html
   diagnostics: diagnostics.html
   tidyaudit: tidyaudit.html
-last_built: 2026-05-28T01:02Z
+last_built: 2026-06-26T22:13Z
 urls:
   reference: https://fpcordeiro.github.io/tidyaudit/reference
   article: https://fpcordeiro.github.io/tidyaudit/articles

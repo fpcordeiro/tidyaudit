@@ -162,39 +162,122 @@ the$active <- NULL
 # candidate parent (its root), but the column name or index is not.
 .audit_extract_ops <- c("$", "[", "[[", "@")
 
+# dplyr/tidyr verbs that take a single data frame as their primary input. The
+# data argument is the first of these names if supplied, else the first
+# positional argument; everything else is a data-mask / tidyselect expression
+# that must NOT be read as a parent.
+.audit_one_data_primary_args <- c(".data", "data", "x", "object")
+.audit_one_data_verbs <- c(
+  "filter", "filter_out", "mutate", "transmute", "summarise", "summarize",
+  "reframe", "select", "rename", "rename_with", "relocate", "arrange",
+  "distinct", "group_by", "ungroup", "rowwise", "count", "add_count", "tally",
+  "add_tally", "slice", "slice_head", "slice_tail", "slice_min", "slice_max",
+  "slice_sample", "pull", "drop_na", "fill", "separate", "unite", "pivot_longer",
+  "pivot_wider", "nest", "unnest", "complete", "head", "tail", "subset",
+  "na.omit", "unique"
+)
+
+# Verbs that combine two data frames addressed as `x` and `y` (joins, set ops).
+# Both tables are parents; auxiliary args (`by`, `suffix`, ...) are always named.
+.audit_two_data_verbs <- c(
+  "left_join", "right_join", "inner_join", "full_join", "outer_join",
+  "semi_join", "anti_join", "nest_join", "cross_join",
+  "union", "union_all", "intersect", "setdiff", "merge"
+)
+
+# Constructors / binders: every data-valued argument (positional OR named) is a
+# parent candidate. Control arguments below carry no data and are skipped.
+.audit_constructor_fns <- c(
+  "data.frame", "tibble", "data_frame", "as.data.frame", "as_tibble",
+  "as_data_frame", "as.data.frame.list", "bind_rows", "bind_cols", "rbind",
+  "cbind", "rbind.data.frame", "cbind.data.frame"
+)
+.audit_constructor_control_args <- c(
+  ".id", ".name_repair", "stringsAsFactors", "check.names", "check.rows",
+  "row.names", "deparse.level", "make.row.names", "fix.empty.names"
+)
+
+#' Normalise a call head to a bare function name. Strips namespace qualification
+#' (`dplyr::mutate` -> "mutate", `pkg:::fn` -> "fn"); "" for anything else.
+#' @noRd
+.audit_call_name <- function(head) {
+  if (is.symbol(head)) return(as.character(head))
+  if (is.call(head) && length(head) == 3L && is.symbol(head[[1L]])) {
+    op <- as.character(head[[1L]])
+    if (op %in% c("::", ":::") && is.symbol(head[[3L]])) {
+      return(as.character(head[[3L]]))
+    }
+  }
+  ""
+}
+
 #' Collect candidate parent symbols from a right-hand-side value expression,
-#' context-aware about tidy-eval data masks and element extraction:
+#' dispatching on the call being made so that data-frame inputs are read while
+#' data-mask / tidyselect expressions are not:
 #'
 #' * Operators (`mpg > 20`, `x + 1`): skipped — operands are masked values.
-#' * Extraction (`raw[i, ]`, `lookup$v`): only the root object is collected,
-#'   not the column/index.
-#' * Ordinary calls: positional (unnamed) arguments are data candidates; named
-#'   arguments are treated as data-masked expressions (e.g. `z = mpg` in
-#'   `mutate(raw, z = mpg)`) and skipped.
+#' * Extraction (`raw[i, ]`, `lookup$v`): only the root object is collected.
+#' * One-data verbs (`filter`, `mutate`, `select`, ...): only the data argument.
+#' * Two-data verbs (`left_join`, `union`, ...): `x` and `y` (by name/position).
+#' * Constructors / binders (`data.frame`, `tibble`, `bind_rows`, ...): every
+#'   data-valued argument, named or positional, minus known control arguments.
+#' * Unknown calls (custom helpers): walk all arguments liberally; resolution
+#'   later filters to symbols that were tracked data frames.
 #' @noRd
 .audit_value_symbols <- function(value_expr) {
   if (is.null(value_expr)) return(character(0))
   syms <- character(0)
   add  <- function(s) syms[[length(syms) + 1L]] <<- s
+
   walk <- function(e) {
     if (is.symbol(e)) { add(as.character(e)); return(invisible()) }
     if (!is.call(e)) return(invisible())
-    fn_name <- if (is.symbol(e[[1L]])) as.character(e[[1L]]) else ""
-    if (fn_name %in% .audit_operator_ops) return(invisible())
-    if (fn_name %in% .audit_extract_ops) {
-      if (length(e) >= 2L) walk(e[[2L]])   # root object only
+
+    fn   <- .audit_call_name(e[[1L]])
+    if (fn %in% .audit_operator_ops) return(invisible())
+    if (fn %in% .audit_extract_ops) {
+      if (length(e) >= 2L) walk(e[[2L]])    # root object only
       return(invisible())
     }
+
     args <- as.list(e)[-1L]
+    if (length(args) == 0L) return(invisible())
     nms  <- names(args)
-    for (i in seq_along(args)) {
-      if (!is.null(nms) && nzchar(nms[[i]])) next   # named arg: data-masked
-      a <- args[[i]]
-      if (is.symbol(a)) add(as.character(a))
-      else if (is.call(a)) walk(a)
+    if (is.null(nms)) nms <- rep("", length(args))
+
+    if (fn %in% .audit_one_data_verbs) {
+      named <- intersect(.audit_one_data_primary_args, nms)
+      data_arg <- if (length(named)) args[[match(named[[1L]], nms)]]
+                  else { pos <- which(!nzchar(nms)); if (length(pos)) args[[pos[[1L]]]] }
+      if (!is.null(data_arg)) walk(data_arg)
+      return(invisible())
     }
+
+    if (fn %in% .audit_two_data_verbs) {
+      # Named x / y plus any positional (unnamed) args — auxiliary args (`by`,
+      # `suffix`, `relationship`, ...) are always named, so unnamed args are the
+      # tables themselves.
+      for (key in c("x", "y")) if (key %in% nms) walk(args[[match(key, nms)]])
+      for (i in which(!nzchar(nms))) walk(args[[i]])
+      return(invisible())
+    }
+
+    if (fn %in% .audit_constructor_fns) {
+      for (i in seq_along(args)) {
+        if (nzchar(nms[[i]]) && nms[[i]] %in% .audit_constructor_control_args) next
+        walk(args[[i]])
+      }
+      return(invisible())
+    }
+
+    # Unknown call (e.g. a custom helper like `helper(x = raw$x)`): walk every
+    # argument, named or positional. We cannot know which are data-masked, so we
+    # collect liberally and let `.audit_resolve_parents()` keep only symbols that
+    # were tracked data frames before the statement ran.
+    for (a in args) walk(a)
     invisible()
   }
+
   walk(value_expr)
   unique(syms)
 }

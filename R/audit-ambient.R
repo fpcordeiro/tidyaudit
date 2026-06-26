@@ -22,21 +22,35 @@ the$active <- NULL
 
 #' @noRd
 .audit_opts <- function(watch = "data.frames", ignore = NULL,
-                        level = "metadata", profile = "standard",
-                        keys = NULL, numeric_summary = TRUE,
-                        continue_on_error = FALSE,
-                        max_rows = Inf, max_cols = Inf) {
+                        level = "metadata", keys = NULL,
+                        numeric_summary = TRUE, continue_on_error = FALSE) {
   list(
-    watch = watch, ignore = ignore, level = level, profile = profile,
+    watch = watch, ignore = ignore, level = level,
     keys = keys, numeric_summary = numeric_summary,
     continue_on_error = continue_on_error,
-    max_rows = max_rows, max_cols = max_cols,
     # Per-run salt: hashes are comparable within a run but not across runs.
     # Derived from the clock + PID rather than the RNG, so enabling auditing
     # never perturbs the user's `.Random.seed` (reproducibility is preserved).
     # Unsalted hashes of small categorical columns are dictionary-attackable,
     # so these are never presented as privacy-preserving.
     salt = paste0(format(Sys.time(), "%Y%m%d%H%M%OS6"), "-", Sys.getpid())
+  )
+}
+
+#' Describe the hashing evidence captured at a given level, for serialisation.
+#' @noRd
+.audit_evidence <- function(level, hash) {
+  if (identical(level, "metadata")) return(NULL)
+  list(
+    algorithm   = "xxhash (rlang::hash)",
+    level       = level,
+    sample      = if (identical(level, "sample_hash")) {
+      "deterministic stride, up to 100 rows"
+    } else {
+      "all rows and columns"
+    },
+    salt_policy = "per-run (clock + PID); not privacy-preserving",
+    hash        = hash
   )
 }
 
@@ -77,20 +91,18 @@ the$active <- NULL
   rlang::hash(list(salt, payload))
 }
 
-#' Lightweight fingerprint used for change detection. Never copies rows unless
-#' a hash `level` is requested. `profile` gates the cost of the NA scan.
+#' Lightweight fingerprint used for change detection. Records shape, types and
+#' NA counts; copies rows only when a hash `level` above `"metadata"` is
+#' requested.
 #' @noRd
-.audit_fingerprint <- function(df, profile = "standard", level = "metadata",
-                               salt = NULL) {
+.audit_fingerprint <- function(df, level = "metadata", salt = NULL) {
   fp <- list(
-    nrow     = nrow(df),
-    ncol     = ncol(df),
-    colnames = names(df),
-    coltypes = vapply(df, function(x) class(x)[[1L]], character(1))
+    nrow      = nrow(df),
+    ncol      = ncol(df),
+    colnames  = names(df),
+    coltypes  = vapply(df, function(x) class(x)[[1L]], character(1)),
+    total_nas = sum(vapply(df, function(x) sum(is.na(x)), integer(1)))
   )
-  if (profile %in% c("standard", "deep")) {
-    fp$total_nas <- sum(vapply(df, function(x) sum(is.na(x)), integer(1)))
-  }
   if (!identical(level, "metadata")) {
     fp$hash <- .audit_hash(df, level, salt)
   }
@@ -107,20 +119,27 @@ the$active <- NULL
   if (is.symbol(lhs)) as.character(lhs) else NULL
 }
 
-#' Assignment target(s) and removals for a statement.
+#' Assignment target(s), removals, the right-hand-side value expression, and
+#' whether the assignment modifies an object in place (replacement form).
 #' Handles `<-`/`=`/`<<-`, replacement forms ($<-, [<-, names<-, attr<-, ...),
 #' `assign("x", ...)`, and `rm(a, b)`.
 #' @noRd
 .audit_assign_targets <- function(expr) {
   targets <- character(0)
   removed <- character(0)
+  value   <- NULL
+  inplace <- FALSE
   if (is.call(expr) && is.symbol(expr[[1L]])) {
     op <- as.character(expr[[1L]])
     if (op %in% c("<-", "=", "<<-")) {
-      root <- .audit_root_symbol(expr[[2L]])
+      lhs  <- expr[[2L]]
+      root <- .audit_root_symbol(lhs)
       if (!is.null(root)) targets <- root
+      inplace <- is.call(lhs)        # f(x, ...) <- v modifies x in place
+      value   <- expr[[3L]]
     } else if (op == "assign" && length(expr) >= 2L && is.character(expr[[2L]])) {
       targets <- expr[[2L]]
+      if (length(expr) >= 3L) value <- expr[[3L]]
     } else if (op == "rm") {
       args <- as.list(expr)[-1L]
       removed <- unlist(lapply(args, function(a) {
@@ -128,7 +147,37 @@ the$active <- NULL
       }))
     }
   }
-  list(targets = targets, removed = removed %||% character(0))
+  list(targets = targets, removed = removed %||% character(0),
+       value = value, inplace = inplace)
+}
+
+# Infix operators and extractors whose operands are column references inside a
+# data mask (or element access), not data-frame inputs. We do not descend into
+# these when collecting candidate parent symbols.
+.audit_mask_ops <- c(">", "<", ">=", "<=", "==", "!=", "+", "-", "*", "/", "^",
+                     "%%", "%/%", "&", "|", "&&", "||", "!", ":", "$", "[",
+                     "[[", "@", "~", "%in%")
+
+#' Collect bare-symbol candidate parents from a right-hand-side value
+#' expression. Symbols appear as parents only when they sit in an ordinary
+#' function-argument position; operands of comparison/arithmetic/extraction
+#' operators (e.g. `mpg` in `filter(raw, mpg > 20)`) are treated as columns.
+#' @noRd
+.audit_value_symbols <- function(value_expr) {
+  if (is.null(value_expr)) return(character(0))
+  syms <- character(0)
+  walk <- function(e) {
+    if (is.symbol(e)) { syms[[length(syms) + 1L]] <<- as.character(e); return(invisible()) }
+    if (!is.call(e)) return(invisible())
+    fn_name <- if (is.symbol(e[[1L]])) as.character(e[[1L]]) else ""
+    if (fn_name %in% .audit_mask_ops) return(invisible())
+    for (a in as.list(e)[-1L]) {
+      if (is.symbol(a)) syms[[length(syms) + 1L]] <<- as.character(a)
+      else if (is.call(a)) walk(a)
+    }
+  }
+  walk(value_expr)
+  unique(syms)
 }
 
 #' Structured srcref (file/line/col), or NULL when unavailable.
@@ -175,23 +224,13 @@ the$active <- NULL
 
 # ── Parent (lineage) resolution ──────────────────────────────────────────────
 
-#' Resolve parent snapshot IDs from the RHS symbols of a statement, using the
-#' PRE-evaluation registry so self-overwrites link to the previous version.
-#' Only tracked data.frames count, and a candidate that is a column of another
-#' candidate is dropped (avoids column-name vs df-name collisions).
+#' Resolve parent snapshot IDs from candidate RHS symbols, against the
+#' PRE-evaluation registry (so self-overwrites link to the previous version).
+#' Only symbols that were tracked data.frames before the statement ran count.
 #' @noRd
-.audit_resolve_parents <- function(rhs_syms, reg_before) {
-  cand <- intersect(rhs_syms, names(reg_before))
+.audit_resolve_parents <- function(value_syms, reg_before) {
+  cand <- intersect(value_syms, names(reg_before))
   if (length(cand) == 0L) return(character(0))
-  if (length(cand) > 1L) {
-    is_col_of_other <- vapply(cand, function(n) {
-      others <- setdiff(cand, n)
-      any(vapply(others, function(o) {
-        n %in% (reg_before[[o]]$fingerprint$colnames %||% character(0))
-      }, logical(1)))
-    }, logical(1))
-    cand <- cand[!is_col_of_other]
-  }
   ids <- vapply(cand, function(n) reg_before[[n]]$snapshot_id, character(1))
   unique(unname(ids))
 }
@@ -236,7 +275,12 @@ the$active <- NULL
     all_columns     = fp$colnames %||% character(0),
     schema          = data.frame(column = character(), type = character(),
                                  n_na = integer(), stringsAsFactors = FALSE),
-    total_nas       = NA_integer_,
+    # Carry forward the last-known NA count so report paths stay numeric.
+    total_nas       = if (!is.null(fp) && !is.null(fp$total_nas)) {
+      as.integer(fp$total_nas)
+    } else {
+      NA_integer_
+    },
     numeric_summary = NULL,
     diagnostics     = NULL,
     pipeline        = NULL,
@@ -252,7 +296,8 @@ the$active <- NULL
     source              = lineage$source,
     srcref              = lineage$srcref,
     parent_snapshot_ids = lineage$parent_snapshot_ids,
-    level               = lineage$level
+    level               = lineage$level,
+    evidence            = lineage$evidence
   )
   structure(snap, class = c("audit_snap", "list"))
 }
@@ -277,7 +322,8 @@ the$active <- NULL
     snapshot_id = snapshot_id, object_id = object_id, object_name = nm,
     version = version, step_id = step_id, event = ev$event,
     source = source, srcref = srcref,
-    parent_snapshot_ids = parent_ids, level = opts$level
+    parent_snapshot_ids = parent_ids, level = opts$level,
+    evidence = .audit_evidence(opts$level, ev$fingerprint$hash)
   )
 
   if (ev$event %in% c("delete", "retire")) {
@@ -319,8 +365,10 @@ the$active <- NULL
   candidates  <- unique(c(current_dfs, names(reg_before), tgt$targets, tgt$removed))
   candidates  <- .audit_filter_names(candidates, opts)
 
-  rhs_syms   <- all.vars(expr)
-  parent_ids <- .audit_resolve_parents(rhs_syms, reg_before)
+  # Candidate parents: data.frames referenced in the RHS value expression only,
+  # so the assignment target is never treated as its own parent unless the value
+  # genuinely reads it (a self-overwrite).
+  step_parents <- .audit_resolve_parents(.audit_value_symbols(tgt$value), reg_before)
 
   events <- list()
   for (nm in candidates) {
@@ -332,7 +380,7 @@ the$active <- NULL
     removed <- nm %in% tgt$removed
 
     if (is_df) {
-      fp <- .audit_fingerprint(val, opts$profile, opts$level, opts$salt)
+      fp <- .audit_fingerprint(val, opts$level, opts$salt)
       if (!tracked) {
         events[[nm]] <- list(name = nm, event = "create", value = val,
                              fingerprint = fp)
@@ -358,7 +406,19 @@ the$active <- NULL
   }
 
   for (ev in events) {
-    .audit_record_event(ev, parent_ids, reg_before, trail, opts,
+    nm      <- ev$name
+    self_id <- reg_before[[nm]]$snapshot_id   # NULL when the object is new
+    if (ev$event %in% c("delete", "retire")) {
+      parents <- if (!is.null(self_id)) self_id else character(0)
+    } else {
+      parents <- step_parents
+      # In-place modification (replacement form, or a tracked df that changed
+      # without being the rebind target) derives from its own previous version.
+      inplace_mod <- (nm %in% tgt$targets && isTRUE(tgt$inplace)) ||
+        (ev$event == "update" && !(nm %in% tgt$targets))
+      if (inplace_mod && !is.null(self_id)) parents <- unique(c(parents, self_id))
+    }
+    .audit_record_event(ev, parents, reg_before, trail, opts,
                         step_id = step_id, source = src, srcref = srcref)
   }
 
@@ -432,7 +492,7 @@ the$active <- NULL
   step_id <- .audit_next_id(trail, "step")
   for (nm in dfs) {
     val <- get(nm, envir = env, inherits = FALSE)
-    fp  <- .audit_fingerprint(val, opts$profile, opts$level, opts$salt)
+    fp  <- .audit_fingerprint(val, opts$level, opts$salt)
     .audit_record_event(
       list(name = nm, event = "create", value = val, fingerprint = fp),
       parent_ids = character(0), reg_before = list(), trail = trail, opts = opts,
@@ -469,13 +529,13 @@ the$active <- NULL
 #' @param level Evidence level: `"metadata"` (default, privacy-safe) detects
 #'   shape/type/NA changes only; `"sample_hash"`, `"column_hash"`, and
 #'   `"full_hash"` additionally detect value-only changes by hashing data with a
-#'   per-run salt. Salted hashes are *not* a privacy guarantee.
-#' @param profile Cost profile for fingerprinting: `"cheap"` (shape + types),
-#'   `"standard"` (default; adds NA counts), or `"deep"`.
+#'   per-run salt. Salted hashes are *not* a privacy guarantee. The hashing
+#'   policy (algorithm, sampling, salt) is recorded in each snapshot's
+#'   `evidence` field.
 #' @param keys Optional named list mapping object names to key column(s), used by
 #'   the HTML report to flag primary-key status.
 #' @param numeric_summary Logical; passed to the snapshot builder. If `FALSE`,
-#'   skip numeric quantile summaries.
+#'   skip numeric quantile summaries (the main cost control on wide data).
 #' @param continue_on_error Logical. If `FALSE` (default), an error in a
 #'   statement is recorded and then re-thrown so the block aborts like normal R
 #'   evaluation. If `TRUE`, the error is recorded and evaluation continues.
@@ -497,16 +557,13 @@ the$active <- NULL
 audit_record <- function(expr, name = NULL, env = parent.frame(),
                          watch = "data.frames", ignore = NULL,
                          level = c("metadata", "sample_hash", "column_hash", "full_hash"),
-                         profile = c("standard", "cheap", "deep"),
                          keys = NULL, numeric_summary = TRUE,
                          continue_on_error = FALSE) {
   level   <- match.arg(level)
-  profile <- match.arg(profile)
   captured <- substitute(expr)
 
   opts  <- .audit_opts(watch = watch, ignore = ignore, level = level,
-                       profile = profile, keys = keys,
-                       numeric_summary = numeric_summary,
+                       keys = keys, numeric_summary = numeric_summary,
                        continue_on_error = continue_on_error)
   trail <- audit_trail(name)
   .audit_init(trail, opts)
@@ -560,11 +617,9 @@ audit_source <- function(file, name = NULL,
                          env = new.env(parent = globalenv()),
                          watch = "data.frames", ignore = NULL,
                          level = c("metadata", "sample_hash", "column_hash", "full_hash"),
-                         profile = c("standard", "cheap", "deep"),
                          keys = NULL, numeric_summary = TRUE,
                          continue_on_error = FALSE, echo = FALSE) {
-  level   <- match.arg(level)
-  profile <- match.arg(profile)
+  level <- match.arg(level)
 
   if (!is.character(file) || length(file) != 1L || is.na(file)) {
     cli::cli_abort("{.arg file} must be a single non-missing character string.")
@@ -577,8 +632,7 @@ audit_source <- function(file, name = NULL,
   srcrefs <- attr(exprs, "srcref")
 
   opts  <- .audit_opts(watch = watch, ignore = ignore, level = level,
-                       profile = profile, keys = keys,
-                       numeric_summary = numeric_summary,
+                       keys = keys, numeric_summary = numeric_summary,
                        continue_on_error = continue_on_error)
   trail <- audit_trail(name %||% basename(file))
   .audit_init(trail, opts)
@@ -636,10 +690,8 @@ audit_source <- function(file, name = NULL,
 audit_start <- function(name = NULL, env = globalenv(),
                         watch = "data.frames", ignore = NULL,
                         level = c("metadata", "sample_hash", "column_hash", "full_hash"),
-                        profile = c("standard", "cheap", "deep"),
                         keys = NULL, numeric_summary = TRUE) {
-  level   <- match.arg(level)
-  profile <- match.arg(profile)
+  level <- match.arg(level)
 
   if (!is.null(the$active)) {
     cli::cli_abort(c(
@@ -649,8 +701,7 @@ audit_start <- function(name = NULL, env = globalenv(),
   }
 
   opts  <- .audit_opts(watch = watch, ignore = ignore, level = level,
-                       profile = profile, keys = keys,
-                       numeric_summary = numeric_summary)
+                       keys = keys, numeric_summary = numeric_summary)
   trail <- audit_trail(name)
   .audit_init(trail, opts)
   .audit_baseline(env, trail, opts)
@@ -660,7 +711,7 @@ audit_start <- function(name = NULL, env = globalenv(),
     TRUE  # keep the callback registered
   }
   addTaskCallback(handler, name = "tidyaudit")
-  the$active <- list(trail = trail, env = env, opts = opts)
+  the$active <- list(trail = trail, env = env, opts = opts, handler = handler)
 
   cli::cli_alert_success("Audit session started. Call {.fn audit_stop} to finish.")
   invisible(trail)

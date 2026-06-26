@@ -432,3 +432,142 @@ test_that("audited execution does not perturb the global RNG state", {
   audit_record({ df <- data.frame(x = 1:3) }, env = e, level = "column_hash")
   expect_identical(.Random.seed, before)
 })
+
+
+# ── Review fixes: parent resolution ──────────────────────────────────────────
+
+test_that("a fresh rebind that does not read the old value gets no parent", {
+  e <- new.env()
+  trail <- audit_record({
+    df <- data.frame(a = 1)
+    df <- data.frame(b = 2)   # unrelated value; reuses the name only
+  }, env = e)
+  v2 <- snap_by(trail, "df", 2L)
+  expect_equal(v2$event, "update")               # same binding stream, new version
+  expect_equal(v2$parent_snapshot_ids, character(0))  # NOT derived from old df
+})
+
+test_that("a real join parent is kept even when it shares a name with a column", {
+  e <- new.env()
+  trail <- audit_record({
+    raw    <- data.frame(id = 1:3, lookup = c(9, 9, 9))   # column named 'lookup'
+    lookup <- data.frame(id = 1:3, val = c("a", "b", "c"))
+    joined <- dplyr::left_join(raw, lookup, by = "id")
+  }, env = e)
+  expect_setequal(
+    snap_by(trail, "joined")$parent_snapshot_ids,
+    c(snap_by(trail, "raw")$snapshot_id, snap_by(trail, "lookup")$snapshot_id)
+  )
+})
+
+test_that("operands of mask operators are not treated as parents", {
+  e <- new.env()
+  trail <- audit_record({
+    mpg   <- data.frame(z = 1:3)
+    raw   <- dplyr::as_tibble(mtcars)
+    clean <- dplyr::filter(raw, mpg > 20)        # mpg is a column here
+  }, env = e)
+  expect_false(snap_by(trail, "mpg")$snapshot_id %in%
+                 snap_by(trail, "clean")$parent_snapshot_ids)
+})
+
+
+# ── Review fixes: terminal snapshots in report paths ─────────────────────────
+
+test_that("delete carries forward the last-known NA count", {
+  e <- new.env()
+  trail <- audit_record({
+    df <- data.frame(x = c(1, NA, 3))
+    rm(df)
+  }, env = e)
+  term <- snap_by(trail, "df", 2L)
+  expect_equal(term$event, "delete")
+  expect_equal(term$total_nas, 1L)
+})
+
+test_that("print.audit_snap and audit_report handle delete/retire without error", {
+  e <- new.env()
+  trail <- audit_record({
+    df <- data.frame(x = c(1, NA, 3))
+    rm(df)
+  }, env = e)
+  term <- snap_by(trail, "df", 2L)
+  expect_no_error(capture.output(print(term), type = "message"))
+  expect_no_error(capture.output(audit_report(trail), type = "message"))
+
+  e2 <- new.env()
+  trail2 <- audit_record({
+    g <- data.frame(y = 1:2)
+    g <- 42                    # retire
+  }, env = e2)
+  expect_equal(snap_by(trail2, "g", 2L)$event, "retire")
+  expect_no_error(capture.output(audit_report(trail2), type = "message"))
+})
+
+
+# ── Review fixes: hash evidence is recorded and serialised ───────────────────
+
+test_that("metadata level records no evidence", {
+  e <- new.env()
+  trail <- audit_record({ df <- data.frame(x = 1:3) }, env = e)
+  expect_null(snap_by(trail, "df")$evidence)
+})
+
+test_that("column_hash level records evidence metadata and a hash", {
+  e <- new.env()
+  trail <- audit_record({ df <- data.frame(x = 1:3) }, env = e, level = "column_hash")
+  ev <- snap_by(trail, "df")$evidence
+  expect_equal(ev$level, "column_hash")
+  expect_true(grepl("xxhash", ev$algorithm))
+  expect_true(grepl("not privacy", ev$salt_policy))
+  expect_false(is.null(ev$hash))
+})
+
+test_that("evidence round-trips through RDS and JSON", {
+  skip_if_not_installed("jsonlite")
+  e <- new.env()
+  trail <- audit_record({ df <- data.frame(x = 1:3) }, env = e, level = "column_hash")
+  rds <- tempfile(fileext = ".rds"); json <- tempfile(fileext = ".json")
+  on.exit(unlink(c(rds, json)))
+  write_trail(trail, rds)
+  write_trail(trail, json, format = "json")
+  expect_equal(read_trail(rds)$snapshots[[1]]$evidence$level, "column_hash")
+  expect_equal(read_trail(json)$snapshots[[1]]$evidence$level, "column_hash")
+})
+
+
+# ── Review fixes: audit_start callback + source() granularity ────────────────
+
+test_that("the audit_start callback observes a completed statement", {
+  on.exit({
+    if (!is.null(tidyaudit:::the$active)) suppressMessages(audit_stop())
+  }, add = TRUE)
+  e <- new.env(parent = globalenv())
+  suppressMessages(audit_start("sess", env = e))
+  # Simulate the REPL completing one statement and firing the task callback.
+  e$df <- data.frame(a = 1)
+  tidyaudit:::the$active$handler(quote(df <- data.frame(a = 1)), e$df, TRUE, TRUE)
+  trail <- suppressMessages(audit_stop())
+  expect_equal(snap_by(trail, "df")$object_name, "df")
+})
+
+test_that("under audit_start, source() is observed as a single combined step", {
+  # R evaluates `source(f)` as ONE top-level task, so the callback fires once
+  # with that single expression — collapsing all of the script's objects into
+  # one step. (audit_source() instead loops per statement; see its test above.)
+  f <- write_script(c(
+    "a <- data.frame(x = 1)",
+    "b <- data.frame(y = 2)",
+    "d <- data.frame(z = 3)"
+  ))
+  on.exit(unlink(f))
+  e <- new.env(parent = globalenv())
+  trail <- audit_trail("src")
+  tidyaudit:::.audit_init(trail, tidyaudit:::.audit_opts())
+  source(f, local = e)
+  tidyaudit:::.audit_observe_step(quote(source(f, local = e)), e, trail, trail$opts)
+
+  expect_equal(length(trail$snapshots), 3L)   # all three captured
+  step_ids <- vapply(trail$snapshots, function(s) s$step_id, character(1))
+  expect_equal(length(unique(step_ids)), 1L)  # but as ONE step
+})

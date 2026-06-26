@@ -11,7 +11,6 @@ audit_start(
   watch = "data.frames",
   ignore = NULL,
   level = c("metadata", "sample_hash", "column_hash", "full_hash"),
-  profile = c("standard", "cheap", "deep"),
   keys = NULL,
   numeric_summary = TRUE
 )
@@ -32,16 +31,15 @@ names match any pattern are skipped (e.g. scratch variables).}
 \item{level}{Evidence level: \code{"metadata"} (default, privacy-safe) detects
 shape/type/NA changes only; \code{"sample_hash"}, \code{"column_hash"}, and
 \code{"full_hash"} additionally detect value-only changes by hashing data with a
-per-run salt. Salted hashes are \emph{not} a privacy guarantee.}
-
-\item{profile}{Cost profile for fingerprinting: \code{"cheap"} (shape + types),
-\code{"standard"} (default; adds NA counts), or \code{"deep"}.}
+per-run salt. Salted hashes are \emph{not} a privacy guarantee. The hashing
+policy (algorithm, sampling, salt) is recorded in each snapshot's
+\code{evidence} field.}
 
 \item{keys}{Optional named list mapping object names to key column(s), used by
 the HTML report to flag primary-key status.}
 
 \item{numeric_summary}{Logical; passed to the snapshot builder. If \code{FALSE},
-skip numeric quantile summaries.}
+skip numeric quantile summaries (the main cost control on wide data).}
 }
 \value{
 \code{\link[=audit_start]{audit_start()}} returns the new \code{\link[=audit_trail]{audit_trail()}} invisibly;

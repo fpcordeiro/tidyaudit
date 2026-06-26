@@ -18,7 +18,8 @@ make_export_trail <- function() {
 test_that("trail_to_list returns a plain list with correct top-level keys", {
   lst <- trail_to_list(make_export_trail())
   expect_type(lst, "list")
-  expect_named(lst, c("name", "created_at", "n_snapshots", "snapshots"))
+  expect_named(lst, c("name", "created_at", "n_snapshots", "snapshots",
+                      "events", "keys"))
   expect_equal(lst$name, "export_test")
   expect_equal(lst$n_snapshots, 3L)
   expect_type(lst$created_at, "character")
@@ -760,4 +761,62 @@ test_that("old RDS trail without lineage fields still loads", {
   expect_s3_class(restored, "audit_trail")
   expect_null(s$object_id)
   expect_equal(s$nrow, nrow(mtcars))
+})
+
+
+# ── events / keys round-trip + audited HTML export ───────────────────────────
+
+make_audited_trail <- function() {
+  e <- new.env(parent = globalenv())
+  audit_record({
+    raw    <- dplyr::as_tibble(mtcars)
+    clean  <- dplyr::filter(raw, mpg > 20)
+    lookup <- data.frame(cyl = c(4, 6, 8), lab = c("s", "m", "l"),
+                         stringsAsFactors = FALSE)
+    joined <- dplyr::left_join(clean, lookup, by = "cyl")
+  }, env = e, keys = list(joined = "cyl"))
+}
+
+test_that("trail_to_list carries events and keys", {
+  lst <- trail_to_list(make_audited_trail())
+  expect_true("events" %in% names(lst))
+  expect_true("keys" %in% names(lst))
+  expect_equal(lst$keys$joined, "cyl")
+  expect_true(length(lst$events) >= 4L)
+})
+
+test_that("RDS round-trip preserves events and keys", {
+  trail <- make_audited_trail()
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp)
+  restored <- read_trail(tmp)
+  expect_equal(length(restored$events), length(trail$events))
+  expect_equal(restored$keys$joined, "cyl")
+  expect_equal(restored$snapshots[[2]]$object_name, "clean")
+  expect_equal(restored$snapshots[[2]]$parent_snapshot_ids,
+               trail$snapshots[[2]]$parent_snapshot_ids)
+})
+
+test_that("JSON round-trip preserves events and keys", {
+  skip_if_not_installed("jsonlite")
+  trail <- make_audited_trail()
+  tmp <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp))
+  write_trail(trail, tmp, format = "json")
+  restored <- read_trail(tmp, format = "json")
+  expect_equal(restored$keys$joined, "cyl")
+  expect_equal(restored$snapshots[[4]]$object_name, "joined")
+})
+
+test_that("audit_export embeds lineage fields for an audited trail", {
+  skip_if_not_installed("jsonlite")
+  trail <- make_audited_trail()
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp))
+  audit_export(trail, tmp)
+  html <- paste(readLines(tmp, warn = FALSE), collapse = "\n")
+  expect_true(grepl("object_name", html))
+  expect_true(grepl("parent_snapshot_ids", html))
+  expect_false(grepl("__TRAIL_DATA__", html))
 })

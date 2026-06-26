@@ -38,21 +38,22 @@ trail
 ```
 
 Each top-level statement becomes a versioned snapshot, tagged with the line of
-code that produced it and the parent data.frames it derived from. Capture is
-metadata-only by default: shape, types, and NA counts, never the rows.
+code that produced it and the parent data.frames it derived from. The join is
+where lineage earns its keep: `joined` converges from *both* tables it was built
+from, while `raw` — the entry point — has no parent.
 
-### Lineage resolution limits
+```{r}
+ids <- vapply(trail$snapshots, function(s) s$snapshot_id, character(1))
+obj <- vapply(trail$snapshots, function(s) s$object_name, character(1))
+data.frame(
+  object  = obj,
+  parents = vapply(trail$snapshots, function(s) {
+    paste(obj[match(unlist(s$parent_snapshot_ids), ids)], collapse = ", ")
+  }, character(1))
+)
+```
 
-Parents are inferred statically from the call you wrote, not from runtime values.
-For data-mask verbs (`filter()`, `mutate()`, `summarise()`, `select()`, and the
-like) only the primary data argument is treated as a parent; the masked
-expressions are not scanned. That is deliberate — it keeps a column reference
-such as `filter(df, mpg > 20)` from inventing a parent when a stray object named
-`mpg` happens to exist. The trade-off is that a genuine cross-data-frame
-reference *inside* a masked argument, e.g. `mutate(df, new = other_df$x)`, will
-not record `other_df` as a parent. If you want that edge captured in the
-lineage, lift the reference into its own statement (`v <- other_df$x`) before
-using it.
+Capture is metadata-only by default: shape, types, and NA counts, never the rows.
 
 ## Three ways in
 
@@ -89,6 +90,19 @@ for identity, so reassignments and self-overwrites stay unambiguous.
 ```{r}
 df <- trail_to_df(trail)
 df[, c("object_name", "version", "event", "nrow", "ncol")]
+```
+
+The identity fields ride along on every row as list-columns. Unpack them to see
+the `snapshot_id` that names each version and the `parent_snapshot_ids` that
+wire the lineage together — the same IDs the join above resolved back to names:
+
+```{r}
+data.frame(
+  object_name = unlist(df$object_name),
+  snapshot_id = unlist(df$snapshot_id),
+  parents     = vapply(df$parent_snapshot_ids,
+                       function(p) paste(p, collapse = ", "), character(1))
+)
 ```
 
 Parents are resolved from the state *before* each statement runs, so a
@@ -140,6 +154,19 @@ str(s$evidence)
 Hashes use a per-run salt and are **not** a privacy guarantee — unsalted hashes
 of small categorical columns can be reversed by dictionary attack. Keep the
 default `"metadata"` level when the trail may be shared.
+
+## Lineage resolution limits
+
+Parents are inferred statically from the call you wrote, not from runtime values.
+For data-mask verbs (`filter()`, `mutate()`, `summarise()`, `select()`, and the
+like) only the primary data argument is treated as a parent; the masked
+expressions are not scanned. That is deliberate — it keeps a column reference
+such as `filter(df, mpg > 20)` from inventing a parent when a stray object named
+`mpg` happens to exist. The trade-off is that a genuine cross-data-frame
+reference *inside* a masked argument, e.g. `mutate(df, new = other_df$x)`, will
+not record `other_df` as a parent. If you want that edge captured in the
+lineage, lift the reference into its own statement (`v <- other_df$x`) before
+using it.
 
 ## Exporting the report
 

@@ -5,15 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>tidyaudit Trail Explorer</title>
 <style>
+  /* ── Light tokens (default) ─────────────────────────────────── */
   :root {
     --bg: #ffffff;
     --bg-secondary: #f8fafc;
     --bg-tertiary: #f1f5f9;
-    --text: #334155;
+    --text: #1e293b;
     --text-secondary: #64748b;
     --text-muted: #94a3b8;
-    --border: #e2e8f0;
+    --border: #e9eef4;
     --border-strong: #cbd5e1;
+    --accent: #4f46e5;
+    --accent-soft: rgba(79,70,229,0.10);
     --snap: #3b82f6;
     --join: #22c55e;
     --filter: #f97316;
@@ -25,25 +28,32 @@
     --warning-bg: #fffbeb;
     --warning-border: #fde68a;
     --warning-text: #92400e;
-    --edge: #94a3b8;
+    --edge: #cbd5e1;
     --edge-text: #64748b;
-    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-    --shadow-lg: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
-    --radius: 8px;
-    --radius-lg: 12px;
+    --shadow: 0 1px 2px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.05);
+    --shadow-lg: 0 8px 24px rgba(15,23,42,0.10), 0 2px 6px rgba(15,23,42,0.06);
+    --radius: 10px;
+    --radius-lg: 14px;
     --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    --theme: light;
   }
 
-  .dark {
-    --bg: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --text: #f1f5f9;
+  /* ── Dark tokens ────────────────────────────────────────────────
+     Kept in sync between the manual override (.theme-dark) and the
+     OS-preference media query below. CSS has no mixins, so the token
+     list is duplicated; keep the two blocks identical. */
+  :root.theme-dark {
+    --bg: #0b1220;
+    --bg-secondary: #131c2e;
+    --bg-tertiary: #1e293b;
+    --text: #e8eef7;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
-    --border: #334155;
-    --border-strong: #475569;
+    --border: #233148;
+    --border-strong: #344155;
+    --accent: #818cf8;
+    --accent-soft: rgba(129,140,248,0.14);
     --snap: #60a5fa;
     --join: #4ade80;
     --filter: #fb923c;
@@ -55,338 +65,262 @@
     --warning-bg: #1c1a0e;
     --warning-border: #78350f;
     --warning-text: #fbbf24;
-    --edge: #475569;
+    --edge: #3a4a63;
     --edge-text: #94a3b8;
-    --shadow: 0 1px 3px rgba(0,0,0,0.3);
-    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+    --theme: dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    /* OS default — applies unless the user forced light via the toggle. */
+    :root:not(.theme-light) {
+      --bg: #0b1220;
+      --bg-secondary: #131c2e;
+      --bg-tertiary: #1e293b;
+      --text: #e8eef7;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #233148;
+      --border-strong: #344155;
+      --accent: #818cf8;
+      --accent-soft: rgba(129,140,248,0.14);
+      --snap: #60a5fa;
+      --join: #4ade80;
+      --filter: #fb923c;
+      --mutate: #c084fc;
+      --summarize: #2dd4bf;
+      --violation: #f87171;
+      --violation-bg: #1c1117;
+      --violation-border: #7f1d1d;
+      --warning-bg: #1c1a0e;
+      --warning-border: #78350f;
+      --warning-text: #fbbf24;
+      --edge: #3a4a63;
+      --edge-text: #94a3b8;
+      --shadow: 0 1px 3px rgba(0,0,0,0.35);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+      --theme: dark;
+    }
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
 
   body {
     font-family: var(--font);
     background: var(--bg);
     color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
     transition: background 0.2s, color 0.2s;
-    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
+  /* ── Header ─────────────────────────────────────────────────── */
   .header {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 24px;
+    gap: 16px;
+    padding: 14px 24px;
     border-bottom: 1px solid var(--border);
     background: var(--bg-secondary);
   }
-
-  .header h1 {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-  }
-
-  .header h1 span {
-    color: var(--snap);
+  .header h1 { font-size: 17px; font-weight: 650; letter-spacing: -0.3px; }
+  .header h1 span { color: var(--accent); font-family: var(--mono); font-weight: 600; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .chip {
+    font-size: 12px;
     font-family: var(--mono);
-    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
+    white-space: nowrap;
   }
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .layout {
-    display: flex;
-    height: calc(100vh - 57px);
-  }
+  /* ── Layout ─────────────────────────────────────────────────── */
+  .layout { flex: 1; min-height: 0; display: flex; }
 
   .controls {
-    width: 260px;
-    min-width: 260px;
+    width: 248px;
+    min-width: 248px;
     border-right: 1px solid var(--border);
     background: var(--bg-secondary);
-    padding: 20px 16px;
+    padding: 18px 16px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 22px;
   }
-
   .control-group h3 {
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     color: var(--text-muted);
     margin-bottom: 10px;
   }
 
-  .control-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
+  /* Page navigation */
+  .nav-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-left: 2px solid transparent;
+    border-radius: 7px;
+    padding: 8px 12px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .nav-item:hover { background: var(--bg-tertiary); color: var(--text); }
+  .nav-item.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
   }
 
-  .control-row label {
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
+  .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .control-row label { font-size: 13px; color: var(--text-secondary); }
 
   .toggle {
-    position: relative;
-    width: 36px;
-    height: 20px;
-    background: var(--border-strong);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.2s;
-    flex-shrink: 0;
+    position: relative; width: 36px; height: 20px;
+    background: var(--border-strong); border-radius: 10px;
+    cursor: pointer; transition: background 0.2s; flex-shrink: 0;
   }
-
-  .toggle.on { background: var(--snap); }
-
+  .toggle.on { background: var(--accent); }
   .toggle::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.2s;
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; background: white; border-radius: 50%;
+    transition: transform 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
   }
-
   .toggle.on::after { transform: translateX(16px); }
 
-  .main-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
 
-  .pipeline-container {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    padding: 32px 24px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-  }
+  .hint { color: var(--text-muted); font-size: 12.5px; line-height: 1.4; }
 
-  .pipeline-svg {
-    display: block;
-    flex-shrink: 0;
-  }
+  /* ── Main area / views ──────────────────────────────────────── */
+  .main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .view { flex: 1; min-height: 0; }
+  .view:not(.active) { display: none; }
+  .view.scroll { overflow: auto; padding: 22px 26px; }
 
+  /* Graph page: full-height pan/zoom viewport */
+  .graph-view { position: relative; }
+  .graph-viewport { position: absolute; inset: 0; overflow: hidden; cursor: grab; }
+  .graph-viewport.panning { cursor: grabbing; }
+  .graph-stage { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+  .graph-stage .pipeline-svg { display: block; }
+  .graph-toolbar {
+    position: absolute; top: 14px; right: 16px; z-index: 5;
+    display: flex; gap: 6px; align-items: center;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 999px; padding: 4px; box-shadow: var(--shadow);
+  }
+  .tool-btn {
+    font-family: var(--font); font-size: 13px; font-weight: 600;
+    min-width: 30px; height: 28px; padding: 0 10px;
+    border: none; background: transparent; color: var(--text-secondary);
+    cursor: pointer; border-radius: 999px; transition: all 0.12s;
+  }
+  .tool-btn:hover { background: var(--bg-tertiary); color: var(--accent); }
+  .graph-empty { color: var(--text-muted); text-align: center; margin-top: 60px; }
+
+  /* ── Detail panel ───────────────────────────────────────────── */
   .detail-panel {
+    flex: 0 0 auto;
     border-top: 1px solid var(--border);
     background: var(--bg-secondary);
-    max-height: 45vh;
+    max-height: 46vh;
     overflow-y: auto;
-    padding: 0;
-    transition: max-height 0.3s;
+    transition: max-height 0.25s;
   }
-
   .detail-panel.hidden { max-height: 0; border-top: none; }
-
   .detail-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--bg-secondary);
-    z-index: 2;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg-secondary); z-index: 2;
   }
-
-  .detail-header h3 {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .detail-close {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-    padding: 4px;
-  }
-
+  .detail-header h3 { font-size: 14px; font-weight: 600; }
+  .detail-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; line-height: 1; padding: 4px; }
   .detail-close:hover { color: var(--text); }
-
-  .detail-body {
-    padding: 16px 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .detail-section {
-    flex: 1;
-    min-width: 280px;
-  }
-
+  .detail-body { padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 16px; }
+  .detail-section { flex: 1; min-width: 280px; }
   .detail-section h4 {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    margin-bottom: 8px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;
   }
+  .card-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .muted-note { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .chg { font-size: 12px; margin-bottom: 4px; }
 
-  .detail-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-  }
-
-  .detail-table th {
-    text-align: left;
-    font-weight: 600;
-    color: var(--text-secondary);
-    padding: 4px 8px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .detail-table td {
-    padding: 4px 8px;
-    border-bottom: 1px solid var(--border);
-    font-family: var(--mono);
-    font-size: 11px;
-  }
+  .detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .detail-table th { text-align: left; font-weight: 600; color: var(--text-secondary); padding: 5px 8px; border-bottom: 1px solid var(--border); }
+  .detail-table td { padding: 4px 8px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 11px; }
+  .detail-table tr:last-child td { border-bottom: none; }
 
   .stat-card {
-    display: inline-flex;
-    flex-direction: column;
-    padding: 8px 12px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius);
-    margin-right: 8px;
-    margin-bottom: 8px;
+    display: inline-flex; flex-direction: column; padding: 8px 14px;
+    background: var(--bg-tertiary); border-radius: var(--radius);
+    border: 1px solid var(--border);
   }
+  .stat-card .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-muted); margin-bottom: 2px; }
+  .stat-card .stat-value { font-family: var(--mono); font-size: 16px; font-weight: 600; }
 
-  .stat-card .stat-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    color: var(--text-muted);
-  }
-
-  .stat-card .stat-value {
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  .violation-card {
-    background: var(--warning-bg);
-    border: 1px solid var(--warning-border);
-    border-radius: var(--radius);
-    padding: 8px 12px;
-    margin-bottom: 6px;
-    font-size: 12px;
-    color: var(--warning-text);
-  }
-
-  .diff-arrow {
-    color: var(--text-muted);
-    margin: 0 4px;
-  }
-
+  .violation-card { background: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: var(--radius); padding: 8px 12px; margin-bottom: 6px; font-size: 12px; color: var(--warning-text); }
+  .diff-arrow { color: var(--text-muted); margin: 0 4px; }
   .diff-positive { color: var(--join); }
   .diff-negative { color: var(--violation); }
   .diff-neutral { color: var(--text-muted); }
+  .code-block { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); background: var(--bg-tertiary); padding: 10px 12px; border-radius: var(--radius); white-space: pre-wrap; overflow: auto; margin-top: 8px; }
 
-  .json-panel {
-    border-top: 1px solid var(--border);
-    background: var(--bg-secondary);
-  }
-
-  .json-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 20px;
-    cursor: pointer;
-  }
-
-  .json-header h3 {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
-  }
-
-  .copy-btn {
-    font-family: var(--font);
-    font-size: 12px;
-    padding: 4px 12px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text);
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.15s;
-  }
-
-  .copy-btn:hover { border-color: var(--snap); color: var(--snap); }
-
-  .json-body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s;
-  }
-
+  /* ── JSON panel ─────────────────────────────────────────────── */
+  .json-panel { flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--bg-secondary); }
+  .json-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; cursor: pointer; }
+  .json-header h3 { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .copy-btn { font-family: var(--font); font-size: 12px; padding: 5px 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; border-radius: 6px; transition: all 0.15s; }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .json-body { max-height: 0; overflow: hidden; transition: max-height 0.3s; }
   .json-body.open { max-height: 300px; overflow-y: auto; }
+  .json-body pre { font-family: var(--mono); font-size: 11px; padding: 12px 20px; line-height: 1.5; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all; }
 
-  .json-body pre {
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 12px 20px;
-    line-height: 1.5;
-    color: var(--text-secondary);
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
-
-  .hint {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 13px;
-    margin-top: 12px;
-  }
-
-  /* SVG styles */
+  /* ── SVG node styles ────────────────────────────────────────── */
   .node-card { cursor: pointer; transition: filter 0.15s; }
-  .node-card:hover { filter: brightness(1.05); }
-  .edge-hit { cursor: pointer; stroke: transparent; stroke-width: 20; fill: none; }
+  .node-card:hover { filter: brightness(1.04); }
+  .edge-hit { cursor: pointer; stroke: transparent; stroke-width: 22; fill: none; }
 
-  /* Tabular report */
-  #report-container { margin-bottom: 8px; }
-  .report-section { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
-  .report-section h2 { font-size: 15px; margin: 0 0 12px; color: var(--text); }
-  .summary-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-  .summary-cell { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; min-width: 90px; }
-  .summary-cell .k { display: block; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em; }
-  .summary-cell .v { display: block; font-size: 18px; font-weight: 600; color: var(--text); }
+  /* ── Report / Tables sections ───────────────────────────────── */
+  .report-section { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .report-section:last-child { margin-bottom: 0; }
+  .report-section h2 { font-size: 14px; font-weight: 650; margin: 0 0 14px; color: var(--text); letter-spacing: -0.2px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .summary-cell { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+  .summary-cell .k { display: block; font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+  .summary-cell .v { display: block; font-size: 19px; font-weight: 650; color: var(--text); font-family: var(--mono); }
   table.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  table.report-table th, table.report-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.report-table th, table.report-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   table.report-table th { color: var(--text-secondary); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
   table.report-table tr:last-child td { border-bottom: none; }
+  table.report-table tbody tr.click { cursor: pointer; transition: background 0.12s; }
+  table.report-table tbody tr.click:hover { background: var(--accent-soft); }
   table.report-table td.num { text-align: right; font-family: var(--mono); }
   table.report-table code, .report-section code { font-family: var(--mono); font-size: 12px; background: var(--bg-tertiary); padding: 1px 5px; border-radius: 4px; }
-  .ev { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px; }
+  .ev { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
   .ev-create { background: rgba(59,130,246,.15); color: var(--snap); }
   .ev-update { background: rgba(168,85,247,.15); color: var(--mutate); }
   .ev-delete, .ev-retire { background: var(--violation-bg); color: var(--violation); }
@@ -395,19 +329,37 @@
   .row-err td { background: var(--violation-bg); }
   .pill-warn { color: var(--warning-text); font-size: 11px; }
   .pill-err { color: var(--violation); font-size: 11px; font-weight: 600; }
+
+  /* Tables page version disclosure */
+  details.tbl-ver { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
+  details.tbl-ver:last-child { margin-bottom: 0; }
+  details.tbl-ver > summary {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    padding: 9px 14px; list-style: none; background: var(--bg-secondary);
+    font-size: 13px; user-select: none;
+  }
+  details.tbl-ver > summary::-webkit-details-marker { display: none; }
+  details.tbl-ver > summary::before { content: '\25B8'; color: var(--text-muted); font-size: 10px; transition: transform 0.15s; }
+  details.tbl-ver[open] > summary::before { transform: rotate(90deg); }
+  .ver-tag { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+  .ver-meta { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-left: auto; }
+  .mini-btn { font-family: var(--font); font-size: 11px; padding: 3px 9px; border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tbl-body { padding: 12px 14px; }
+  .tc-h { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 14px 0 6px; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1><span>tidyaudit</span> Trail Explorer</h1>
-  <div class="header-right">
-    <span id="trail-info" style="font-size:13px;color:var(--text-secondary);font-family:var(--mono)"></span>
-  </div>
+  <div class="header-right" id="trail-info"></div>
 </div>
 
 <div class="layout">
   <div class="controls">
+    <div class="control-group" id="nav-group"></div>
+
     <div class="control-group">
       <h3>Display</h3>
       <div class="control-row">
@@ -416,29 +368,35 @@
       </div>
       <div class="control-row">
         <label>Dark theme</label>
-        <div class="toggle" id="t-theme" onclick="toggleClick(this); toggleTheme()"></div>
+        <div class="toggle" id="t-theme" onclick="toggleTheme()"></div>
       </div>
     </div>
 
     <div class="control-group">
       <h3>Legend</h3>
-      <div style="display:flex;flex-direction:column;gap:4px;font-size:12px">
-        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--snap)"></div>Snapshot</div>
-        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--join)"></div>Join</div>
-        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--filter)"></div>Filter</div>
-        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--mutate)"></div>Mutate</div>
-        <div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:3px;background:var(--summarize)"></div>Summarize</div>
-      </div>
+      <div id="legend-list"></div>
     </div>
 
     <div style="margin-top:auto">
-      <p class="hint">Click nodes or edges to inspect</p>
+      <p class="hint">Click nodes or edges in the graph — or rows in the report — to inspect.</p>
     </div>
   </div>
 
   <div class="main-area">
-    <div id="report-container"></div>
-    <div class="pipeline-container" id="pipeline-container"></div>
+    <div class="view scroll" id="report-view"></div>
+
+    <div class="view graph-view" id="graph-view">
+      <div class="graph-toolbar">
+        <button class="tool-btn" onclick="zoomAt(0.83)" title="Zoom out">&minus;</button>
+        <button class="tool-btn" onclick="fitGraph(true)" title="Fit to view">Fit</button>
+        <button class="tool-btn" onclick="zoomAt(1.2)" title="Zoom in">+</button>
+      </div>
+      <div class="graph-viewport" id="graph-viewport">
+        <div class="graph-stage" id="graph-stage"></div>
+      </div>
+    </div>
+
+    <div class="view scroll" id="tables-view"></div>
 
     <div class="detail-panel hidden" id="detail-panel">
       <div class="detail-header">
@@ -468,62 +426,52 @@ const TRAIL_DATA = /*__TRAIL_DATA__*/null;
 const state = {
   numeric: true,
   trail: null,
-  selected: null // { type: 'node'|'edge', index: N }
+  selected: null,      // { type:'node', index } | { type:'edge', index } | { type:'diff', prevIdx, nextIdx, title }
+  page: 'report',
+  view: null,          // { scale, tx, ty } pan/zoom transform of the graph stage
+  graphSize: null,     // { w, h } natural SVG size
+  needFit: false,
+  byId: {},
+  idxById: {}
 };
 
 // ── Helpers ────────────────────────────────────────────────────
 function fmtN(n) {
+  n = scalar(n);
   if (n == null) return '-';
   return n >= 1000 ? (n/1000).toFixed(1) + 'k' : String(n);
 }
-
 function fmtNum(v) {
   if (v == null) return '-';
   return typeof v === 'number' ? v.toFixed(2) : String(v);
 }
-
 function fmtDelta(d) {
-  if (d == null) return '=';
-  if (d === 0) return '=';
+  if (d == null || d === 0) return '=';
   return (d > 0 ? '+' : '') + d.toLocaleString();
 }
-
 function escHtml(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
-function asArray(x) {
-  if (x == null) return [];
-  return Array.isArray(x) ? x : [x];
-}
-
+function scalar(v) { return Array.isArray(v) ? v[0] : v; }
+function asArray(x) { return x == null ? [] : (Array.isArray(x) ? x : [x]); }
 function statCard(label, value, colorVar) {
   const style = colorVar ? ` style="color:var(${colorVar})"` : '';
   return `<div class="stat-card"><span class="stat-label">${escHtml(label)}</span><span class="stat-value"${style}>${escHtml(String(value))}</span></div>`;
+}
+function isDark() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--theme').trim() === 'dark';
 }
 
 // ── Data loading ───────────────────────────────────────────────
 function loadTrail() {
   if (!TRAIL_DATA || !TRAIL_DATA.snapshots) return null;
-
-  // trail_to_list() outputs snapshots as a named list (JSON object).
-  // Convert to array preserving insertion order.
-  let snapshots;
-  if (Array.isArray(TRAIL_DATA.snapshots)) {
-    snapshots = TRAIL_DATA.snapshots;
-  } else {
-    snapshots = Object.values(TRAIL_DATA.snapshots);
-  }
-
+  let snapshots = Array.isArray(TRAIL_DATA.snapshots)
+    ? TRAIL_DATA.snapshots : Object.values(TRAIL_DATA.snapshots);
   if (snapshots.length === 0) return null;
-
-  // Audited-execution trails carry per-object lineage; classic tap trails do not.
   const audited = snapshots.some(function(s) { return s && s.object_name != null; });
-
   let events = TRAIL_DATA.events;
   if (events && !Array.isArray(events)) events = Object.values(events);
-
   return {
     name: TRAIL_DATA.name,
     created_at: TRAIL_DATA.created_at,
@@ -535,24 +483,16 @@ function loadTrail() {
   };
 }
 
-// First-element accessor: jsonlite may wrap scalars as length-1 arrays.
-function scalar(v) { return Array.isArray(v) ? v[0] : v; }
-function asArray(v) { return v == null ? [] : (Array.isArray(v) ? v : [v]); }
-
-// ── Type display helpers ───────────────────────────────────────
+// ── Type / colour helpers ──────────────────────────────────────
 function typeLabel(snap) {
   const d = snap.diagnostics || {};
   if (snap.type === 'join' && d.join_type) return d.join_type.replace(/_/g, ' ');
-  if (snap.type === 'filter') {
-    const ft = d.filter_type === 'drop' ? 'filter out' : 'filter';
-    return ft;
-  }
+  if (snap.type === 'filter') return d.filter_type === 'drop' ? 'filter out' : 'filter';
   if (snap.type === 'tabulation') return 'tabulation';
   if (snap.type === 'mutate') return 'mutate';
   if (snap.type === 'summarize') return 'summarize';
   return 'snapshot';
 }
-
 function opColorHex(type, dark) {
   if (type === 'join') return dark ? '#4ade80' : '#22c55e';
   if (type === 'filter') return dark ? '#fb923c' : '#f97316';
@@ -560,406 +500,13 @@ function opColorHex(type, dark) {
   if (type === 'summarize' || type === 'tabulation') return dark ? '#2dd4bf' : '#14b8a6';
   return dark ? '#60a5fa' : '#3b82f6';
 }
-
-// ── SVG Pipeline Rendering ─────────────────────────────────────
-function renderPipeline() {
-  const trail = state.trail;
-  if (!trail) return;
-  const snaps = trail.snapshots;
-  const n = snaps.length;
-  const dark = document.body.classList.contains('dark');
-
-  const nodeW = 160, nodeH = 88;
-  const gap = 100;
-  const padX = 40, padY = 50;
-  const totalW = padX * 2 + n * nodeW + (n - 1) * gap;
-  const totalH = padY * 2 + nodeH + 30;
-
-  const fontFamily = getComputedStyle(document.body).getPropertyValue('--font').split(',')[0].trim();
-  const monoFamily = getComputedStyle(document.body).getPropertyValue('--mono').trim();
-
-  let svg = `<svg class="pipeline-svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">`;
-
-  // Defs
-  svg += `<defs>
-    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="${dark ? '#475569' : '#94a3b8'}" />
-    </marker>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.1"/>
-    </filter>
-  </defs>`;
-
-  // Edges
-  for (let i = 0; i < n - 1; i++) {
-    const x1 = padX + i * (nodeW + gap) + nodeW;
-    const x2 = padX + (i + 1) * (nodeW + gap);
-    const cy = padY + nodeH / 2;
-
-    svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="${dark ? '#475569' : '#cbd5e1'}" stroke-width="2" marker-end="url(#arrowhead)" />`;
-    svg += `<line class="edge-hit" x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" data-edge="${i}" onclick="selectEdge(${i})" />`;
-
-    // Edge label
-    const midX = (x1 + x2) / 2;
-    const nextSnap = snaps[i + 1];
-    const d = nextSnap.diagnostics || {};
-    let edgeLabel = '';
-
-    if (nextSnap.type === 'join' && d.join_type) {
-      edgeLabel = d.join_type.replace(/_/g, ' ');
-      if (d.match_rate && d.match_rate.x != null) edgeLabel += ' | match: ' + d.match_rate.x.toFixed(1) + '%';
-    } else if (nextSnap.type === 'filter' && d.pct_dropped != null) {
-      edgeLabel = 'filter | -' + d.pct_dropped.toFixed(1) + '%';
-    } else if (nextSnap.changes) {
-      const ch = nextSnap.changes;
-      const parts = [];
-      if (ch.row_delta && ch.row_delta !== 0) parts.push((ch.row_delta > 0 ? '+' : '') + ch.row_delta + ' rows');
-      if (ch.col_delta && ch.col_delta !== 0) parts.push((ch.col_delta > 0 ? '+' : '') + ch.col_delta + ' cols');
-      edgeLabel = parts.join(', ');
-    }
-
-    svg += `<text x="${midX}" y="${cy - 10}" text-anchor="middle" font-size="10" font-family="${monoFamily}" fill="${dark ? '#94a3b8' : '#64748b'}">${escHtml(edgeLabel)}</text>`;
-  }
-
-  // Nodes
-  for (let i = 0; i < n; i++) {
-    const snap = snaps[i];
-    const x = padX + i * (nodeW + gap);
-    const y = padY;
-    const color = opColorHex(snap.type, dark);
-    const w = nodeW;
-    const h = nodeH;
-    const hasViolation = (snap.policy_violations || []).length > 0;
-    const bg = dark ? '#1e293b' : '#ffffff';
-    const isSelected = state.selected && state.selected.type === 'node' && state.selected.index === i;
-
-    svg += `<g class="node-card" data-node="${i}" onclick="selectNode(${i})" transform="translate(${x},${y})">`;
-    svg += `<rect width="${w}" height="${h}" rx="8" fill="${bg}" stroke="${hasViolation ? (dark ? '#f87171' : '#ef4444') : color}" stroke-width="${isSelected ? 3 : hasViolation ? 2.5 : 1.5}" filter="url(#shadow)" />`;
-    // Color bar at top
-    svg += `<rect width="${w}" height="4" rx="8" fill="${color}" />`;
-    svg += `<rect x="8" width="${w - 16}" height="4" fill="${color}" />`;
-    // Label
-    svg += `<text x="${w/2}" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="${dark ? '#f1f5f9' : '#334155'}" font-family="${fontFamily}">${escHtml(snap.label)}</text>`;
-    // Operation type
-    svg += `<text x="${w/2}" y="37" text-anchor="middle" font-size="10" fill="${color}" font-family="${monoFamily}">${escHtml(typeLabel(snap))}</text>`;
-    // Stats line
-    svg += `<text x="${w/2}" y="56" text-anchor="middle" font-size="11" fill="${dark ? '#94a3b8' : '#64748b'}" font-family="${monoFamily}">${fmtN(snap.nrow)} rows  ${snap.ncol} cols</text>`;
-    // NAs
-    const naColor = snap.total_nas > 0 ? (dark ? '#fb923c' : '#f97316') : (dark ? '#64748b' : '#94a3b8');
-    svg += `<text x="${w/2}" y="72" text-anchor="middle" font-size="10" fill="${naColor}" font-family="${monoFamily}">${snap.total_nas} NAs</text>`;
-    // Violation indicator
-    if (hasViolation) {
-      svg += `<circle cx="${w - 8}" cy="8" r="5" fill="${dark ? '#f87171' : '#ef4444'}" />`;
-      svg += `<text x="${w - 8}" y="11" text-anchor="middle" font-size="8" fill="white" font-weight="700">!</text>`;
-    }
-    svg += `</g>`;
-  }
-
-  svg += `</svg>`;
-  document.getElementById('pipeline-container').innerHTML = svg;
+function eventColorHex(ev, dark) {
+  ev = scalar(ev);
+  if (ev === 'update') return dark ? '#c084fc' : '#a855f7';
+  if (ev === 'delete' || ev === 'retire') return dark ? '#f87171' : '#ef4444';
+  if (ev === 'unchanged_assignment') return dark ? '#64748b' : '#94a3b8';
+  return dark ? '#60a5fa' : '#3b82f6';
 }
-
-// ── Node & Edge Selection ──────────────────────────────────────
-function selectNode(i) {
-  state.selected = { type: 'node', index: i };
-  renderDetail();
-  if (state.trail.audited) renderLineageGraph(); else renderPipeline();
-}
-
-function selectEdge(i) {
-  state.selected = { type: 'edge', index: i };
-  renderDetail();
-}
-
-function closeDetail() {
-  state.selected = null;
-  document.getElementById('detail-panel').classList.add('hidden');
-  renderPipeline();
-}
-
-// ── Detail Panel Rendering ─────────────────────────────────────
-function renderDetail() {
-  const panel = document.getElementById('detail-panel');
-  const title = document.getElementById('detail-title');
-  const body = document.getElementById('detail-body');
-  panel.classList.remove('hidden');
-
-  if (state.selected.type === 'node') {
-    renderNodeDetail(title, body);
-  } else {
-    renderEdgeDetail(title, body);
-  }
-}
-
-function renderNodeDetail(title, body) {
-  const snap = state.trail.snapshots[state.selected.index];
-  const d = snap.diagnostics || {};
-  title.textContent = snap.label + ' \u2014 ' + typeLabel(snap);
-
-  let html = '<div class="detail-section" style="min-width:100%"><div style="display:flex;flex-wrap:wrap">';
-
-  // Core stats
-  html += statCard('Rows', snap.nrow.toLocaleString());
-  html += statCard('Cols', snap.ncol);
-  html += statCard('Total NAs', snap.total_nas.toLocaleString());
-  if (snap.timestamp) html += statCard('Timestamp', snap.timestamp);
-
-  // Join diagnostics
-  if (snap.type === 'join') {
-    if (d.match_rate) {
-      if (d.match_rate.x != null) html += statCard('Match Rate X', d.match_rate.x.toFixed(1) + '%', '--join');
-      if (d.match_rate.y != null) html += statCard('Match Rate Y', d.match_rate.y.toFixed(1) + '%', '--join');
-    }
-    if (d.n_only_x != null) html += statCard('Unmatched X', d.n_only_x);
-    if (d.n_only_y != null) html += statCard('Unmatched Y', d.n_only_y);
-    if (d.relation) html += statCard('Relation', d.relation);
-    if (d.y_name) html += statCard('Right Table', d.y_name);
-    if (d.x_has_dups != null) html += statCard('X Has Dups', d.x_has_dups ? 'Yes' : 'No');
-    if (d.y_has_dups != null) html += statCard('Y Has Dups', d.y_has_dups ? 'Yes' : 'No');
-  }
-
-  // Filter diagnostics
-  if (snap.type === 'filter') {
-    if (d.n_total != null) html += statCard('Total Before', d.n_total.toLocaleString());
-    if (d.n_dropped != null) html += statCard('Dropped', d.n_dropped.toLocaleString(), '--filter');
-    if (d.pct_dropped != null) html += statCard('Drop %', d.pct_dropped.toFixed(1) + '%', '--filter');
-    if (d.expr_label) html += statCard('Expression', d.expr_label);
-    if (d.n_na_in_filter != null) html += statCard('NAs in Expr', d.n_na_in_filter);
-    if (d.stat_col) {
-      html += statCard('Stat Col', d.stat_col);
-      if (d.stat_dropped != null) html += statCard('Stat Dropped', d.stat_dropped.toLocaleString());
-      if (d.stat_total != null) html += statCard('Stat Total', d.stat_total.toLocaleString());
-    }
-  }
-
-  // Mutate diagnostics (future-proof)
-  if (snap.type === 'mutate' && d.cols_added != null) {
-    html += statCard('Added', '+' + d.cols_added, '--mutate');
-    if (d.cols_modified != null) html += statCard('Modified', d.cols_modified);
-  }
-
-  // Summarize diagnostics (future-proof)
-  if (snap.type === 'summarize') {
-    if (d.groups_before != null) html += statCard('Groups', d.groups_before);
-    if (d.nrow_before != null) html += statCard('Rows Before', d.nrow_before.toLocaleString());
-  }
-
-  html += '</div></div>';
-
-  // Lineage (audited execution)
-  if (snap.object_name != null) {
-    const parents = asArray(snap.parent_snapshot_ids).map(function(pid) {
-      const p = state.byId[pid];
-      return p ? (scalar(p.object_name) + ' v' + scalar(p.version)) : pid;
-    });
-    html += '<div class="detail-section" style="min-width:100%"><h4>Lineage</h4><div style="display:flex;flex-wrap:wrap">';
-    html += statCard('Object', scalar(snap.object_name));
-    html += statCard('Version', scalar(snap.version));
-    html += statCard('Event', scalar(snap.event));
-    html += statCard('Derived from', parents.length ? parents.join(', ') : '—');
-    html += '</div>';
-    if (snap.source && snap.source !== '<pre-existing>') {
-      html += '<pre style="margin-top:10px;padding:10px;background:var(--bg-tertiary);border-radius:6px;overflow:auto;font-family:var(--mono);font-size:12px">' + escHtml(scalar(snap.source)) + '</pre>';
-    }
-    html += '</div>';
-  }
-
-  // Policy violations (future-proof)
-  const violations = snap.policy_violations || [];
-  if (violations.length > 0) {
-    html += '<div class="detail-section" style="min-width:100%"><h4>Policy Violations</h4>';
-    violations.forEach(function(v) {
-      html += '<div class="violation-card">' + escHtml(v.message || JSON.stringify(v)) + '</div>';
-    });
-    html += '</div>';
-  }
-
-  // Custom diagnostics (.fns)
-  if (snap.custom && typeof snap.custom === 'object' && Object.keys(snap.custom).length > 0) {
-    html += '<div class="detail-section" style="min-width:100%"><h4>Custom Diagnostics (.fns)</h4>';
-    html += '<table class="detail-table"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody>';
-    Object.entries(snap.custom).forEach(function(entry) {
-      const k = entry[0], v = entry[1];
-      const display = typeof v === 'object' ? JSON.stringify(v) : String(v);
-      html += '<tr><td>' + escHtml(k) + '</td><td>' + escHtml(display) + '</td></tr>';
-    });
-    html += '</tbody></table></div>';
-  }
-
-  // Column schema table
-  const schema = snap.schema || [];
-  if (schema.length > 0) {
-    html += '<div class="detail-section"><h4>Column Schema</h4>';
-    html += '<table class="detail-table"><thead><tr>';
-    html += '<th>Column</th><th>Type</th><th>NAs</th><th>NA%</th>';
-    if (state.numeric) html += '<th>Min</th><th>Q25</th><th>Median</th><th>Mean</th><th>Q75</th><th>Max</th>';
-    html += '</tr></thead><tbody>';
-
-    // Build numeric summary lookup
-    var numLookup = {};
-    if (snap.numeric_summary) {
-      (Array.isArray(snap.numeric_summary) ? snap.numeric_summary : Object.values(snap.numeric_summary)).forEach(function(ns) {
-        numLookup[ns.column] = ns;
-      });
-    }
-
-    schema.forEach(function(col) {
-      const pctNa = snap.nrow > 0 ? (col.n_na / snap.nrow * 100).toFixed(1) : '0.0';
-      html += '<tr><td>' + escHtml(col.column) + '</td><td>' + escHtml(col.type) + '</td><td>' + col.n_na + '</td><td>' + pctNa + '%</td>';
-      if (state.numeric) {
-        const ns = numLookup[col.column];
-        if (ns) {
-          html += '<td>' + fmtNum(ns.min) + '</td><td>' + fmtNum(ns.q25) + '</td><td>' + fmtNum(ns.median) + '</td><td>' + fmtNum(ns.mean) + '</td><td>' + fmtNum(ns.q75) + '</td><td>' + fmtNum(ns.max) + '</td>';
-        } else {
-          html += '<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>';
-        }
-      }
-      html += '</tr>';
-    });
-
-    html += '</tbody></table></div>';
-  }
-
-  // Pipeline capture
-  var pipelineArr = asArray(snap.pipeline);
-  if (pipelineArr.length > 0) {
-    html += '<div class="detail-section" style="min-width:100%"><h4>Captured Pipeline</h4>';
-    html += '<pre style="font-family:var(--mono);font-size:11px;color:var(--text-secondary);background:var(--bg-tertiary);padding:8px 12px;border-radius:var(--radius);white-space:pre-wrap">';
-    html += escHtml(pipelineArr.join('\n'));
-    html += '</pre></div>';
-  }
-
-  body.innerHTML = html;
-}
-
-function renderEdgeDetail(title, body) {
-  const i = state.selected.index;
-  const prev = state.trail.snapshots[i];
-  const next = state.trail.snapshots[i + 1];
-  title.textContent = 'Diff: ' + prev.label + ' \u2192 ' + next.label;
-
-  let html = '';
-
-  // Row / Column / NA changes from the changes field
-  const ch = next.changes;
-  html += '<div class="detail-section"><h4>Row / Column Changes</h4><div style="display:flex;flex-wrap:wrap">';
-
-  if (ch) {
-    const rowClass = ch.row_delta > 0 ? 'diff-positive' : ch.row_delta < 0 ? 'diff-negative' : 'diff-neutral';
-    const colClass = ch.col_delta > 0 ? 'diff-positive' : ch.col_delta < 0 ? 'diff-negative' : 'diff-neutral';
-    const naClass = ch.na_delta > 0 ? 'diff-negative' : ch.na_delta < 0 ? 'diff-positive' : 'diff-neutral';
-
-    html += `<div class="stat-card"><span class="stat-label">Rows</span><span class="stat-value">${prev.nrow.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.nrow.toLocaleString()} <span class="${rowClass}">(${fmtDelta(ch.row_delta)})</span></span></div>`;
-    html += `<div class="stat-card"><span class="stat-label">Cols</span><span class="stat-value">${prev.ncol} <span class="diff-arrow">\u2192</span> ${next.ncol} <span class="${colClass}">(${fmtDelta(ch.col_delta)})</span></span></div>`;
-    html += `<div class="stat-card"><span class="stat-label">Total NAs</span><span class="stat-value">${prev.total_nas.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.total_nas.toLocaleString()} <span class="${naClass}">(${fmtDelta(ch.na_delta)})</span></span></div>`;
-  } else {
-    html += `<div class="stat-card"><span class="stat-label">Rows</span><span class="stat-value">${prev.nrow.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.nrow.toLocaleString()}</span></div>`;
-    html += `<div class="stat-card"><span class="stat-label">Cols</span><span class="stat-value">${prev.ncol} <span class="diff-arrow">\u2192</span> ${next.ncol}</span></div>`;
-    html += `<div class="stat-card"><span class="stat-label">Total NAs</span><span class="stat-value">${prev.total_nas.toLocaleString()} <span class="diff-arrow">\u2192</span> ${next.total_nas.toLocaleString()}</span></div>`;
-  }
-  html += '</div></div>';
-
-  // Column changes from changes field
-  if (ch) {
-    const added = asArray(ch.cols_added);
-    const removed = asArray(ch.cols_removed);
-    html += '<div class="detail-section"><h4>Column Changes</h4>';
-    if (added.length) html += '<p style="font-size:12px;margin-bottom:4px"><span class="diff-positive">+ Added (' + added.length + '):</span> <code style="font-size:11px">' + escHtml(added.join(', ')) + '</code></p>';
-    if (removed.length) html += '<p style="font-size:12px;margin-bottom:4px"><span class="diff-negative">- Removed (' + removed.length + '):</span> <code style="font-size:11px">' + escHtml(removed.join(', ')) + '</code></p>';
-
-    // Type changes
-    const tc = ch.type_changes || [];
-    if (tc.length > 0) {
-      html += '<table class="detail-table" style="margin-top:8px"><thead><tr><th>Column</th><th>From</th><th>To</th></tr></thead><tbody>';
-      tc.forEach(function(t) {
-        html += '<tr><td>' + escHtml(t.column) + '</td><td>' + escHtml(t.from) + '</td><td>' + escHtml(t.to) + '</td></tr>';
-      });
-      html += '</tbody></table>';
-    }
-
-    // Count unchanged columns
-    const prevCols = new Set((prev.schema || []).map(function(c) { return c.column; }));
-    const nextCols = new Set((next.schema || []).map(function(c) { return c.column; }));
-    const common = [...prevCols].filter(function(c) { return nextCols.has(c); });
-    html += '<p style="font-size:12px;color:var(--text-muted);margin-top:4px">Unchanged: ' + common.length + ' columns</p>';
-    html += '</div>';
-
-    // NA changes for common columns
-    const naChanges = common.map(function(name) {
-      const pc = (prev.schema || []).find(function(c) { return c.column === name; });
-      const nc = (next.schema || []).find(function(c) { return c.column === name; });
-      if (!pc || !nc) return null;
-      return { name: name, prev_na: pc.n_na, next_na: nc.n_na, delta: nc.n_na - pc.n_na };
-    }).filter(function(x) { return x && x.delta !== 0; }).sort(function(a, b) { return Math.abs(b.delta) - Math.abs(a.delta); }).slice(0, 10);
-
-    if (naChanges.length > 0) {
-      html += '<div class="detail-section"><h4>NA Changes (top ' + naChanges.length + ')</h4>';
-      html += '<table class="detail-table"><thead><tr><th>Column</th><th>Before</th><th>After</th><th>Delta</th></tr></thead><tbody>';
-      naChanges.forEach(function(c) {
-        html += '<tr><td>' + escHtml(c.name) + '</td><td>' + c.prev_na + '</td><td>' + c.next_na + '</td><td class="' + (c.delta > 0 ? 'diff-negative' : 'diff-positive') + '">' + (c.delta > 0 ? '+' : '') + c.delta + '</td></tr>';
-      });
-      html += '</tbody></table></div>';
-    }
-  }
-
-  // Operation diagnostics for the target snapshot
-  const d = next.diagnostics || {};
-  const dKeys = Object.keys(d);
-  if (dKeys.length > 0) {
-    html += '<div class="detail-section"><h4>Operation Diagnostics</h4>';
-    html += '<table class="detail-table"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
-    dKeys.forEach(function(k) {
-      var v = d[k];
-      var display;
-      if (v != null && typeof v === 'object') {
-        display = JSON.stringify(v);
-      } else if (typeof v === 'number' && v < 1 && v > 0) {
-        display = (v * 100).toFixed(1) + '%';
-      } else {
-        display = String(v);
-      }
-      html += '<tr><td>' + escHtml(k.replace(/_/g, ' ')) + '</td><td>' + escHtml(display) + '</td></tr>';
-    });
-    html += '</tbody></table></div>';
-  }
-
-  body.innerHTML = html;
-}
-
-// ── JSON panel ─────────────────────────────────────────────────
-function updateJson() {
-  document.getElementById('json-output').textContent = JSON.stringify(TRAIL_DATA, null, 2);
-}
-
-function copyJson() {
-  var text = document.getElementById('json-output').textContent;
-  navigator.clipboard.writeText(text).then(function() {
-    var btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(function() { btn.textContent = 'Copy JSON'; }, 1500);
-  });
-}
-
-function toggleJson() {
-  document.getElementById('json-body').classList.toggle('open');
-}
-
-// ── Controls ───────────────────────────────────────────────────
-function toggleClick(el) { el.classList.toggle('on'); }
-
-function toggleOption(el, key) {
-  el.classList.toggle('on');
-  state[key] = el.classList.contains('on');
-  if (state.selected) renderDetail();
-}
-
-function toggleTheme() {
-  document.body.classList.toggle('dark');
-  if (state.trail && state.trail.audited) renderLineageGraph(); else renderPipeline();
-  if (state.selected) renderDetail();
-}
-
-// ── Init ────────────────────────────────────────────────────────
 function eventBadge(ev) {
   ev = scalar(ev) || 'create';
   return '<span class="ev ev-' + escHtml(ev) + '">' + escHtml(ev) + '</span>';
@@ -969,10 +516,438 @@ function deltaCell(d) {
   const cls = d > 0 ? 'delta-pos' : 'delta-neg';
   return '<td class="num ' + cls + '">' + (d > 0 ? '+' : '') + d + '</td>';
 }
+function nodeTitle(i) {
+  const s = state.trail.snapshots[i];
+  if (s.object_name != null) return scalar(s.object_name) + ' v' + scalar(s.version);
+  return scalar(s.label);
+}
+// Index of the parent version (same object) for an audited snapshot, else null.
+function parentIndexOf(s) {
+  const ps = asArray(s.parent_snapshot_ids);
+  for (const pid of ps) {
+    const i = state.idxById[scalar(pid)];
+    if (i != null && scalar(state.trail.snapshots[i].object_id) === scalar(s.object_id)) return i;
+  }
+  for (const pid of ps) {
+    const i = state.idxById[scalar(pid)];
+    if (i != null) return i;
+  }
+  return null;
+}
 
+// ── Pan / zoom for the graph stage ─────────────────────────────
+function applyView() {
+  const stage = document.getElementById('graph-stage');
+  if (!stage || !state.view) return;
+  const v = state.view;
+  stage.style.transform = 'translate(' + v.tx + 'px,' + v.ty + 'px) scale(' + v.scale + ')';
+}
+function fitGraph(force) {
+  const vp = document.getElementById('graph-viewport');
+  const g = state.graphSize;
+  if (!g) return;
+  if (vp.clientWidth === 0 || vp.clientHeight === 0) { state.needFit = true; return; }
+  const pad = 48;
+  const s = Math.max(Math.min((vp.clientWidth - pad) / g.w, (vp.clientHeight - pad) / g.h, 1.4), 0.05);
+  state.view = { scale: s, tx: (vp.clientWidth - g.w * s) / 2, ty: (vp.clientHeight - g.h * s) / 2 };
+  state.needFit = false;
+  applyView();
+}
+function zoomAt(factor, cx, cy) {
+  if (!state.view) return;
+  const vp = document.getElementById('graph-viewport');
+  if (cx == null) { cx = vp.clientWidth / 2; cy = vp.clientHeight / 2; }
+  const v = state.view;
+  const ns = Math.min(Math.max(v.scale * factor, 0.05), 8);
+  const wx = (cx - v.tx) / v.scale, wy = (cy - v.ty) / v.scale;
+  v.scale = ns; v.tx = cx - wx * ns; v.ty = cy - wy * ns;
+  applyView();
+}
+function setupPanZoom() {
+  const vp = document.getElementById('graph-viewport');
+  let panning = false, sx = 0, sy = 0, moved = false;
+  vp.addEventListener('mousedown', function(e) { panning = true; moved = false; sx = e.clientX; sy = e.clientY; vp.classList.add('panning'); });
+  window.addEventListener('mousemove', function(e) {
+    if (!panning || !state.view) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy; sx = e.clientX; sy = e.clientY;
+    if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+    state.view.tx += dx; state.view.ty += dy; applyView();
+  });
+  window.addEventListener('mouseup', function() { panning = false; vp.classList.remove('panning'); });
+  // Suppress node/edge clicks that were actually drags.
+  vp.addEventListener('click', function(e) { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  vp.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const r = vp.getBoundingClientRect();
+    zoomAt(e.deltaY < 0 ? 1.1 : 0.9, e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+}
+function paintGraph(svg, totalW, totalH) {
+  state.graphSize = { w: totalW, h: totalH };
+  const stage = document.getElementById('graph-stage');
+  stage.style.width = totalW + 'px';
+  stage.style.height = totalH + 'px';
+  stage.innerHTML = svg;
+  if (state.view) applyView(); else fitGraph();
+}
+
+// ── Classic pipeline (tap trails) ──────────────────────────────
+function renderPipeline() {
+  const trail = state.trail;
+  if (!trail) return;
+  const snaps = trail.snapshots;
+  const n = snaps.length;
+  const dark = isDark();
+
+  const nodeW = 160, nodeH = 88, gap = 100, padX = 40, padY = 50;
+  const totalW = padX * 2 + n * nodeW + (n - 1) * gap;
+  const totalH = padY * 2 + nodeH + 30;
+  const fontFamily = getComputedStyle(document.body).getPropertyValue('--font').split(',')[0].trim();
+  const monoFamily = getComputedStyle(document.body).getPropertyValue('--mono').trim();
+
+  let svg = `<svg class="pipeline-svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="${dark ? '#475569' : '#94a3b8'}" /></marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter>
+  </defs>`;
+
+  for (let i = 0; i < n - 1; i++) {
+    const x1 = padX + i * (nodeW + gap) + nodeW;
+    const x2 = padX + (i + 1) * (nodeW + gap);
+    const cy = padY + nodeH / 2;
+    svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="${dark ? '#475569' : '#cbd5e1'}" stroke-width="2" marker-end="url(#arrowhead)" />`;
+    svg += `<line class="edge-hit" x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" onclick="selectEdge(${i})" />`;
+    const midX = (x1 + x2) / 2;
+    const nextSnap = snaps[i + 1];
+    const d = nextSnap.diagnostics || {};
+    let edgeLabel = '';
+    if (nextSnap.type === 'join' && d.join_type) {
+      edgeLabel = d.join_type.replace(/_/g, ' ');
+      if (d.match_rate && d.match_rate.x != null) edgeLabel += ' | match: ' + d.match_rate.x.toFixed(1) + '%';
+    } else if (nextSnap.type === 'filter' && d.pct_dropped != null) {
+      edgeLabel = 'filter | -' + d.pct_dropped.toFixed(1) + '%';
+    } else if (nextSnap.changes) {
+      const ch = nextSnap.changes, parts = [];
+      if (ch.row_delta && ch.row_delta !== 0) parts.push((ch.row_delta > 0 ? '+' : '') + ch.row_delta + ' rows');
+      if (ch.col_delta && ch.col_delta !== 0) parts.push((ch.col_delta > 0 ? '+' : '') + ch.col_delta + ' cols');
+      edgeLabel = parts.join(', ');
+    }
+    svg += `<text x="${midX}" y="${cy - 10}" text-anchor="middle" font-size="10" font-family="${monoFamily}" fill="${dark ? '#94a3b8' : '#64748b'}">${escHtml(edgeLabel)}</text>`;
+  }
+
+  for (let i = 0; i < n; i++) {
+    const snap = snaps[i];
+    const x = padX + i * (nodeW + gap), y = padY;
+    const color = opColorHex(snap.type, dark);
+    const hasViolation = (snap.policy_violations || []).length > 0;
+    const bg = dark ? '#131c2e' : '#ffffff';
+    const isSelected = state.selected && state.selected.type === 'node' && state.selected.index === i;
+    svg += `<g class="node-card" onclick="selectNode(${i})" transform="translate(${x},${y})">`;
+    svg += `<rect width="${nodeW}" height="${nodeH}" rx="10" fill="${bg}" stroke="${hasViolation ? (dark ? '#f87171' : '#ef4444') : color}" stroke-width="${isSelected ? 3 : hasViolation ? 2.5 : 1.5}" filter="url(#shadow)" />`;
+    svg += `<rect width="6" height="${nodeH}" rx="3" fill="${color}" />`;
+    svg += `<text x="${nodeW/2 + 3}" y="24" text-anchor="middle" font-size="13" font-weight="600" fill="${dark ? '#e8eef7' : '#1e293b'}" font-family="${fontFamily}">${escHtml(scalar(snap.label))}</text>`;
+    svg += `<text x="${nodeW/2 + 3}" y="39" text-anchor="middle" font-size="10" fill="${color}" font-family="${monoFamily}">${escHtml(typeLabel(snap))}</text>`;
+    svg += `<text x="${nodeW/2 + 3}" y="58" text-anchor="middle" font-size="11" fill="${dark ? '#94a3b8' : '#64748b'}" font-family="${monoFamily}">${fmtN(snap.nrow)} rows  ${scalar(snap.ncol)} cols</text>`;
+    const naColor = scalar(snap.total_nas) > 0 ? (dark ? '#fb923c' : '#f97316') : (dark ? '#64748b' : '#94a3b8');
+    svg += `<text x="${nodeW/2 + 3}" y="74" text-anchor="middle" font-size="10" fill="${naColor}" font-family="${monoFamily}">${scalar(snap.total_nas)} NAs</text>`;
+    if (hasViolation) {
+      svg += `<circle cx="${nodeW - 10}" cy="12" r="5" fill="${dark ? '#f87171' : '#ef4444'}" />`;
+      svg += `<text x="${nodeW - 10}" y="15" text-anchor="middle" font-size="8" fill="white" font-weight="700">!</text>`;
+    }
+    svg += `</g>`;
+  }
+  svg += `</svg>`;
+  paintGraph(svg, totalW, totalH);
+}
+
+// ── Lineage graph (audited trails) ─────────────────────────────
+function renderLineageGraph() {
+  const trail = state.trail;
+  const snaps = trail.snapshots;
+  const dark = isDark();
+
+  const lanes = [], laneOf = {};
+  snaps.forEach(function(s) {
+    const oid = scalar(s.object_id);
+    if (laneOf[oid] == null) { laneOf[oid] = lanes.length; lanes.push(oid); }
+  });
+
+  const nodeW = 156, nodeH = 62, colGap = 50, rowGap = 34, padX = 118, padY = 34;
+  const colW = nodeW + colGap, rowH = nodeH + rowGap, pos = {};
+  snaps.forEach(function(s, i) {
+    const lane = laneOf[scalar(s.object_id)];
+    const x = padX + i * colW, y = padY + lane * rowH;
+    pos[scalar(s.snapshot_id)] = { x: x, y: y, cx: x + nodeW/2, cy: y + nodeH/2, i: i };
+  });
+  const totalW = padX + snaps.length * colW + 40;
+  const totalH = padY * 2 + lanes.length * rowH;
+
+  const monoFamily = getComputedStyle(document.body).getPropertyValue('--mono').trim();
+  const fontFamily = getComputedStyle(document.body).getPropertyValue('--font').split(',')[0].trim();
+  const labelColor = dark ? '#94a3b8' : '#64748b';
+  const edgeColor = dark ? '#3a4a63' : '#cbd5e1';
+
+  let svg = '<svg class="pipeline-svg" width="' + totalW + '" height="' + totalH + '" viewBox="0 0 ' + totalW + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg">';
+  svg += '<defs><marker id="lin-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="' + edgeColor + '" /></marker><filter id="lshadow" x="-12%" y="-12%" width="124%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-opacity="0.12"/></filter></defs>';
+
+  lanes.forEach(function(oid, li) {
+    const first = snaps.find(function(s){ return scalar(s.object_id) === oid; });
+    const y = padY + li * rowH + nodeH/2;
+    svg += '<text x="10" y="' + (y + 4) + '" font-size="12" font-weight="600" fill="' + labelColor + '" font-family="' + monoFamily + '">' + escHtml(scalar(first.object_name)) + '</text>';
+  });
+
+  snaps.forEach(function(s, ci) {
+    const to = pos[scalar(s.snapshot_id)];
+    asArray(s.parent_snapshot_ids).forEach(function(pid) {
+      const from = pos[scalar(pid)];
+      if (!from) return;
+      const x1 = from.x + nodeW, y1 = from.cy, x2 = to.x, y2 = to.cy, mx = (x1 + x2) / 2;
+      const dPath = 'M ' + x1 + ' ' + y1 + ' C ' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2;
+      svg += '<path d="' + dPath + '" fill="none" stroke="' + edgeColor + '" stroke-width="1.8" marker-end="url(#lin-arrow)" />';
+      const pIdx = state.idxById[scalar(pid)];
+      if (pIdx != null) svg += '<path class="edge-hit" d="' + dPath + '" onclick="selectLineageEdge(' + ci + ',' + pIdx + ')" />';
+    });
+  });
+
+  snaps.forEach(function(s, i) {
+    const p = pos[scalar(s.snapshot_id)];
+    const color = eventColorHex(s.event, dark);
+    const bg = dark ? '#131c2e' : '#ffffff';
+    const sel = state.selected && state.selected.type === 'node' && state.selected.index === i;
+    const term = scalar(s.event) === 'delete' || scalar(s.event) === 'retire';
+    svg += '<g class="node-card" onclick="selectNode(' + i + ')" transform="translate(' + p.x + ',' + p.y + ')">';
+    svg += '<rect width="' + nodeW + '" height="' + nodeH + '" rx="9" fill="' + bg + '" stroke="' + color + '" stroke-width="' + (sel ? 3 : 1.5) + '"' + (term ? ' stroke-dasharray="4 3"' : '') + ' filter="url(#lshadow)" />';
+    svg += '<rect width="5" height="' + nodeH + '" rx="2.5" fill="' + color + '" />';
+    svg += '<text x="14" y="23" font-size="12.5" font-weight="600" fill="' + (dark ? '#e8eef7' : '#1e293b') + '" font-family="' + fontFamily + '">' + escHtml(scalar(s.object_name)) + ' <tspan fill="' + color + '">v' + scalar(s.version) + '</tspan></text>';
+    svg += '<text x="14" y="39" font-size="10" fill="' + color + '" font-family="' + monoFamily + '">' + escHtml(scalar(s.event)) + '</text>';
+    svg += '<text x="14" y="53" font-size="10.5" fill="' + labelColor + '" font-family="' + monoFamily + '">' + fmtN(s.nrow) + ' × ' + scalar(s.ncol) + (scalar(s.total_nas) > 0 ? '  · ' + fmtN(s.total_nas) + ' NA' : '') + '</text>';
+    svg += '</g>';
+  });
+
+  svg += '</svg>';
+  paintGraph(svg, totalW, totalH);
+}
+
+// ── Selection ──────────────────────────────────────────────────
+function selectNode(i) {
+  state.selected = { type: 'node', index: i };
+  renderDetail();
+  if (state.trail.audited) renderLineageGraph(); else renderPipeline();
+}
+function selectEdge(i) { state.selected = { type: 'edge', index: i }; renderDetail(); }
+function selectLineageEdge(childIdx, parentIdx) {
+  state.selected = { type: 'diff', prevIdx: parentIdx, nextIdx: childIdx, title: 'Diff: ' + nodeTitle(parentIdx) + ' → ' + nodeTitle(childIdx) };
+  renderDetail();
+}
+function closeDetail() {
+  state.selected = null;
+  document.getElementById('detail-panel').classList.add('hidden');
+  if (state.trail.audited) renderLineageGraph(); else renderPipeline();
+}
+
+// ── Detail panel ───────────────────────────────────────────────
+function renderDetail() {
+  const sel = state.selected;
+  if (!sel) return;
+  document.getElementById('detail-panel').classList.remove('hidden');
+  if (sel.type === 'node') renderNodeDetail();
+  else if (sel.type === 'edge') renderDiff(sel.index, sel.index + 1, 'Diff: ' + nodeTitle(sel.index) + ' → ' + nodeTitle(sel.index + 1));
+  else if (sel.type === 'diff') renderDiff(sel.prevIdx, sel.nextIdx, sel.title);
+}
+
+// Shared schema/missingness/summary table — used by detail panel & Tables page.
+function schemaTableHtml(snap) {
+  const schema = snap.schema || [];
+  if (!schema.length) return '<p class="muted-note">No schema captured for this snapshot.</p>';
+  let h = '<table class="detail-table"><thead><tr><th>Column</th><th>Type</th><th>NAs</th><th>NA%</th>';
+  if (state.numeric) h += '<th>Min</th><th>Q25</th><th>Median</th><th>Mean</th><th>Q75</th><th>Max</th>';
+  h += '</tr></thead><tbody>';
+  var numLookup = {};
+  if (snap.numeric_summary) {
+    (Array.isArray(snap.numeric_summary) ? snap.numeric_summary : Object.values(snap.numeric_summary)).forEach(function(ns) { numLookup[ns.column] = ns; });
+  }
+  const nrow = scalar(snap.nrow);
+  schema.forEach(function(col) {
+    const pctNa = nrow > 0 ? (col.n_na / nrow * 100).toFixed(1) : '0.0';
+    h += '<tr><td>' + escHtml(col.column) + '</td><td>' + escHtml(col.type) + '</td><td>' + col.n_na + '</td><td>' + pctNa + '%</td>';
+    if (state.numeric) {
+      const ns = numLookup[col.column];
+      h += ns
+        ? '<td>' + fmtNum(ns.min) + '</td><td>' + fmtNum(ns.q25) + '</td><td>' + fmtNum(ns.median) + '</td><td>' + fmtNum(ns.mean) + '</td><td>' + fmtNum(ns.q75) + '</td><td>' + fmtNum(ns.max) + '</td>'
+        : '<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>';
+    }
+    h += '</tr>';
+  });
+  return h + '</tbody></table>';
+}
+
+// Columns whose type changed between two snapshots.
+function typeChanges(prev, next) {
+  const pm = {};
+  (prev.schema || []).forEach(function(c) { pm[c.column] = c.type; });
+  const out = [];
+  (next.schema || []).forEach(function(c) { if (pm[c.column] != null && pm[c.column] !== c.type) out.push({ column: c.column, from: pm[c.column], to: c.type }); });
+  return out;
+}
+
+function renderNodeDetail() {
+  const snap = state.trail.snapshots[state.selected.index];
+  const d = snap.diagnostics || {};
+  document.getElementById('detail-title').textContent = (snap.object_name != null ? nodeTitle(state.selected.index) : scalar(snap.label)) + ' — ' + (snap.object_name != null ? scalar(snap.event) : typeLabel(snap));
+
+  let html = '<div class="detail-section" style="min-width:100%"><div class="card-row">';
+  html += statCard('Rows', scalar(snap.nrow).toLocaleString());
+  html += statCard('Cols', scalar(snap.ncol));
+  html += statCard('Total NAs', scalar(snap.total_nas).toLocaleString());
+  if (snap.timestamp) html += statCard('Timestamp', scalar(snap.timestamp));
+
+  if (snap.type === 'join') {
+    if (d.match_rate) {
+      if (d.match_rate.x != null) html += statCard('Match Rate X', d.match_rate.x.toFixed(1) + '%', '--join');
+      if (d.match_rate.y != null) html += statCard('Match Rate Y', d.match_rate.y.toFixed(1) + '%', '--join');
+    }
+    if (d.n_only_x != null) html += statCard('Unmatched X', d.n_only_x);
+    if (d.n_only_y != null) html += statCard('Unmatched Y', d.n_only_y);
+    if (d.relation) html += statCard('Relation', d.relation);
+    if (d.y_name) html += statCard('Right Table', d.y_name);
+  }
+  if (snap.type === 'filter') {
+    if (d.n_total != null) html += statCard('Total Before', d.n_total.toLocaleString());
+    if (d.n_dropped != null) html += statCard('Dropped', d.n_dropped.toLocaleString(), '--filter');
+    if (d.pct_dropped != null) html += statCard('Drop %', d.pct_dropped.toFixed(1) + '%', '--filter');
+    if (d.expr_label) html += statCard('Expression', d.expr_label);
+  }
+  html += '</div></div>';
+
+  // Lineage (audited execution)
+  if (snap.object_name != null) {
+    const parents = asArray(snap.parent_snapshot_ids).map(function(pid) {
+      const p = state.byId[scalar(pid)];
+      return p ? (scalar(p.object_name) + ' v' + scalar(p.version)) : pid;
+    });
+    html += '<div class="detail-section" style="min-width:100%"><h4>Lineage</h4><div class="card-row">';
+    html += statCard('Object', scalar(snap.object_name));
+    html += statCard('Version', scalar(snap.version));
+    html += statCard('Event', scalar(snap.event));
+    html += statCard('Derived from', parents.length ? parents.join(', ') : '—');
+    html += '</div>';
+    if (snap.source && scalar(snap.source) !== '<pre-existing>') {
+      html += '<pre class="code-block">' + escHtml(scalar(snap.source)) + '</pre>';
+    }
+    html += '</div>';
+  }
+
+  // Custom diagnostics (.fns)
+  if (snap.custom && typeof snap.custom === 'object' && Object.keys(snap.custom).length > 0) {
+    html += '<div class="detail-section" style="min-width:100%"><h4>Custom Diagnostics (.fns)</h4>';
+    html += '<table class="detail-table"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody>';
+    Object.entries(snap.custom).forEach(function(entry) {
+      const v = entry[1];
+      html += '<tr><td>' + escHtml(entry[0]) + '</td><td>' + escHtml(typeof v === 'object' ? JSON.stringify(v) : String(v)) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Column schema / missingness / summaries
+  if ((snap.schema || []).length > 0) {
+    html += '<div class="detail-section" style="min-width:100%"><h4>Column Schema</h4>' + schemaTableHtml(snap) + '</div>';
+  }
+
+  // Changes from previous version (audited)
+  const parentIdx = snap.object_name != null ? parentIndexOf(snap) : null;
+  if (parentIdx != null) {
+    const parent = state.trail.snapshots[parentIdx];
+    html += '<div class="detail-section" style="min-width:100%"><h4>Changes from ' + escHtml(nodeTitle(parentIdx)) + '</h4></div>';
+    html += diffBodyHtml(parent, snap);
+  }
+
+  // Pipeline capture
+  const pipelineArr = asArray(snap.pipeline);
+  if (pipelineArr.length > 0) {
+    html += '<div class="detail-section" style="min-width:100%"><h4>Captured Pipeline</h4><pre class="code-block">' + escHtml(pipelineArr.join('\n')) + '</pre></div>';
+  }
+
+  document.getElementById('detail-body').innerHTML = html;
+}
+
+function diffStat(label, a, b, cls) {
+  const delta = b - a;
+  const cmap = { pos: 'diff-positive', neg: 'diff-negative', neu: 'diff-neutral' };
+  return '<div class="stat-card"><span class="stat-label">' + escHtml(label) + '</span><span class="stat-value">' +
+    Number(a).toLocaleString() + ' <span class="diff-arrow">→</span> ' + Number(b).toLocaleString() +
+    ' <span class="' + cmap[cls] + '">(' + fmtDelta(delta) + ')</span></span></div>';
+}
+
+// Computes a diff purely from two snapshots' metadata (works for pipeline edges and lineage parents).
+function diffBodyHtml(prev, next) {
+  const pn = scalar(prev.nrow), nn = scalar(next.nrow);
+  const pc = scalar(prev.ncol), nc = scalar(next.ncol);
+  const pNa = scalar(prev.total_nas), nNa = scalar(next.total_nas);
+  const rd = nn - pn, cd = nc - pc, nad = nNa - pNa;
+
+  let html = '<div class="detail-section"><h4>Row / Column / NA changes</h4><div class="card-row">';
+  html += diffStat('Rows', pn, nn, rd > 0 ? 'pos' : rd < 0 ? 'neg' : 'neu');
+  html += diffStat('Cols', pc, nc, cd > 0 ? 'pos' : cd < 0 ? 'neg' : 'neu');
+  html += diffStat('Total NAs', pNa, nNa, nad > 0 ? 'neg' : nad < 0 ? 'pos' : 'neu');
+  html += '</div></div>';
+
+  const prevCols = new Set((prev.schema || []).map(function(c) { return c.column; }));
+  const nextCols = new Set((next.schema || []).map(function(c) { return c.column; }));
+  const added = [...nextCols].filter(function(c) { return !prevCols.has(c); });
+  const removed = [...prevCols].filter(function(c) { return !nextCols.has(c); });
+  const common = [...prevCols].filter(function(c) { return nextCols.has(c); });
+
+  html += '<div class="detail-section"><h4>Column Changes</h4>';
+  if (added.length) html += '<p class="chg"><span class="diff-positive">+ Added (' + added.length + '):</span> <code>' + escHtml(added.join(', ')) + '</code></p>';
+  if (removed.length) html += '<p class="chg"><span class="diff-negative">- Removed (' + removed.length + '):</span> <code>' + escHtml(removed.join(', ')) + '</code></p>';
+  if (!added.length && !removed.length) html += '<p class="muted-note">No columns added or removed.</p>';
+  const tc = typeChanges(prev, next);
+  if (tc.length) {
+    html += '<table class="detail-table" style="margin-top:8px"><thead><tr><th>Column</th><th>From</th><th>To</th></tr></thead><tbody>';
+    tc.forEach(function(t) { html += '<tr><td>' + escHtml(t.column) + '</td><td>' + escHtml(t.from) + '</td><td>' + escHtml(t.to) + '</td></tr>'; });
+    html += '</tbody></table>';
+  }
+  html += '<p class="muted-note">Unchanged: ' + common.length + ' columns</p></div>';
+
+  const naCh = common.map(function(name) {
+    const pcc = (prev.schema || []).find(function(c) { return c.column === name; });
+    const ncc = (next.schema || []).find(function(c) { return c.column === name; });
+    if (!pcc || !ncc) return null;
+    return { name: name, prev_na: pcc.n_na, next_na: ncc.n_na, delta: ncc.n_na - pcc.n_na };
+  }).filter(function(x) { return x && x.delta !== 0; }).sort(function(a, b) { return Math.abs(b.delta) - Math.abs(a.delta); }).slice(0, 10);
+  if (naCh.length) {
+    html += '<div class="detail-section"><h4>NA Changes (top ' + naCh.length + ')</h4><table class="detail-table"><thead><tr><th>Column</th><th>Before</th><th>After</th><th>Δ</th></tr></thead><tbody>';
+    naCh.forEach(function(c) {
+      html += '<tr><td>' + escHtml(c.name) + '</td><td>' + c.prev_na + '</td><td>' + c.next_na + '</td><td class="' + (c.delta > 0 ? 'diff-negative' : 'diff-positive') + '">' + (c.delta > 0 ? '+' : '') + c.delta + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  const d = next.diagnostics || {}, dKeys = Object.keys(d);
+  if (dKeys.length) {
+    html += '<div class="detail-section"><h4>Operation Diagnostics</h4><table class="detail-table"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
+    dKeys.forEach(function(k) {
+      var v = d[k], display;
+      if (v != null && typeof v === 'object') display = JSON.stringify(v);
+      else if (typeof v === 'number' && v < 1 && v > 0) display = (v * 100).toFixed(1) + '%';
+      else display = String(v);
+      html += '<tr><td>' + escHtml(k.replace(/_/g, ' ')) + '</td><td>' + escHtml(display) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  return html;
+}
+
+function renderDiff(prevIdx, nextIdx, titleText) {
+  const prev = state.trail.snapshots[prevIdx], next = state.trail.snapshots[nextIdx];
+  document.getElementById('detail-title').textContent = titleText;
+  document.getElementById('detail-body').innerHTML = diffBodyHtml(prev, next);
+}
+
+// ── Report page ────────────────────────────────────────────────
 function renderReport() {
   const trail = state.trail;
-  const c = document.getElementById('report-container');
+  const c = document.getElementById('report-view');
   if (!trail.audited) { c.innerHTML = ''; return; }
   const snaps = trail.snapshots;
 
@@ -982,32 +957,28 @@ function renderReport() {
     if (!byObj[oid]) { byObj[oid] = []; order.push(oid); }
     byObj[oid].push(s);
   });
-  const nSteps = trail.events.length ||
-    new Set(snaps.map(function(s){return scalar(s.step_id);})).size;
+  const nSteps = trail.events.length || new Set(snaps.map(function(s){ return scalar(s.step_id); })).size;
   const nErr = trail.events.filter(function(e){ return scalar(e.error) != null; }).length;
   const level = snaps.length ? (scalar(snaps[0].level) || 'metadata') : 'metadata';
 
-  let html = '';
-
-  html += '<div class="report-section"><h2>Run summary</h2><div class="summary-grid">';
-  html += '<div class="summary-cell"><span class="k">Trail</span><span class="v">' + escHtml(trail.name || '') + '</span></div>';
+  let html = '<div class="report-section"><h2>Run summary</h2><div class="summary-grid">';
+  html += '<div class="summary-cell"><span class="k">Trail</span><span class="v" style="font-size:14px">' + escHtml(trail.name || '') + '</span></div>';
   html += '<div class="summary-cell"><span class="k">Objects</span><span class="v">' + order.length + '</span></div>';
   html += '<div class="summary-cell"><span class="k">Steps</span><span class="v">' + nSteps + '</span></div>';
   html += '<div class="summary-cell"><span class="k">Snapshots</span><span class="v">' + snaps.length + '</span></div>';
-  html += '<div class="summary-cell"><span class="k">Level</span><span class="v">' + escHtml(level) + '</span></div>';
+  html += '<div class="summary-cell"><span class="k">Level</span><span class="v" style="font-size:14px">' + escHtml(level) + '</span></div>';
   html += '<div class="summary-cell"><span class="k">Errors</span><span class="v"' + (nErr ? ' style="color:var(--violation)"' : '') + '>' + nErr + '</span></div>';
   html += '</div></div>';
 
   if (trail.events.length) {
     html += '<div class="report-section"><h2>Step timeline</h2><table class="report-table"><thead><tr><th>Step</th><th>Code</th><th>Objects changed</th><th></th></tr></thead><tbody>';
     trail.events.forEach(function(e) {
-      const err = scalar(e.error);
-      const warns = asArray(e.warnings);
+      const err = scalar(e.error), warns = asArray(e.warnings);
       const objs = asArray(e.snapshots).map(escHtml).join(', ');
       const src = scalar(e.source) || '';
       let flag = '';
       if (err != null) flag = '<span class="pill-err">error</span>';
-      else if (warns.length) flag = '<span class="pill-warn">' + warns.length + ' warning' + (warns.length>1?'s':'') + '</span>';
+      else if (warns.length) flag = '<span class="pill-warn">' + warns.length + ' warning' + (warns.length > 1 ? 's' : '') + '</span>';
       html += '<tr' + (err != null ? ' class="row-err"' : '') + '><td>' + escHtml(scalar(e.step_id) || '') + '</td><td><code>' + escHtml(src) + '</code></td><td>' + objs + '</td><td>' + flag + '</td></tr>';
     });
     html += '</tbody></table></div>';
@@ -1020,9 +991,9 @@ function renderReport() {
       const nm = scalar(s.object_name);
       const keyCols = trail.keys && trail.keys[nm] ? asArray(trail.keys[nm]).join(', ') : '';
       const ch = s.changes;
-      html += '<tr style="cursor:pointer" onclick="selectNode(' + idx + ')">';
+      html += '<tr class="click" onclick="selectNode(' + idx + ')">';
       html += '<td>' + escHtml(nm) + '</td><td class="num">' + scalar(s.version) + '</td><td>' + eventBadge(s.event) + '</td>';
-      html += '<td class="num">' + fmtN(scalar(s.nrow)) + '</td><td class="num">' + scalar(s.ncol) + '</td><td class="num">' + fmtN(scalar(s.total_nas)) + '</td>';
+      html += '<td class="num">' + fmtN(s.nrow) + '</td><td class="num">' + scalar(s.ncol) + '</td><td class="num">' + fmtN(s.total_nas) + '</td>';
       html += deltaCell(ch ? scalar(ch.row_delta) : null);
       html += '<td>' + escHtml(keyCols) + '</td></tr>';
     });
@@ -1033,117 +1004,148 @@ function renderReport() {
   if (probs.length) {
     html += '<div class="report-section"><h2>Warnings &amp; errors</h2><table class="report-table"><thead><tr><th>Step</th><th>Type</th><th>Message</th></tr></thead><tbody>';
     probs.forEach(function(e) {
-      const step = escHtml(scalar(e.step_id) || '');
-      const err = scalar(e.error);
+      const step = escHtml(scalar(e.step_id) || ''), err = scalar(e.error);
       if (err != null) html += '<tr class="row-err"><td>' + step + '</td><td class="pill-err">error</td><td><code>' + escHtml(err) + '</code></td></tr>';
-      asArray(e.warnings).forEach(function(w) {
-        html += '<tr><td>' + step + '</td><td class="pill-warn">warning</td><td><code>' + escHtml(w) + '</code></td></tr>';
-      });
+      asArray(e.warnings).forEach(function(w) { html += '<tr><td>' + step + '</td><td class="pill-warn">warning</td><td><code>' + escHtml(w) + '</code></td></tr>'; });
     });
     html += '</tbody></table></div>';
   }
 
-  html += '<div class="report-section" style="margin-bottom:0;padding-bottom:8px"><h2>Lineage graph</h2><p class="hint" style="margin:0">Each row is one object\u2019s version chain; edges show derivations. Click a node for detail.</p></div>';
-
   c.innerHTML = html;
 }
 
-function eventColorHex(ev, dark) {
-  ev = scalar(ev);
-  if (ev === 'update') return dark ? '#c084fc' : '#a855f7';
-  if (ev === 'delete' || ev === 'retire') return dark ? '#f87171' : '#ef4444';
-  if (ev === 'unchanged_assignment') return dark ? '#64748b' : '#94a3b8';
-  return dark ? '#60a5fa' : '#3b82f6';
-}
+// ── Tables page ────────────────────────────────────────────────
+function renderTables() {
+  const c = document.getElementById('tables-view');
+  if (!state.trail.audited) { c.innerHTML = ''; return; }
+  const snaps = state.trail.snapshots;
 
-function renderLineageGraph() {
-  const trail = state.trail;
-  const snaps = trail.snapshots;
-  const n = snaps.length;
-  const dark = document.body.classList.contains('dark');
-
-  const lanes = [], laneOf = {};
+  const order = [], byObj = {};
   snaps.forEach(function(s) {
     const oid = scalar(s.object_id);
-    if (laneOf[oid] == null) { laneOf[oid] = lanes.length; lanes.push(oid); }
+    if (!byObj[oid]) { byObj[oid] = []; order.push(oid); }
+    byObj[oid].push(s);
   });
 
-  const nodeW = 150, nodeH = 60, colGap = 46, rowGap = 30;
-  const padX = 110, padY = 30;
-  const colW = nodeW + colGap, rowH = nodeH + rowGap;
-  const pos = {};
-  snaps.forEach(function(s, i) {
-    const lane = laneOf[scalar(s.object_id)];
-    const x = padX + i * colW, y = padY + lane * rowH;
-    pos[scalar(s.snapshot_id)] = { x: x, y: y, cx: x + nodeW/2, cy: y + nodeH/2, i: i };
-  });
-  const totalW = padX + n * colW + 40;
-  const totalH = padY * 2 + lanes.length * rowH;
-
-  const monoFamily = getComputedStyle(document.body).getPropertyValue('--mono').trim();
-  const fontFamily = getComputedStyle(document.body).getPropertyValue('--font').split(',')[0].trim();
-  const labelColor = dark ? '#94a3b8' : '#64748b';
-
-  let svg = '<svg class="pipeline-svg" width="' + totalW + '" height="' + totalH + '" viewBox="0 0 ' + totalW + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg">';
-  svg += '<defs><marker id="lin-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="' + (dark ? '#475569' : '#94a3b8') + '" /></marker><filter id="lshadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter></defs>';
-
-  lanes.forEach(function(oid, li) {
-    const first = snaps.find(function(s){ return scalar(s.object_id) === oid; });
-    const y = padY + li * rowH + nodeH/2;
-    svg += '<text x="8" y="' + (y + 4) + '" font-size="12" font-weight="600" fill="' + labelColor + '" font-family="' + monoFamily + '">' + escHtml(scalar(first.object_name)) + '</text>';
-  });
-
-  snaps.forEach(function(s) {
-    const to = pos[scalar(s.snapshot_id)];
-    asArray(s.parent_snapshot_ids).forEach(function(pid) {
-      const from = pos[pid];
-      if (!from) return;
-      const x1 = from.x + nodeW, y1 = from.cy, x2 = to.x, y2 = to.cy;
-      const mx = (x1 + x2) / 2;
-      svg += '<path d="M ' + x1 + ' ' + y1 + ' C ' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2 + '" fill="none" stroke="' + (dark ? '#475569' : '#cbd5e1') + '" stroke-width="1.8" marker-end="url(#lin-arrow)" />';
+  let html = '<div class="report-section"><h2>Tables</h2><p class="hint" style="margin:0">Schema, missingness and summaries for every object version. Expand a version to inspect its columns; toggle <em>Numeric summaries</em> in the sidebar for distributions.</p></div>';
+  order.forEach(function(oid) {
+    const versions = byObj[oid];
+    html += '<div class="report-section"><h2>' + escHtml(scalar(versions[0].object_name)) + '</h2>';
+    versions.forEach(function(s) {
+      const idx = snaps.indexOf(s);
+      const parentIdx = parentIndexOf(s);
+      const tc = parentIdx != null ? typeChanges(snaps[parentIdx], s) : [];
+      html += '<details class="tbl-ver"><summary>';
+      html += '<span class="ver-tag">v' + scalar(s.version) + '</span> ' + eventBadge(s.event);
+      html += '<span class="ver-meta">' + fmtN(s.nrow) + ' × ' + scalar(s.ncol) + (scalar(s.total_nas) > 0 ? ' · ' + fmtN(s.total_nas) + ' NA' : '') + '</span>';
+      html += '<button class="mini-btn" onclick="event.preventDefault();event.stopPropagation();selectNode(' + idx + ')">Inspect</button>';
+      html += '</summary><div class="tbl-body">';
+      html += schemaTableHtml(s);
+      if (tc.length) {
+        html += '<h4 class="tc-h">Type changes from v' + scalar(snaps[parentIdx].version) + '</h4><table class="detail-table"><thead><tr><th>Column</th><th>From</th><th>To</th></tr></thead><tbody>';
+        tc.forEach(function(t) { html += '<tr><td>' + escHtml(t.column) + '</td><td>' + escHtml(t.from) + '</td><td>' + escHtml(t.to) + '</td></tr>'; });
+        html += '</tbody></table>';
+      }
+      html += '</div></details>';
     });
+    html += '</div>';
   });
-
-  snaps.forEach(function(s, i) {
-    const p = pos[scalar(s.snapshot_id)];
-    const color = eventColorHex(s.event, dark);
-    const bg = dark ? '#1e293b' : '#ffffff';
-    const sel = state.selected && state.selected.type === 'node' && state.selected.index === i;
-    const term = scalar(s.event) === 'delete' || scalar(s.event) === 'retire';
-    svg += '<g class="node-card" onclick="selectNode(' + i + ')" transform="translate(' + p.x + ',' + p.y + ')">';
-    svg += '<rect width="' + nodeW + '" height="' + nodeH + '" rx="8" fill="' + bg + '" stroke="' + color + '" stroke-width="' + (sel ? 3 : 1.5) + '"' + (term ? ' stroke-dasharray="4 3"' : '') + ' filter="url(#lshadow)" />';
-    svg += '<rect width="' + nodeW + '" height="4" rx="8" fill="' + color + '" />';
-    svg += '<text x="10" y="22" font-size="12.5" font-weight="600" fill="' + (dark ? '#f1f5f9' : '#334155') + '" font-family="' + fontFamily + '">' + escHtml(scalar(s.object_name)) + ' <tspan fill="' + color + '">v' + scalar(s.version) + '</tspan></text>';
-    svg += '<text x="10" y="38" font-size="10" fill="' + color + '" font-family="' + monoFamily + '">' + escHtml(scalar(s.event)) + '</text>';
-    svg += '<text x="10" y="52" font-size="10.5" fill="' + labelColor + '" font-family="' + monoFamily + '">' + fmtN(scalar(s.nrow)) + ' \u00d7 ' + scalar(s.ncol) + (scalar(s.total_nas) > 0 ? '  \u00b7 ' + fmtN(scalar(s.total_nas)) + ' NA' : '') + '</text>';
-    svg += '</g>';
-  });
-
-  svg += '</svg>';
-  document.getElementById('pipeline-container').innerHTML = svg;
+  c.innerHTML = html;
 }
 
+// ── Page navigation ────────────────────────────────────────────
+function navItem(id, label) {
+  return '<button class="nav-item" id="nav-' + id + '" onclick="setPage(\'' + id + '\')">' + label + '</button>';
+}
+function buildNav() {
+  const g = document.getElementById('nav-group');
+  if (!state.trail.audited) { g.style.display = 'none'; return; }
+  g.innerHTML = '<h3>Pages</h3>' + navItem('report', 'Report') + navItem('graph', 'Lineage graph') + navItem('tables', 'Tables');
+}
+function buildLegend() {
+  const el = document.getElementById('legend-list');
+  const items = state.trail.audited
+    ? [['--snap', 'create'], ['--mutate', 'update'], ['--violation', 'delete / retire'], ['--text-muted', 'unchanged']]
+    : [['--snap', 'Snapshot'], ['--join', 'Join'], ['--filter', 'Filter'], ['--mutate', 'Mutate'], ['--summarize', 'Summarize']];
+  el.innerHTML = items.map(function(it) {
+    return '<div class="legend-row"><span class="swatch" style="background:var(' + it[0] + ')"></span>' + escHtml(it[1]) + '</div>';
+  }).join('');
+}
+function setPage(p) {
+  state.page = p;
+  ['report', 'graph', 'tables'].forEach(function(id) {
+    const v = document.getElementById(id + '-view');
+    if (v) v.classList.toggle('active', id === p);
+    const n = document.getElementById('nav-' + id);
+    if (n) n.classList.toggle('active', id === p);
+  });
+  if (p === 'graph') {
+    if (!state.view || state.needFit) fitGraph(); else applyView();
+  }
+}
+
+// ── Controls ───────────────────────────────────────────────────
+function toggleOption(el, key) {
+  el.classList.toggle('on');
+  state[key] = el.classList.contains('on');
+  if (state.trail.audited) renderTables();
+  if (state.selected) renderDetail();
+}
+function toggleTheme() {
+  const root = document.documentElement;
+  const goingDark = !isDark();
+  root.classList.remove('theme-dark', 'theme-light');
+  root.classList.add(goingDark ? 'theme-dark' : 'theme-light');
+  document.getElementById('t-theme').classList.toggle('on', goingDark);
+  if (state.trail) { if (state.trail.audited) renderLineageGraph(); else renderPipeline(); }
+  if (state.selected) renderDetail();
+}
+
+// ── JSON panel ─────────────────────────────────────────────────
+function updateJson() { document.getElementById('json-output').textContent = JSON.stringify(TRAIL_DATA, null, 2); }
+function copyJson() {
+  navigator.clipboard.writeText(document.getElementById('json-output').textContent).then(function() {
+    var btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy JSON'; }, 1500);
+  });
+}
+function toggleJson() { document.getElementById('json-body').classList.toggle('open'); }
+
+// ── Init ───────────────────────────────────────────────────────
+function setTrailInfo() {
+  const chip = function(t) { return '<span class="chip">' + escHtml(t) + '</span>'; };
+  document.getElementById('trail-info').innerHTML =
+    chip(state.trail.name || 'trail') +
+    chip(state.trail.n_snapshots + ' snapshots') +
+    chip('Created ' + (state.trail.created_at || 'N/A'));
+}
 function renderMain() {
-  if (state.trail.audited) { renderReport(); renderLineageGraph(); }
+  if (state.trail.audited) { renderReport(); renderTables(); renderLineageGraph(); }
   else renderPipeline();
 }
 
 (function init() {
   state.trail = loadTrail();
+  document.getElementById('t-theme').classList.toggle('on', isDark());
   if (!state.trail) {
-    document.getElementById('pipeline-container').innerHTML =
-      '<p style="color:var(--text-muted);text-align:center;margin-top:40px">No trail data found.</p>';
-    document.getElementById('trail-info').textContent = 'Empty trail';
+    document.getElementById('graph-stage').innerHTML = '<p class="graph-empty">No trail data found.</p>';
+    document.getElementById('graph-view').classList.add('active');
+    document.getElementById('nav-group').style.display = 'none';
+    document.getElementById('trail-info').innerHTML = '<span class="chip">Empty trail</span>';
     return;
   }
-  state.byId = {};
-  state.trail.snapshots.forEach(function(s) {
-    if (s.snapshot_id != null) state.byId[scalar(s.snapshot_id)] = s;
+  state.trail.snapshots.forEach(function(s, i) {
+    if (s.snapshot_id != null) { state.byId[scalar(s.snapshot_id)] = s; state.idxById[scalar(s.snapshot_id)] = i; }
   });
-  document.getElementById('trail-info').textContent =
-    state.trail.name + ' \u2014 ' + state.trail.n_snapshots + ' snapshots \u2014 Created: ' + (state.trail.created_at || 'N/A');
+  buildNav();
+  buildLegend();
+  setTrailInfo();
+  setupPanZoom();
   renderMain();
+  setPage(state.trail.audited ? 'report' : 'graph');
   updateJson();
+  window.addEventListener('resize', function() { if (state.page === 'graph' && state.needFit) fitGraph(); });
 })();
 </script>
 </body>

@@ -26,8 +26,8 @@ trail <- audit_record({
 
 trail
 #> 
-#> ── Audit Trail: "trail_20260626_221410" ────────────────────────────────────────
-#> Created: 2026-06-26 22:14:10
+#> ── Audit Trail: "trail_20260627_130919" ────────────────────────────────────────
+#> Created: 2026-06-27 13:09:19
 #> Snapshots: 4
 #> 
 #>   #  Label   Rows  Cols  NAs  Type
@@ -87,8 +87,8 @@ writeLines(c(
 strail <- audit_source(script)
 strail
 #> 
-#> ── Audit Trail: "file1d007d86e5a0.R" ───────────────────────────────────────────
-#> Created: 2026-06-26 22:14:10
+#> ── Audit Trail: "file1c273284b1d5.R" ───────────────────────────────────────────
+#> Created: 2026-06-27 13:09:19
 #> Snapshots: 3
 #> 
 #>   #  Label  Rows  Cols  NAs  Type
@@ -200,7 +200,7 @@ str(s$evidence)
 #>  $ level      : chr "column_hash"
 #>  $ sample     : chr "all rows and columns"
 #>  $ salt_policy: chr "per-run (clock + PID); not privacy-preserving"
-#>  $ hash       : chr "1a9284a114b95db2a3b7a68a66743a57"
+#>  $ hash       : chr "8b4333a501d8bcc000d6917ee066ae63"
 ```
 
 Hashes use a per-run salt and are **not** a privacy guarantee — unsalted

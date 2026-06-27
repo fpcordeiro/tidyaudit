@@ -43,7 +43,7 @@ lst <- trail_to_list(trail)
 str(lst, max.level = 2)
 #> List of 6
 #>  $ name       : chr "example"
-#>  $ created_at : chr "2026-06-26T22:14:07Z"
+#>  $ created_at : chr "2026-06-27T13:09:16Z"
 #>  $ n_snapshots: int 1
 #>  $ snapshots  :List of 1
 #>   ..$ raw:List of 26

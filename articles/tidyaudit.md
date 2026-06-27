@@ -58,7 +58,7 @@ Print the trail to see the full timeline:
 print(trail)
 #> 
 #> ── Audit Trail: "order_pipeline" ───────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:17
+#> Created: 2026-06-27 13:09:26
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -114,7 +114,7 @@ result2 <- orders |>
 print(trail2)
 #> 
 #> ── Audit Trail: "join_pipeline" ────────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:17
+#> Created: 2026-06-27 13:09:26
 #> Snapshots: 2
 #> 
 #>   #  Label        Rows  Cols  NAs  Type                                
@@ -166,7 +166,7 @@ result3 <- orders |>
 print(trail3)
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:17
+#> Created: 2026-06-27 13:09:26
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -230,11 +230,11 @@ prints the complete trail summary plus all consecutive diffs in one call
 
 audit_report(trail3)
 #> ── Audit Report: "filter_pipeline" ─────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:17
+#> Created: 2026-06-27 13:09:26
 #> Total snapshots: 3
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:17
+#> Created: 2026-06-27 13:09:26
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          
@@ -335,7 +335,7 @@ row:
 print(trail4)
 #> 
 #> ── Audit Trail: "custom_example" ───────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:18
+#> Created: 2026-06-27 13:09:26
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -368,7 +368,7 @@ To suppress annotations and display only the main table:
 print(trail4, show_custom = FALSE)
 #> 
 #> ── Audit Trail: "custom_example" ───────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:18
+#> Created: 2026-06-27 13:09:26
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -411,7 +411,7 @@ wide_data |>
 print(trail_ctrl)
 #> 
 #> ── Audit Trail: "snapshot_controls" ────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:18
+#> Created: 2026-06-27 13:09:27
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -483,7 +483,7 @@ result_tab <- orders |>
 print(trail_tab)
 #> 
 #> ── Audit Trail: "tab_pipeline" ─────────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:18
+#> Created: 2026-06-27 13:09:27
 #> Snapshots: 2
 #> 
 #>   #  Label          Rows  Cols  NAs  Type
@@ -539,7 +539,7 @@ trail_list <- trail_to_list(trail3)
 str(trail_list, max.level = 2)
 #> List of 6
 #>  $ name       : chr "filter_pipeline"
-#>  $ created_at : chr "2026-06-26T22:14:17Z"
+#>  $ created_at : chr "2026-06-27T13:09:26Z"
 #>  $ n_snapshots: int 3
 #>  $ snapshots  :List of 3
 #>   ..$ raw          :List of 26
@@ -552,9 +552,9 @@ str(trail_list, max.level = 2)
 trail_df <- trail_to_df(trail3)
 print(trail_df)
 #>   index         label   type           timestamp nrow ncol total_nas
-#> 1     1           raw    tap 2026-06-26 22:14:17   20    4         0
-#> 2     2 complete_only filter 2026-06-26 22:14:17   12    4         0
-#> 3     3    high_value filter 2026-06-26 22:14:17    4    4         0
+#> 1     1           raw    tap 2026-06-27 13:09:26   20    4         0
+#> 2     2 complete_only filter 2026-06-27 13:09:26   12    4         0
+#> 3     3    high_value filter 2026-06-27 13:09:26    4    4         0
 #>    all_columns       schema numeric_summary      changes  diagnostics custom
 #> 1 id, cust.... c("id", ....    c("id", ....                                 
 #> 2 id, cust.... c("id", ....    c("id", .... -8, 0, 0.... keep, st....       
@@ -581,7 +581,7 @@ restored <- read_trail(tmp_rds)
 print(restored)
 #> 
 #> ── Audit Trail: "filter_pipeline" ──────────────────────────────────────────────
-#> Created: 2026-06-26 22:14:17
+#> Created: 2026-06-27 13:09:26
 #> Snapshots: 3
 #> 
 #>   #  Label          Rows  Cols  NAs  Type                          

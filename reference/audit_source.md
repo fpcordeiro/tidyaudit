@@ -115,8 +115,8 @@ writeLines(c(
 trail <- audit_source(tmp)
 print(trail)
 #> 
-#> ── Audit Trail: "file1a8f2616bd5f.R" ───────────────────────────────────────────
-#> Created: 2026-06-26 22:14:02
+#> ── Audit Trail: "file19b65a5631a7.R" ───────────────────────────────────────────
+#> Created: 2026-06-27 13:09:12
 #> Snapshots: 2
 #> 
 #>   #  Label  Rows  Cols  NAs  Type

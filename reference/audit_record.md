@@ -110,8 +110,8 @@ trail <- audit_record({
 })
 print(trail)
 #> 
-#> ── Audit Trail: "trail_20260626_221401" ────────────────────────────────────────
-#> Created: 2026-06-26 22:14:01
+#> ── Audit Trail: "trail_20260627_130912" ────────────────────────────────────────
+#> Created: 2026-06-27 13:09:12
 #> Snapshots: 3
 #> 
 #>   #  Label   Rows  Cols  NAs  Type
